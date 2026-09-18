@@ -90,6 +90,7 @@ main>.view>*+*{margin-top:14px}
 .chip.c2{background:var(--camel-soft);border-color:#eddcc3;color:var(--camel-ink)}
 .chip.pmiss{border-style:dashed;border-color:#e0b6b0}
 .chip.viol{border-color:var(--terra);box-shadow:0 0 0 2px var(--terra-soft)}
+.chip.pbreak{border-style:dotted;border-color:var(--terra);box-shadow:0 0 0 2px var(--terra-soft)}
 .dot{width:6px;height:6px;border-radius:50%;flex:none}
 .dot.m{background:#5d7383}.dot.f{background:var(--terra)}
 .badge{display:inline-flex;align-items:center;border-radius:999px;padding:2.5px 10px;font-size:11px;font-weight:600;background:var(--card2);color:var(--mut)}
@@ -177,6 +178,8 @@ main>.view>*+*{margin-top:14px}
 .daycard.thu{background:#f8f7fc;border-color:#ddd8f0}
 .daycard.off{opacity:.55}
 .daycard.off .dc-body{pointer-events:none;opacity:.55}
+.msel{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:4.5px 13px;font:inherit;font-size:12.5px;color:var(--ink)}
+.pblock.off{opacity:.55;pointer-events:none}
 .dc-body{display:flex;flex-direction:column;gap:9px}
 .dcrow{display:flex;align-items:center;gap:8px}
 .dcrow>.tiny{flex:none;width:62px}
@@ -235,6 +238,7 @@ h1{font-size:17px}
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.6 21.5 20.5h-19z"/><path d="M12 9.8v4.4M12 17.4v.01"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 4v2.5M6.5 6.5 7.5 20a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13.5M10 10.5v6.5M14 10.5v6.5"/></symbol>
+<symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7 16 16M8 8 6.3 6.3"/></symbol>
 </svg>
 <div class="wrap">
 <header class="top">
@@ -274,6 +278,7 @@ h1{font-size:17px}
 <section class="view" id="v-days"><div id="daysWrap" class="stack"></div></section>
 <section class="view" id="v-members"><div id="mIntro"></div><div id="mlist" class="stack"></div><div id="mAddWrap"></div></section>
 <section class="view" id="v-locations"><div id="lBulk"></div><div id="llist" class="stack"></div></section>
+<section class="view" id="v-settings"><div id="setWrap" class="stack"></div></section>
 <section class="view" id="v-results"><div id="resTab" class="stack"></div></section>
 </main>
 </div>
@@ -291,10 +296,11 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const icon=(id,cls='ic')=>`<svg class="${cls}"><use href="#${id}"/></svg>`;
 const $=s=>document.querySelector(s);
 let _uid=100;const nid=()=>++_uid;
-const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'results',l:'النتائج',ic:'i-res'}];
+const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
 visits:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,hl:null,
+pairs:{enabled:false,mode:'soft',rules:[]},
 days:Array.from({length:7},(_,i)=>({on:i>=2&&i<=5,fav:'',dist:i===THU?'near':''})),
 members:[
 {id:nid(),name:'شوقي',pool:1,gender:'M',off:[],pref:''},
@@ -331,11 +337,27 @@ if(!hasM){nc+=nm;nm=0;}
 if(!hasC){nm+=nc;nc=0;}
 return{nm,nc};
 }
+function compilePairs(){
+const P={on:false,hard:false,list:[],with:new Map(),avoid:new Map()};
+if(!state.pairs.enabled)return P;
+const alive=new Set(state.members.map(m=>m.id)),seen=new Set();
+for(const r of state.pairs.rules){
+if(r.a===r.b||!alive.has(r.a)||!alive.has(r.b))continue;
+const k=Math.min(r.a,r.b)+':'+Math.max(r.a,r.b);
+if(seen.has(k))continue; seen.add(k);
+const M=r.kind==='avoid'?P.avoid:P.with;
+if(!M.has(r.a))M.set(r.a,new Set()); M.get(r.a).add(r.b);
+if(!M.has(r.b))M.set(r.b,new Set()); M.get(r.b).add(r.a);
+P.list.push({a:r.a,b:r.b,kind:r.kind});
+}
+P.on=P.list.length>0; P.hard=state.pairs.mode==='hard';
+return P;
+}
 function buildCfg(){
 const days=workingDays().sort((a,b)=>a-b);
 const locs=state.locations;
 const sp=effSplit();
-return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays};
+return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs()};
 }
 function reach(on,maxM,maxC){
 let states=new Set(['0,0,0,0']);
@@ -495,7 +517,7 @@ function solveTeams(cfg,slots,opts){
 const vs=slots.slice().sort((a,b)=>a.day-b.day);
 const n=vs.length,teams=new Array(n),missRows=new Array(n),violRows=new Array(n);
 const busy=new Set(),md=new Map(),cnt=new Map();
-let steps=3600,prefMiss=0,consecViol=0;
+let steps=cfg.pairs.hard?5200:3600,prefMiss=0,consecViol=0;
 const gOK=(gs,v)=>{
 if(!v.loc.genderRule)return true;
 const c=gs.filter(x=>x==='M').length;
@@ -525,6 +547,8 @@ rem++;
 (m.pool===1?c1:c2).push({m,pv,viol,rem,rb});
 }
 if(c1.length<2||c2.length<need2)return false;
+const P=cfg.pairs;
+const availSet=P.on?new Set(c1.concat(c2).map(x=>x.m.id)):null;
 const combos=[];
 for(const a of kCombos(c1,2))for(const b of kCombos(c2,need2)){
 const team=a.concat(b);
@@ -534,6 +558,25 @@ for(const x of team){
 sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb+Math.random()*7;
 if(x.pv===1)sc-=52;else if(x.pv===-1){sc+=52;miss++;}
 if(x.viol)vio++;
+}
+if(P.on){
+const ids=team.map(x=>x.m.id);
+let pb=0,skip=false;
+for(let i=0;i<ids.length-1&&!skip;i++)for(let j=i+1;j<ids.length;j++){
+const A=ids[i],B=ids[j];
+if(P.with.get(A)&&P.with.get(A).has(B))pb-=48;
+else if(P.avoid.get(A)&&P.avoid.get(A).has(B)){
+if(P.hard&&!opts.relax){skip=true;break;}
+pb+=170;
+}
+}
+if(skip)continue;
+const inTeam=new Set(ids);
+for(const id of ids){
+const w=P.with.get(id); if(!w)continue;
+for(const pid of w)if(availSet.has(pid)&&!inTeam.has(pid))pb+=22;
+}
+sc+=pb;
 }
 combos.push({team,sc,miss,vio});
 }
@@ -578,6 +621,23 @@ function makePlan(cfg,slots,sol,ref){
 const rows=slots.map((s,i)=>({day:s.day,loc:s.loc,team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[]}));
 const counts=new Map();
 for(const r of rows)for(const id of r.team)counts.set(id,(counts.get(id)||0)+1);
+let pairHit=0,pairTotal=0,pairBreak=0;
+if(cfg.pairs.on){
+for(const r of rows){
+r.pbreak=[];
+for(const {a,b,kind} of cfg.pairs.list){
+if(kind!=='avoid')continue;
+if(r.team.includes(a)&&r.team.includes(b)){r.pbreak.push(a,b);pairBreak++;}
+}
+}
+for(const {a,b,kind} of cfg.pairs.list){
+if(kind!=='with')continue;
+let both=0;
+for(const r of rows)if(r.team.includes(a)&&r.team.includes(b))both++;
+pairHit+=both;
+pairTotal+=Math.min(counts.get(a)||0,counts.get(b)||0);
+}
+}
 let prefHit=0,prefTotal=0,favHit=0,favTotal=0,distHit=0,distTotal=0;
 for(const r of rows){
 const dp=cfg.dayCfg[r.day];
@@ -601,13 +661,32 @@ const tot=cs.reduce((a,b)=>a+b,0),avg=cs.length?tot/cs.length:0;
 let vr=0,ss=0;
 for(const c of cs){vr+=(c-avg)**2;ss+=c*c;}
 const fair=ss?clamp(1-vr/ss,0,1):1;
-return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss};
+return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak};
 }
 function scorePlan(p){
 let s=0.55*p.fair+0.15*(p.dayTotal?p.dayHit/p.dayTotal:0.5);
 if(p.prefTotal)s+=0.3*(p.prefHit/p.prefTotal);
+if(p.pairTotal)s+=0.28*(p.pairHit/p.pairTotal);
+if(p.pairBreak)s-=0.45*Math.min(1,p.pairBreak/Math.max(1,p.rows.length));
 if(p.sim!=null)s=0.68*s+0.32*p.sim;
 return s+Math.random()*0.001;
+}
+function diagnosePairs(cfg){
+const P=cfg.pairs,out=[];
+if(!P.on||!P.hard)return out;
+const blocked=(a,b)=>P.avoid.get(a)&&P.avoid.get(a).has(b);
+const hasPair=(pool,d)=>{
+const c=cfg.members.filter(m=>m.pool===pool&&!m.off.includes(d));
+for(let i=0;i<c.length-1;i++)for(let j=i+1;j<c.length;j++)if(!blocked(c[i].id,c[j].id))return true;
+return false;
+};
+for(const d of cfg.days){
+if(!hasPair(1,d)){out.push('قواعد «ليس مع» تمنع تشكيل ثنائي سريري يوم '+DAYS[d]);break;}
+}
+if(cfg.nMain>0)for(const d of cfg.days){
+if(!hasPair(2,d)){out.push('قواعد «ليس مع» تمنع تشكيل ثنائي إداري للمواقع الرئيسية يوم '+DAYS[d]);break;}
+}
+return out;
 }
 function diagnose(cfg){
 const msgs=[];
@@ -632,6 +711,7 @@ msgs.push('الإجازات تقلّص الطاقة — الأقصى المتا�
 const short=cfg.days.filter(d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length<2||cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length<1);
 if(short.length)msgs.push('يوم '+DAYS[short[0]]+' يفتقد الحد الأدنى من المتاحين بعد الإجازات');
 if(!msgs.length)msgs.push('القيود مشدودة على هذا التوزيع — خفّف الإجازات أو عدّل عدد الزيارات والنسبة');
+msgs.unshift(...diagnosePairs(cfg));
 return msgs.slice(0,3);
 }
 let genRun=0;
@@ -734,6 +814,7 @@ if(state.tab===id)return;
 state.tab=id;
 document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
 document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
+if(id==='settings')$('#setWrap').innerHTML=settingsTabHTML();
 }
 function patchHeader(){
  $('#stM').innerHTML=icon('i-users')+' '+ar(state.members.length)+' أعضاء';
@@ -883,6 +964,7 @@ return l;
 }
 function removeMember(id){
 state.members=state.members.filter(m=>m.id!==id);
+state.pairs.rules=state.pairs.rules.filter(r=>r.a!==id&&r.b!==id);
 if(state.hl===id)state.hl=null;
 const card=document.querySelector('[data-mcard="'+id+'"]');
 if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
@@ -910,8 +992,50 @@ if(!added.length){toast('زد العدّاد أولًا ثم أضف');return;}
 added.forEach(l=>$('#llist').insertAdjacentHTML('beforeend',locationCardHTML(l,0)));
 patchLocIntro();patchHeader();recalcCap();markStale();
 }
+function memberOptionsHTML(sel){
+return state.members.map(m=>`<option value="${m.id}"${+sel===m.id?' selected':''}>${esc(m.name)}</option>`).join('');
+}
+function pairRuleHTML(r,i){
+return `<div class="card rv" style="--i:${i}" data-prule="${r.id}">
+<div class="mhead">
+<select class="msel" data-act="pa" data-r="${r.id}">${memberOptionsHTML(r.a)}</select>
+<div class="seg"><button class="${r.kind==='with'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="with">يفضّل مع</button><button class="${r.kind==='avoid'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="avoid">ليس مع</button></div>
+<select class="msel" data-act="pb" data-r="${r.id}">${memberOptionsHTML(r.b)}</select>
+<button class="icon-btn" data-act="pdel" data-r="${r.id}" title="حذف القاعدة">${icon('i-trash')}</button>
+</div>
+</div>`;
+}
+function settingsTabHTML(){
+const on=state.pairs.enabled;
+const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv">${icon('i-users')} لا قواعد اقتران بعد</div>`;
+return `<div class="card introbar rv">${icon('i-cog')}<span>تُطبَّق قواعد الاقتران <b>داخل فريق الزيارة الواحدة</b> فقط، وليست عبر الأسبوع.</span></div>
+<div class="card rv">
+<div class="mhead">
+<label class="swlab" data-act="ptoggle"><span class="sw${on?' on':''}"></span> تفعيل تفضيلات الاقتران</label>
+<div class="seg"><button class="${state.pairs.mode==='soft'?'on':''}" data-act="pmode" data-v="soft">مرن</button><button class="${state.pairs.mode==='hard'?'on':''}" data-act="pmode" data-v="hard">صارم</button></div>
+</div>
+</div>
+<div class="stack pblock${on?'':' off'}" id="pblock">
+${list}
+<button class="btn" data-act="padd">${icon('i-plus')} إضافة قاعدة</button>
+</div>`;
+}
+function addPairRule(){
+if(state.members.length<2){toast('أضف عضوين على الأقل أولًا');return;}
+const r={id:nid(),a:state.members[0].id,b:state.members[1].id,kind:'with'};
+state.pairs.rules.push(r);
+ $('#setWrap').innerHTML=settingsTabHTML();
+markStale();
+}
+function removePairRule(id){
+state.pairs.rules=state.pairs.rules.filter(r=>r.id!==id);
+const card=document.querySelector('[data-prule="'+id+'"]');
+if(card){card.classList.add('rem');setTimeout(()=>{ $('#setWrap').innerHTML=settingsTabHTML(); },240);}
+else $('#setWrap').innerHTML=settingsTabHTML();
+markStale();
+}
 function miniStrip(p){
-const wd=workingDays().sort((a,b)=>a-b);
+const wd=p.days.slice().sort((a,b)=>a-b);
 return `<div class="wstrip">${wd.map(d=>{
 const qs=p.rows.filter(r=>r.day===d);
 return `<span class="wcol">${qs.length?qs.map(r=>`<i class="${r.loc.type==='main'?'m':'c'}"></i>`).join(''):'<i class="e"></i>'}</span>`;
@@ -926,8 +1050,8 @@ const dp=state.days[d];
 const vrows=rows.map(r=>{
 const team=r.team.map(id=>{
 const m=byId(id);if(!m)return'';
-const miss=r.miss.includes(id),viol=r.viol.includes(id);
-return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
+const miss=r.miss.includes(id),viol=r.viol.includes(id),pbreak=r.pbreak&&r.pbreak.includes(id);
+return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}${pbreak?' — تعارض اقتران':''}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
 }).join('');
 return `<div class="vrow"><div class="vloc"><b>${esc(r.loc.name)}</b><span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
 }).join('');
@@ -945,9 +1069,11 @@ const stats=[
 p.prefTotal?`<span class="stat${p.prefHit<p.prefTotal?' bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:'',
 p.dayTotal?`<span class="stat">الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:'',
 p.sim!=null?`<span class="stat">تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:'',
+p.pairTotal?`<span class="stat">اقتران <b>${ar(p.pairHit)}/${ar(p.pairTotal)}</b></span>`:'',
+p.pairBreak?`<span class="stat bad">تعارض <b>${ar(p.pairBreak)}</b></span>`:'',
 p.consecViol?`<span class="stat bad">مخالفات <b>${ar(p.consecViol)}</b></span>`:''
 ].filter(Boolean).join('');
-const warn=p.consecViol?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${ar(p.consecViol)} عضوية في أيام متتالية${p.prefMiss?' · '+ar(p.prefMiss)+' خارج التفضيل':''} — معلَّمة بالأحمر</div>`:'';
+const warn=(p.consecViol||p.pairBreak)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${ar(p.consecViol)} عضوية في أيام متتالية${p.prefMiss?' · '+ar(p.prefMiss)+' خارج التفضيل':''}${p.pairBreak?' · '+ar(p.pairBreak)+' تعارض اقتران':''} — معلَّمة بالأحمر</div>`:'';
 return `<div class="card reshead rv" style="--i:0">
 <div class="rh-top">
 <div class="rh-name"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
@@ -981,7 +1107,7 @@ function resHTML(){
 if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums">جارٍ استكشاف التوليفات — <b id="gn">٠</b> محاولة · <b id="gf">٠</b> خطة صالحة</div></div>`;
 if(state.plans.length&&state.selected!=null)return `<div id="resMain" class="stack">${resMainInner()}</div><div id="resAlts">${altsHTML()}</div>`;
 if(state.fail)return failHTML();
-return `<div class="card idle rv">${icon('i-cal')} جاهز — اضغط «توليد الخطط»`;
+return `<div class="card idle rv">${icon('i-cal')} جاهز — اضغط «توليد الخطط»</div>`;
 }
 function pcardHTML(p,i){
 return `<button class="pcard rv${i===state.selected?' sel':''}" style="--i:${i}" data-act="rplan" data-i="${i}">
@@ -993,6 +1119,8 @@ return `<button class="pcard rv${i===state.selected?' sel':''}" style="--i:${i}"
  ${p.prefTotal?`<span class="${p.prefHit<p.prefTotal?'bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:''}
  ${p.dayTotal?`<span>الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:''}
  ${p.sim!=null?`<span>تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:''}
+ ${p.pairTotal?`<span>اقتران <b>${ar(p.pairHit)}/${ar(p.pairTotal)}</b></span>`:''}
+ ${p.pairBreak?`<span class="bad">تعارض <b>${ar(p.pairBreak)}</b></span>`:''}
  ${p.consecViol?`<span class="bad"><b>${ar(p.consecViol)}</b> مخالفة</span>`:''}
 </div>
 </button>`;
@@ -1052,7 +1180,7 @@ const rd=$('#rdetail');if(rd)rd.innerHTML=rdetailHTML(state.plans[i]);
 paintHl();
 }
 function paintHl(){
-const id=state.hl;
+const id=state.hl??hoverM;
 document.querySelectorAll('.sched,.mloads').forEach(el=>el.classList.toggle('focus',id!=null));
 document.querySelectorAll('.chip[data-m]').forEach(ch=>ch.classList.toggle('hl',id!=null&&+ch.dataset.m===id));
 }
@@ -1075,7 +1203,7 @@ const t=e.target.closest('[data-act]');if(!t)return;
 const a=t.dataset;
 switch(a.act){
 case'tab':setTab(a.id);break;
-case'wday':case'dsw':toggleDay(+a.day||+a.d);break;
+case'wday':case'dsw':toggleDay(a.day!==undefined?+a.day:+a.d);break;
 case'vstep':changeVisits(+a.v);break;
 case'ratio':setRatio(+a.i);break;
 case'alldays':{
@@ -1113,7 +1241,24 @@ case'ldel':removeLocation(+a.l);break;
 case'ladd':bulkAdd();break;
 case'bst':{state.bulk[a.k]=clamp(state.bulk[a.k]+ +a.v,0,9);$('#b'+(a.k==='main'?'mainN':'conN')).textContent=ar(state.bulk[a.k]);break;}
 case'minch':{state.minChanges=!state.minChanges;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');break;}
+case'ptoggle':{
+state.pairs.enabled=!state.pairs.enabled;
+const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');
+const pb=$('#pblock');if(pb)pb.classList.toggle('off',!state.pairs.enabled);
+markStale();break;
 }
+case'pmode':{state.pairs.mode=a.v;segOn(t);markStale();break;}
+case'pkind':{const r=state.pairs.rules.find(x=>x.id===+a.r);if(r){r.kind=a.v;segOn(t);markStale();}break;}
+case'padd':addPairRule();break;
+case'pdel':removePairRule(+a.r);break;
+}
+});
+document.addEventListener('change',e=>{
+const t=e.target.closest('select[data-act]');if(!t)return;
+const r=state.pairs.rules.find(x=>x.id===+t.dataset.r);if(!r)return;
+if(t.dataset.act==='pa')r.a=+t.value;else r.b=+t.value;
+if(r.a===r.b)toast('اختر عضوين مختلفين');
+markStale();
 });
 document.addEventListener('input',e=>{
 const t=e.target.closest('input[data-name]');if(!t)return;
