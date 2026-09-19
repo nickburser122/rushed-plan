@@ -44,6 +44,7 @@ nav.tabs::-webkit-scrollbar{display:none}
 .tab.on{background:var(--card);color:var(--teal);font-weight:600;box-shadow:var(--sh)}
 .tnum{background:var(--teal-soft);color:var(--teal-d);border-radius:99px;font-size:10.5px;font-weight:600;padding:1px 7px}
 .tnum:empty{display:none}
+.tab.dirty::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--terra);display:inline-block;margin-inline-start:4px}
 .view{display:none}
 .view.on{display:block;animation:viewin .32s cubic-bezier(.22,.85,.3,1)}
 @keyframes viewin{from{opacity:0;transform:translateY(8px)}}
@@ -84,7 +85,7 @@ main>.view>*+*{margin-top:14px}
 .sw::after{content:'';position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(51,61,74,.3);transition:.2s}
 .sw.on{background:var(--teal);border-color:var(--teal)}
 .sw.on::after{transform:translateX(-17px)}
-.swlab{display:inline-flex;align-items:center;gap:7px;color:var(--mut);font-size:12px;cursor:pointer}
+.swlab{display:inline-flex;align-items:center;gap:7px;color:var(--mut);font-size:12px;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3.5px 11px;font-size:13px;font-weight:500;border:1.5px solid transparent;transition:.15s;cursor:pointer}
 .chip.c1{background:var(--sage-soft);border-color:#d5e6dc;color:var(--sage-ink)}
 .chip.c2{background:var(--camel-soft);border-color:#eddcc3;color:var(--camel-ink)}
@@ -252,7 +253,7 @@ h1{font-size:17px}
 <span class="schip" id="stV"></span>
 </div>
 </header>
-<nav class="tabs" id="tabs"></nav>
+<nav class="tabs" id="tabs" role="tablist"></nav>
 <main>
 <section class="view on" id="v-plan">
 <div class="card ctrl rv">
@@ -262,7 +263,7 @@ h1{font-size:17px}
 <span class="stepper"><button data-act="vstep" data-v="-1">−</button><b id="vnum"></b><button data-act="vstep" data-v="1">+</button></span>
 <span class="tiny mut" id="vmax"></span>
 <span class="split" id="split"></span>
-<label class="swlab" data-act="alldays" title="اضمن زيارة واحدة على الأقل في كل يوم عمل"><span class="sw"></span> استخدم كل الأيام</label>
+<button type="button" class="swlab" role="switch" aria-checked="false" data-act="alldays" title="اضمن زيارة واحدة على الأقل في كل يوم عمل"><span class="sw"></span> استخدم كل الأيام</button>
 <span style="flex:1"></span>
 <span class="clab">نسبة الرئيسية</span>
 <div class="seg" id="ratioseg" title="رئيسية : متعاقدة"></div>
@@ -282,7 +283,7 @@ h1{font-size:17px}
 <section class="view" id="v-results"><div id="resTab" class="stack"></div></section>
 </main>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 const DAYS=['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
 const DAY_SHORT=['سبت','أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة'];
@@ -299,7 +300,8 @@ let _uid=100;const nid=()=>++_uid;
 const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
-visits:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,hl:null,
+visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,
+cap:{mainPerDay:2,conPerDay:1,pairTotal:3,pairWeighted:5},
 pairs:{enabled:false,mode:'soft',rules:[]},
 days:Array.from({length:7},(_,i)=>({on:i>=2&&i<=5,fav:'',dist:i===THU?'near':''})),
 members:[
@@ -327,15 +329,34 @@ const locById=id=>state.locations.find(l=>l.id===id);
 const poolName=p=>p===1?'سريري':'إداري';
 const workingDays=()=>state.days.map((d,i)=>d.on?i:-1).filter(i=>i>=0);
 function visitsWord(n){if(n===0)return'لا زيارات';if(n===1)return'زيارة واحدة';if(n===2)return'زيارتان';if(n<11)return ar(n)+' زيارات';return ar(n)+' زيارة';}
+const plural=(n,one,two,few,many)=>n===1?one:n===2?two:n<11?ar(n)+' '+few:ar(n)+' '+many;
 function kCombos(arr,k){const res=[];(function rec(s,cur){if(cur.length===k){res.push(cur.slice());return;}for(let i=s;i<=arr.length-(k-cur.length);i++){cur.push(arr[i]);rec(i+1,cur);cur.pop();}})(0,[]);return res;}
 function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=Math.random()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
+let _reachCache=new Map();
+function reachTotals(){
+const maxM=Math.min(state.cap.mainPerDay,state.locations.filter(l=>l.type==='main').length);
+const maxC=Math.min(state.cap.conPerDay,state.locations.filter(l=>l.type==='contracted').length);
+const key=state.days.map(d=>d.on?1:0).join('')+'|'+maxM+'|'+maxC;
+if(!_reachCache.has(key))
+_reachCache.set(key,[...reach(state.days.map(d=>d.on),maxM,maxC)].map(s=>s.split(',').map(Number)));
+return _reachCache.get(key);
+}
 function effSplit(){
-const V=state.visits,r=RATIOS[state.ratioIdx];
-let nm=Math.round(V*r.rm/(r.rm+r.rc)),nc=V-nm;
-const hasM=state.locations.some(l=>l.type==='main'),hasC=state.locations.some(l=>l.type==='contracted');
-if(!hasM){nc+=nm;nm=0;}
-if(!hasC){nm+=nc;nc=0;}
-return{nm,nc};
+const V=state.visits,r=RATIOS[state.ratioIdx],want=r.rm/(r.rm+r.rc);
+if(!state.locations.length)return{nm:0,nc:0,capped:true};
+const totals=reachTotals();
+let pool=totals.filter(([m,c])=>m+c===V);
+if(!pool.length){
+const best=Math.max(...totals.map(t=>t[0]+t[1]));
+pool=totals.filter(([m,c])=>m+c===best);
+}
+if(!pool.length)return{nm:0,nc:0,capped:true};
+let sel=pool[0],bd=Infinity;
+for(const [m,c] of pool){
+const d=Math.abs((m+c?m/(m+c):0)-want);
+if(d<bd-1e-9){bd=d;sel=[m,c];}
+}
+return{nm:sel[0],nc:sel[1],capped:sel[0]+sel[1]!==V};
 }
 function compilePairs(){
 const P={on:false,hard:false,list:[],with:new Map(),avoid:new Map()};
@@ -367,8 +388,8 @@ const ns=new Set();
 for(const s of states){
 const q=s.split(',').map(Number);
 for(let nm=0;nm<=maxM;nm++)for(let nc=0;nc<=maxC;nc++){
-if(q[2]+q[3]+nm+nc>3)continue;
-if(2*q[2]+q[3]+2*nm+nc>5)continue;
+if(q[2]+q[3]+nm+nc>state.cap.pairTotal)continue;
+if(2*q[2]+q[3]+2*nm+nc>state.cap.pairWeighted)continue;
 ns.add((q[0]+nm)+','+(q[1]+nc)+','+nm+','+nc);
 }
 }
@@ -407,22 +428,26 @@ return totals;
 }
 function visitCap(){
 const on=state.days.map(d=>d.on);
-const maxM=Math.min(2,state.locations.filter(l=>l.type==='main').length);
-const maxC=Math.min(1,state.locations.filter(l=>l.type==='contracted').length);
+const maxM=Math.min(state.cap.mainPerDay,state.locations.filter(l=>l.type==='main').length);
+const maxC=Math.min(state.cap.conPerDay,state.locations.filter(l=>l.type==='contracted').length);
 const totals=reach(on,maxM,maxC);
 let cap=0;
 for(const t of totals){const q=t.split(',').map(Number);if(q[0]+q[1]>cap)cap=q[0]+q[1];}
 return cap;
 }
 function slotsValid(cfg,ref){
-const maxM=Math.min(2,cfg.mains.length),maxC=Math.min(1,cfg.cons.length);
+const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.cap.conPerDay,cfg.cons.length);
 const load=new Map(cfg.days.map(d=>[d,{m:0,c:0}]));
+const used=new Map(cfg.days.map(d=>[d,new Set()]));
 let m=0,c=0;
 const out=[];
 for(const s of ref){
 if(!load.has(s.day))return null;
 const loc=cfg.locs.find(l=>l.id===s.loc.id);
 if(!loc)return null;
+const U=used.get(s.day);
+if(U.has(loc.id))return null;
+U.add(loc.id);
 const L=load.get(s.day);
 if(loc.type==='main'){if(L.m>=maxM)return null;L.m++;m++;}else{if(L.c>=maxC)return null;L.c++;c++;}
 out.push({loc,day:s.day});
@@ -430,8 +455,8 @@ out.push({loc,day:s.day});
 if(m!==cfg.nMain||c!==cfg.nCon)return null;
 for(const [d,L] of load)for(const nb of[d-1,d+1]){
 const L2=load.get(nb);if(!L2)continue;
-if(L.m+L.c+L2.m+L2.c>3)return null;
-if(2*L.m+L.c+2*L2.m+L2.c>5)return null;
+if(L.m+L.c+L2.m+L2.c>state.cap.pairTotal)return null;
+if(2*L.m+L.c+2*L2.m+L2.c>state.cap.pairWeighted)return null;
 }
 if(cfg.useAll){for(const [,L] of load)if(!L.m&&!L.c)return null;}
 return out;
@@ -441,7 +466,7 @@ if(refSlots&&Math.random()<0.45){
 const ok=slotsValid(cfg,refSlots);
 if(ok)return ok;
 }
-const maxM=Math.min(2,cfg.mains.length),maxC=Math.min(1,cfg.cons.length);
+const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.cap.conPerDay,cfg.cons.length);
 if((cfg.nMain>0&&!maxM)||(cfg.nCon>0&&!maxC))return null;
 if(cfg.useAll&&cfg.days.length>cfg.visits)return null;
 const load=new Map(cfg.days.map(d=>[d,{m:0,c:0}]));
@@ -451,8 +476,8 @@ if(t==='main'?L.m>=maxM:L.c>=maxC)return false;
 const nm=L.m+(t==='main'?1:0),nc=L.c+(t==='contracted'?1:0);
 for(const nb of[d-1,d+1]){
 const L2=load.get(nb);if(!L2)continue;
-if(nm+nc+L2.m+L2.c>3)return false;
-if(2*nm+nc+2*L2.m+L2.c>5)return false;
+if(nm+nc+L2.m+L2.c>state.cap.pairTotal)return false;
+if(2*nm+nc+2*L2.m+L2.c>state.cap.pairWeighted)return false;
 }
 return true;
 };
@@ -549,8 +574,11 @@ rem++;
 if(c1.length<2||c2.length<need2)return false;
 const P=cfg.pairs;
 const availSet=P.on?new Set(c1.concat(c2).map(x=>x.m.id)):null;
+const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb;
+const c1s=c1.length>6?c1.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c1;
+const c2s=c2.length>6?c2.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c2;
 const combos=[];
-for(const a of kCombos(c1,2))for(const b of kCombos(c2,need2)){
+for(const a of kCombos(c1s,2))for(const b of kCombos(c2s,need2)){
 const team=a.concat(b);
 if(!gOK(team.map(x=>x.m.gender),v))continue;
 let sc=0,miss=0,vio=0;
@@ -618,7 +646,7 @@ const un=A.size+B.size-inter;
 return un?1-inter/un:1;
 }
 function makePlan(cfg,slots,sol,ref){
-const rows=slots.map((s,i)=>({day:s.day,loc:s.loc,team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[]}));
+const rows=slots.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[]}));
 const counts=new Map();
 for(const r of rows)for(const id of r.team)counts.set(id,(counts.get(id)||0)+1);
 let pairHit=0,pairTotal=0,pairBreak=0;
@@ -691,7 +719,7 @@ return out;
 function diagnose(cfg){
 const msgs=[];
 if(cfg.useAll&&cfg.visits<cfg.days.length)msgs.push('«استخدام كل الأيام» مفعّل، لكن الزيارات ('+ar(cfg.visits)+') أقل من أيام العمل ('+ar(cfg.days.length)+') — ارفع العدد أو عطّل يومًا');
-const maxM=Math.min(2,cfg.mains.length),maxC=Math.min(1,cfg.cons.length);
+const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.cap.conPerDay,cfg.cons.length);
 const p1=cfg.members.filter(m=>m.pool===1).length,p2=cfg.members.filter(m=>m.pool===2).length;
 if(p1<2||p2<1)msgs.push('التشكيل يتطلب عضوَين سريريَّين وإداريًّا واحدًا على الأقل لكل موقع');
 const key=cfg.nMain+','+cfg.nCon;
@@ -710,9 +738,47 @@ msgs.push('الإجازات تقلّص الطاقة — الأقصى المتا�
 }
 const short=cfg.days.filter(d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length<2||cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length<1);
 if(short.length)msgs.push('يوم '+DAYS[short[0]]+' يفتقد الحد الأدنى من المتاحين بعد الإجازات');
+if(cfg.locs.some(l=>l.genderRule))for(const d of cfg.days){
+const av=cfg.members.filter(m=>!m.off.includes(d));
+if(av.length&&av.every(m=>m.gender===av[0].gender)){
+msgs.push('قاعدة الخلط النوعي تمنع تشكيل فريق يوم '+DAYS[d]+' — المتاحون من نوع واحد');break;
+}
+}
 if(!msgs.length)msgs.push('القيود مشدودة على هذا التوزيع — خفّف الإجازات أو عدّل عدد الزيارات والنسبة');
 msgs.unshift(...diagnosePairs(cfg));
 return msgs.slice(0,3);
+}
+function saveState(){
+try{
+localStorage.setItem('visitplan.v1',JSON.stringify({
+v:1,days:state.days,members:state.members,locations:state.locations,
+visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
+bulk:state.bulk,pairs:state.pairs,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges
+}));
+}catch(err){}
+}
+let _saveT;
+function scheduleSave(){clearTimeout(_saveT);_saveT=setTimeout(saveState,400);}
+function loadState(){
+try{
+const raw=localStorage.getItem('visitplan.v1');
+if(!raw)return;
+const d=JSON.parse(raw);
+if(!d||d.v!==1)return;
+if(Array.isArray(d.days)&&d.days.length===7)state.days=d.days;
+if(Array.isArray(d.members))state.members=d.members;
+if(Array.isArray(d.locations))state.locations=d.locations;
+if(typeof d.visits==='number'){state.visitsWanted=d.visits;state.visits=d.visits;}
+if(typeof d.ratioIdx==='number')state.ratioIdx=d.ratioIdx;
+if(typeof d.useAllDays==='boolean')state.useAllDays=d.useAllDays;
+if(d.bulk)state.bulk=d.bulk;
+if(d.pairs)state.pairs=d.pairs;
+if(d.cap)state.cap=d.cap;
+if(typeof d.autoRegen==='boolean')state.autoRegen=d.autoRegen;
+if(typeof d.minChanges==='boolean')state.minChanges=d.minChanges;
+const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id)];
+_uid=Math.max(...ids);
+}catch(err){}
 }
 let genRun=0;
 function startGen(mode){
@@ -721,13 +787,15 @@ const run=++genRun;
 if(!cfg.days.length||!cfg.locs.length||!cfg.members.length){
 state.running=false;state.plans=[];state.selected=null;state.lastRun=null;state.flexOffer=false;state.stale=false;
 state.fail=[!cfg.days.length?'فعّل أيام العمل أولًا — لا أيام مفعّلة حاليًا':!cfg.locs.length?'أضف مواقع من تبويب «المواقع» قبل التوليد':'أضف أعضاء من تبويب «الأعضاء» قبل التوليد'];
- $('#stale').classList.remove('show');
+{const s=$('#stale');if(s)s.classList.remove('show');}
+{const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.remove('dirty');}
 updateGenUI();updateLastRun();renderResults();
 const tn=$('#tnum');if(tn)tn.textContent='';
 return;
 }
 state.running=true;state.fail=null;state.stale=false;
- $('#stale').classList.remove('show');
+{const s=$('#stale');if(s)s.classList.remove('show');}
+{const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.remove('dirty');}
 updateGenUI();renderResults();
 const sel=state.plans[state.selected];
 const useRef=state.minChanges&&!!sel;
@@ -784,7 +852,7 @@ state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;
 }
 updateGenUI();updateLastRun();renderResults();
 const tn=$('#tnum');if(tn)tn.textContent=state.plans.length?ar(state.plans.length):'';
-if(all.length)toast('تم العثور على '+ar(state.plans.length)+' خطط صالحة من '+ar(attempts)+' محاولة');
+if(all.length)toast('تم العثور على '+plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')+' صالحة من '+plural(attempts,'محاولة واحدة','محاولتين','محاولات','محاولة'));
 }
 function planText(p){return p.rows.map(r=>DAYS[r.day]+': '+r.loc.name+' — '+r.team.map(id=>{const m=byId(id);return m?m.name:'؟';}).join(' - ')).join('\n');}
 function detailText(p){
@@ -807,49 +875,60 @@ toast(det?'تم نسخ جدول كل عضو':'تم نسخ الجدول بصيغ�
 let toastT,hoverM=null;
 function toast(msg){const t=$('#toast');t.innerHTML=icon('i-check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 function renderTabs(){
- $('#tabs').innerHTML=TABS.map(t=>`<button class="tab${state.tab===t.id?' on':''}" data-act="tab" data-id="${t.id}">${icon(t.ic)}${t.l}${t.id==='results'?'<span class="tnum" id="tnum"></span>':''}</button>`).join('');
+ $('#tabs').innerHTML=TABS.map(t=>`<button class="tab${state.tab===t.id?' on':''}" role="tab" aria-selected="${state.tab===t.id}" data-act="tab" data-id="${t.id}">${icon(t.ic)}${t.l}${t.id==='results'?'<span class="tnum" id="tnum"></span>':''}</button>`).join('');
 }
 function setTab(id){
 if(state.tab===id)return;
 state.tab=id;
-document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
+document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));});
 document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
 if(id==='settings')$('#setWrap').innerHTML=settingsTabHTML();
 }
 function patchHeader(){
- $('#stM').innerHTML=icon('i-users')+' '+ar(state.members.length)+' أعضاء';
- $('#stL').innerHTML=icon('i-pin')+' '+ar(state.locations.length)+' مواقع';
+ $('#stM').innerHTML=icon('i-users')+' '+plural(state.members.length,'عضو واحد','عضوان','أعضاء','عضوًا');
+ $('#stL').innerHTML=icon('i-pin')+' '+plural(state.locations.length,'موقع واحد','موقعان','مواقع','موقعًا');
  $('#stV').innerHTML=icon('i-cal')+' '+visitsWord(state.visits);
 }
 function updateVisitUI(){
  $('#vnum').textContent=ar(state.visits);
- $('#vmax').textContent=state.vcap>0?'الحد '+ar(state.vcap):'';
+ $('#vmax').textContent=state.vcap>0?'الحد '+ar(state.vcap):'لا توجد طاقة — فعّل يومًا أو أضف موقعًا';
 const sp=effSplit();
- $('#split').innerHTML=state.locations.length?`<i class="pdot d1"></i>${ar(sp.nm)} رئيسية<i class="pdot d2"></i>${ar(sp.nc)} متعاقدة`:'أضف مواقع';
+ $('#split').innerHTML=state.locations.length
+?`<i class="pdot d1"></i>${ar(sp.nm)} رئيسية<i class="pdot d2"></i>${ar(sp.nc)} متعاقدة`+(sp.capped?` <span class="tiny" style="color:var(--terra-ink)">— مقيّدة بطاقة المواقع</span>`:'')
+:'أضف مواقع';
  $('#stV').innerHTML=icon('i-cal')+' '+visitsWord(state.visits);
+updateGenUI();
 }
 function updateGenUI(){
 const b=$('#genbtn');
-b.disabled=state.running;
+b.disabled=state.running||state.vcap<=0;
 b.innerHTML=state.running?icon('i-gen')+' جارٍ التوليد…':icon('i-gen')+' توليد الخطط';
 }
 function updateLastRun(){
- $('#lastrun').textContent=state.plans.length&&state.lastRun?('آخر توليد: '+ar(state.plans.length)+' خطط من '+ar(state.lastRun.attempts)+' محاولة'):(state.lastRun?'آخر توليد: تعذّر بعد '+ar(state.lastRun.attempts)+' محاولة':'');
+ $('#lastrun').textContent=state.plans.length&&state.lastRun?('آخر توليد: '+plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')+' من '+plural(state.lastRun.attempts,'محاولة واحدة','محاولتين','محاولات','محاولة')):(state.lastRun?'آخر توليد: تعذّر بعد '+plural(state.lastRun.attempts,'محاولة واحدة','محاولتين','محاولات','محاولة'):'');
 }
 function recalcCap(){
+_reachCache.clear();
 state.vcap=visitCap();
 const maxV=Math.max(1,state.vcap);
-if(state.visits>maxV){
-state.visits=maxV;
-toast('خُفِّض عدد الزيارات إلى '+ar(maxV)+' — الحد الأقصى بهذه الأيام');
+const derived=clamp(state.visitsWanted,1,maxV);
+if(derived!==state.visits){
+state.visits=derived;
+if(derived!==state.visitsWanted)toast('خُفِّض عدد الزيارات إلى '+ar(derived)+' — الحد الأقصى بهذه الأيام');
 }
 updateVisitUI();
 }
+let _autoT;
 function markStale(){
 state.stale=true;
 if(state.running){genRun++;state.running=false;updateGenUI();renderResults();}
-if(state.plans.length||state.fail)$('#stale').classList.add('show');
+if(state.plans.length||state.fail){
+const s=$('#stale');if(s)s.classList.add('show');
+const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.add('dirty');
+}
 const rn=$('#rnote');if(rn)rn.classList.add('show');
+scheduleSave();
+if(state.autoRegen){clearTimeout(_autoT);_autoT=setTimeout(()=>startGen('normal'),900);}
 }
 function segOn(t){t.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));t.classList.add('on');}
 function pillsOn(t){t.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));t.classList.add('on');}
@@ -858,7 +937,11 @@ const on=state.days[i].on;
 const p=document.querySelector('#daypills [data-day="'+i+'"]');
 if(p)p.classList.toggle('on',on);
 const c=document.querySelector('[data-dcard="'+i+'"]');
-if(c){c.classList.toggle('off',!on);const sw=c.querySelector('.sw');if(sw)sw.classList.toggle('on',on);}
+if(c){
+c.classList.toggle('off',!on);
+const sw=c.querySelector('.sw');if(sw)sw.classList.toggle('on',on);
+const btn=c.querySelector('[data-act="dsw"]');if(btn)btn.setAttribute('aria-checked',String(on));
+}
 }
 function toggleDay(d){
 state.days[d].on=!state.days[d].on;
@@ -881,9 +964,15 @@ if(v)c.querySelector('.dname').insertAdjacentHTML('afterend','<span class="thuta
 markStale();
 }
 function changeVisits(dv){
-const nv=clamp(state.visits+dv,1,Math.max(1,state.vcap));
-if(nv===state.visits)return;
-state.visits=nv;updateVisitUI();markStale();
+if(dv<0&&state.useAllDays&&state.visitsWanted-1<workingDays().length){
+toast('«استخدام كل الأيام» مفعّل — لا يمكن خفض الزيارات تحت عدد أيام العمل');
+return;
+}
+const nv=clamp(state.visitsWanted+dv,1,Math.max(1,state.vcap));
+if(nv===state.visitsWanted)return;
+state.visitsWanted=nv;
+recalcCap();
+markStale();
 }
 function setRatio(i){
 if(state.ratioIdx===i)return;
@@ -895,7 +984,7 @@ function dayCardHTML(i){
 const d=state.days[i];
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur===o.v?'on':''}" data-act="${act}" data-d="${i}" data-v="${o.v}">${o.l}</button>`).join('')}</div>`;
 return `<div class="card daycard${d.dist==='near'?' thu':''}${d.on?'':' off'}" data-dcard="${i}">
-<div class="dc-head"><span class="dname">${DAYS[i]}</span>${d.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[d.dist]}</span>`:''}<label class="swlab" data-act="dsw" data-d="${i}"><span class="sw${d.on?' on':''}"></span> عمل</label></div>
+<div class="dc-head"><span class="dname">${DAYS[i]}</span>${d.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[d.dist]}</span>`:''}<button type="button" class="swlab" role="switch" aria-checked="${d.on?'true':'false'}" data-act="dsw" data-d="${i}"><span class="sw${d.on?' on':''}"></span> عمل</button></div>
 <div class="dc-body">
 <div class="dcrow"><span class="tiny mut">نوع الموقع</span>${seg('dfav',[{v:'',l:'متوازن'},{v:'main',l:'رئيسية'},{v:'contracted',l:'متعاقد'}],d.fav)}</div>
 <div class="dcrow"><span class="tiny mut">المسافة</span>${seg('ddist',[{v:'',l:'متوازن'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],d.dist)}</div>
@@ -915,7 +1004,7 @@ const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur=
 return `<div class="card rv" style="--i:${i}" data-mcard="${m.id}">
 <div class="mhead">
  ${seg('mpool',[{v:'1',l:'سريري'},{v:'2',l:'إداري'}],String(m.pool))}
-<input class="name" data-name="${m.id}" value="${esc(m.name)}">
+<input class="name" data-name="${m.id}" value="${esc(m.name)}" aria-label="اسم العضو">
  ${seg('mgender',[{v:'M',l:'ذكر'},{v:'F',l:'أنثى'}],m.gender)}
 <button class="icon-btn" data-act="mdel" data-m="${m.id}" title="حذف العضو">${icon('i-trash')}</button>
 </div>
@@ -932,33 +1021,40 @@ const dists=[{v:'',l:'بدون'},{v:'near',l:'قريب'},{v:'mid',l:'متوسط'
 return `<div class="card rv" style="--i:${i}" data-lcard="${l.id}">
 <div class="lhead">
 <div class="seg"><button class="${l.type==='main'?'on':''}" data-act="ltype" data-l="${l.id}" data-v="main">رئيسي</button><button class="${l.type==='contracted'?'on':''}" data-act="ltype" data-l="${l.id}" data-v="contracted">متعاقد</button></div>
-<input class="name" data-name="${l.id}" value="${esc(l.name)}">
+<input class="name" data-name="${l.id}" value="${esc(l.name)}" aria-label="اسم الموقع">
 <button class="icon-btn" data-act="ldel" data-l="${l.id}" title="حذف الموقع">${icon('i-trash')}</button>
 </div>
 <div class="lrow">
 <span class="tiny mut">المسافة</span>
 <div class="pills">${dists.map(d=>`<button class="pill dst${l.dist===d.v?' on':''}" data-act="ldist" data-l="${l.id}" data-v="${d.v}">${d.l}</button>`).join('')}</div>
-<label class="swlab" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</label>
+<button type="button" class="swlab" role="switch" aria-checked="${l.genderRule?'true':'false'}" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</button>
 </div>
 </div>`;
 }
 function bulkBarHTML(){
+const disabled=state.bulk.main===0&&state.bulk.cont===0;
 return `<div class="card bulkbar rv">
-<span class="stepper"><span class="lb">رئيسية</span><button data-act="bst" data-k="main" data-v="-1">−</button><b id="bmainN">${ar(state.bulk.main)}</b><button data-act="bst" data-k="main" data-v="1">+</button></span>
-<span class="stepper"><span class="lb">متعاقدة</span><button data-act="bst" data-k="cont" data-v="-1">−</button><b id="bconN">${ar(state.bulk.cont)}</b><button data-act="bst" data-k="cont" data-v="1">+</button></span>
-<button class="btn primary" data-act="ladd">${icon('i-plus')} إضافة دفعة</button>
+<span class="stepper"><span class="lb">إضافة رئيسية</span><button data-act="bst" data-k="main" data-v="-1">−</button><b id="bmainN">${ar(state.bulk.main)}</b><button data-act="bst" data-k="main" data-v="1">+</button></span>
+<span class="stepper"><span class="lb">إضافة متعاقدة</span><button data-act="bst" data-k="cont" data-v="-1">−</button><b id="bconN">${ar(state.bulk.cont)}</b><button data-act="bst" data-k="cont" data-v="1">+</button></span>
+<button class="btn primary" id="baddBtn" data-act="ladd"${disabled?' disabled':''}>${icon('i-plus')} إضافة دفعة</button>
 <span class="tiny mut" id="lcount"></span>
-<span class="tiny mut" style="margin-inline-start:auto">تُوزَّع أيام الزيارات تلقائيًا من العدد والنسبة في «الخطة»</span>
+<button class="linky" data-act="gomain" style="margin-inline-start:auto">تعديل نسبة الزيارات في «الخطة» ←</button>
 </div>`;
 }
 function patchLocIntro(){
 const m=state.locations.filter(l=>l.type==='main').length;
-const el=$('#lcount');
-if(el)el.innerHTML=state.locations.length?`<b>${ar(state.locations.length)}</b> موقع — <b>${ar(m)}</b> رئيسي و<b>${ar(state.locations.length-m)}</b> متعاقد`:'لا مواقع بعد';
+const sp=effSplit(),el=$('#lcount');
+if(!el)return;
+el.innerHTML=state.locations.length
+?`<b>${ar(state.locations.length)}</b> موقع — <b>${ar(m)}</b> رئيسي و<b>${ar(state.locations.length-m)}</b> متعاقد · الخطة: <b>${ar(sp.nm)}</b> رئيسية و<b>${ar(sp.nc)}</b> متعاقدة`
+:'لا مواقع بعد';
 }
 function addLoc(type){
-const n=state.locations.filter(l=>l.type===type).length+1;
-const l={id:nid(),name:(type==='main'?'رئيسي ':'متعاقد ')+ar(n),type,dist:'',genderRule:true};
+const base=type==='main'?'رئيسي ':'متعاقد ';
+const used=new Set(state.locations.map(l=>l.name));
+let n=state.locations.filter(l=>l.type===type).length+1;
+while(used.has(base+ar(n)))n++;
+const l={id:nid(),name:base+ar(n),type,dist:'',genderRule:true};
 state.locations.push(l);
 return l;
 }
@@ -969,7 +1065,10 @@ if(state.hl===id)state.hl=null;
 const card=document.querySelector('[data-mcard="'+id+'"]');
 if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
  $('#mIntro').innerHTML=memberIntroHTML();
-patchHeader();markStale();
+recalcCap();
+state.plans=[];state.selected=null;state.fail=null;
+const tn=$('#tnum');if(tn)tn.textContent='';
+patchHeader();markStale();renderResults();
 }
 function addMember(){
 const m={id:nid(),name:'عضو جديد',pool:1,gender:'M',off:[],pref:''};
@@ -982,13 +1081,16 @@ function removeLocation(id){
 state.locations=state.locations.filter(l=>l.id!==id);
 const card=document.querySelector('[data-lcard="'+id+'"]');
 if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
-patchLocIntro();patchHeader();recalcCap();markStale();
+patchLocIntro();patchHeader();recalcCap();
+state.plans=[];state.selected=null;state.fail=null;
+const tn=$('#tnum');if(tn)tn.textContent='';
+markStale();renderResults();
 }
 function bulkAdd(){
+if(!state.bulk.main&&!state.bulk.cont)return;
 const added=[];
 for(let i=0;i<state.bulk.main;i++)added.push(addLoc('main'));
 for(let i=0;i<state.bulk.cont;i++)added.push(addLoc('contracted'));
-if(!added.length){toast('زد العدّاد أولًا ثم أضف');return;}
 added.forEach(l=>$('#llist').insertAdjacentHTML('beforeend',locationCardHTML(l,0)));
 patchLocIntro();patchHeader();recalcCap();markStale();
 }
@@ -1011,13 +1113,27 @@ const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,
 return `<div class="card introbar rv">${icon('i-cog')}<span>تُطبَّق قواعد الاقتران <b>داخل فريق الزيارة الواحدة</b> فقط، وليست عبر الأسبوع.</span></div>
 <div class="card rv">
 <div class="mhead">
-<label class="swlab" data-act="ptoggle"><span class="sw${on?' on':''}"></span> تفعيل تفضيلات الاقتران</label>
+<span class="clab">طاقة الزيارات في اليوم</span>
+<span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1">−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1">+</button></span>
+<span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1">−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1">+</button></span>
+</div>
+</div>
+<div class="card rv">
+<div class="mhead">
+<button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> تفعيل تفضيلات الاقتران</button>
 <div class="seg"><button class="${state.pairs.mode==='soft'?'on':''}" data-act="pmode" data-v="soft">مرن</button><button class="${state.pairs.mode==='hard'?'on':''}" data-act="pmode" data-v="hard">صارم</button></div>
 </div>
 </div>
 <div class="stack pblock${on?'':' off'}" id="pblock">
 ${list}
 <button class="btn" data-act="padd">${icon('i-plus')} إضافة قاعدة</button>
+</div>
+<div class="card rv">
+<div class="mhead">
+<button type="button" class="swlab" role="switch" aria-checked="${state.autoRegen?'true':'false'}" data-act="autoregen"><span class="sw${state.autoRegen?' on':''}"></span> إعادة توليد تلقائية عند التعديل</button>
+<span style="flex:1"></span>
+<button class="btn terra" data-act="resetall">${icon('i-trash')} إعادة الضبط</button>
+</div>
 </div>`;
 }
 function addPairRule(){
@@ -1104,7 +1220,7 @@ function failHTML(){
 return `<div class="card failcard rv"><div class="fhead">${icon('i-alert')} لم نجد خطة مستوفية لكل الشروط</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">محاولة مرنة</button><span class="tiny mut">تسمح بأيام متتالية عند الضرورة مع تعليم المخالفات</span>`:`<span class="tiny mut">عدّل المدخلات ثم أعد المحاولة</span>`}<button class="btn" data-act="gen">إعادة المحاولة</button></div></div>`;
 }
 function resHTML(){
-if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums">جارٍ استكشاف التوليفات — <b id="gn">٠</b> محاولة · <b id="gf">٠</b> خطة صالحة</div></div>`;
+if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums" aria-live="polite">جارٍ استكشاف التوليفات — <b id="gn">٠</b> محاولة · <b id="gf">٠</b> خطة صالحة</div></div>`;
 if(state.plans.length&&state.selected!=null)return `<div id="resMain" class="stack">${resMainInner()}</div><div id="resAlts">${altsHTML()}</div>`;
 if(state.fail)return failHTML();
 return `<div class="card idle rv">${icon('i-cal')} جاهز — اضغط «توليد الخطط»</div>`;
@@ -1150,9 +1266,9 @@ return `<div class="card idle rv">${icon('i-res')} لا نتائج بعد — و
 const sel=state.plans[state.selected];
 const bar=`<div class="card rbar rv">
 <div class="rb-in">
-<span class="rb-t"><b>${ar(state.plans.length)}</b> خطط · المختارة <b id="rselname">خطة ${ar(state.selected+1)}</b></span>
+<span class="rb-t">${plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')} · المختارة <b id="rselname">خطة ${ar(state.selected+1)}</b></span>
 <span id="rnote">المدخلات تغيّرت — أعد التوليد</span>
-<label class="swlab" data-act="minch" title="عند إعادة التوليد، حافظ على أكبر قدر من الخطة المختارة"><span class="sw${state.minChanges?' on':''}"></span> أقل تغييرًا</label>
+<button type="button" class="swlab" role="switch" aria-checked="${state.minChanges?'true':'false'}" data-act="minch" title="عند إعادة التوليد، حافظ على أكبر قدر من الخطة المختارة"><span class="sw${state.minChanges?' on':''}"></span> أقل تغييرًا</button>
 <span style="flex:1"></span>
 <button class="btn sm" data-act="copy">${icon('i-copy')} نسخ</button>
 <button class="btn sm primary" data-act="gomain">عرض الجدول</button>
@@ -1209,10 +1325,11 @@ case'ratio':setRatio(+a.i);break;
 case'alldays':{
 state.useAllDays=!state.useAllDays;
 const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');
+t.setAttribute('aria-checked',String(state.useAllDays));
 if(state.useAllDays){
 const wd=workingDays().length;
 if(state.visits<wd){
-if(state.vcap>=wd){state.visits=wd;updateVisitUI();toast('رُفع عدد الزيارات إلى '+ar(wd)+' لتغطية كل الأيام');}
+if(state.vcap>=wd){state.visitsWanted=wd;recalcCap();toast('رُفع عدد الزيارات إلى '+ar(wd)+' لتغطية كل الأيام');}
 else toast('أيام العمل تفوق الطاقة المتاحة — عطّل يومًا أو خفّف الإجازات');
 }
 }
@@ -1236,14 +1353,39 @@ case'mdel':removeMember(+a.m);break;
 case'madd':addMember();break;
 case'ltype':{const l=locById(+a.l);if(l){l.type=a.v;segOn(t);patchLocIntro();recalcCap();markStale();}break;}
 case'ldist':{const l=locById(+a.l);if(l){l.dist=a.v;pillsOn(t);markStale();}break;}
-case'lgen':{const l=locById(+a.l);if(l){l.genderRule=!l.genderRule;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');markStale();}break;}
+case'lgen':{const l=locById(+a.l);if(l){l.genderRule=!l.genderRule;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(l.genderRule));markStale();}break;}
 case'ldel':removeLocation(+a.l);break;
 case'ladd':bulkAdd();break;
-case'bst':{state.bulk[a.k]=clamp(state.bulk[a.k]+ +a.v,0,9);$('#b'+(a.k==='main'?'mainN':'conN')).textContent=ar(state.bulk[a.k]);break;}
-case'minch':{state.minChanges=!state.minChanges;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');break;}
+case'bst':{
+state.bulk[a.k]=clamp(state.bulk[a.k]+ +a.v,0,9);
+$('#b'+(a.k==='main'?'mainN':'conN')).textContent=ar(state.bulk[a.k]);
+const bb=$('#baddBtn');if(bb)bb.disabled=state.bulk.main===0&&state.bulk.cont===0;
+break;
+}
+case'capstep':{
+const nv=clamp(state.cap[a.k]+ +a.v,1,3);
+if(nv!==state.cap[a.k]){
+state.cap[a.k]=nv;
+if(state.cap.pairTotal<state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairTotal=state.cap.mainPerDay+state.cap.conPerDay;
+if(state.cap.pairWeighted<2*state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairWeighted=2*state.cap.mainPerDay+state.cap.conPerDay;
+ $('#setWrap').innerHTML=settingsTabHTML();
+recalcCap();patchLocIntro();markStale();
+}
+break;
+}
+case'minch':{state.minChanges=!state.minChanges;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.minChanges));scheduleSave();break;}
+case'autoregen':{state.autoRegen=!state.autoRegen;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.autoRegen));scheduleSave();break;}
+case'resetall':{
+if(confirm('سيتم مسح كل البيانات المحفوظة وإعادة تحميل الصفحة. متابعة؟')){
+try{localStorage.removeItem('visitplan.v1');}catch(err){}
+location.reload();
+}
+break;
+}
 case'ptoggle':{
 state.pairs.enabled=!state.pairs.enabled;
 const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');
+t.setAttribute('aria-checked',String(state.pairs.enabled));
 const pb=$('#pblock');if(pb)pb.classList.toggle('off',!state.pairs.enabled);
 markStale();break;
 }
@@ -1260,16 +1402,26 @@ if(t.dataset.act==='pa')r.a=+t.value;else r.b=+t.value;
 if(r.a===r.b)toast('اختر عضوين مختلفين');
 markStale();
 });
+let _paintT;
+function schedulePaint(){
+clearTimeout(_paintT);
+_paintT=setTimeout(()=>{
+renderResults();
+if(state.tab==='settings'){const sw=$('#setWrap');if(sw)sw.innerHTML=settingsTabHTML();}
+scheduleSave();
+},250);
+}
 document.addEventListener('input',e=>{
 const t=e.target.closest('input[data-name]');if(!t)return;
 const id=+t.dataset.name;
 const m=state.members.find(x=>x.id===id);
-if(m){m.name=t.value||'عضو';markStale();return;}
+if(m){m.name=t.value||'عضو';schedulePaint();return;}
 const l=state.locations.find(x=>x.id===id);
-if(l){l.name=t.value||'موقع';markStale();}
+if(l){l.name=t.value||'موقع';patchLocIntro();schedulePaint();}
 });
 document.addEventListener('pointerover',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=+c.dataset.m;paintHl();}});
 document.addEventListener('pointerout',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=null;paintHl();}});
+loadState();
 buildStaticUI();
 patchHeader();
 renderResults();
