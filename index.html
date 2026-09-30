@@ -216,11 +216,70 @@ input.name:focus{outline:none;border-color:var(--teal)}
 .toast .ic{width:15px;height:15px;color:#9fd3c0}
 .rv{animation:rise .5s cubic-bezier(.22,.85,.3,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
 @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.weeknav{display:inline-flex;align-items:center;gap:2px;margin-top:2px}
+.wkbtn{width:22px;height:22px;border:none;background:transparent;border-radius:50%;color:var(--mut);font:inherit;font-size:16px;line-height:1;cursor:pointer}
+.wkbtn:hover{background:var(--card2);color:var(--ink)}
+.wklabel{border:none;background:transparent;font:inherit;font-size:12.5px;color:var(--mut);cursor:pointer;padding:1px 6px;border-radius:8px}
+.wklabel:hover{background:var(--card2);color:var(--ink)}
+.wklabel.cur::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--sage);margin-inline-start:6px;vertical-align:middle}
+.ddate{font-size:11.5px;color:var(--mut)}
+.today-tag{background:var(--teal);color:#fff;font-size:10px;font-weight:600;padding:1px 8px;border-radius:999px}
+.dayblk.today{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft),var(--sh)}
+.pill.dyp small{display:block;font-size:10px;opacity:.75;font-weight:400;line-height:1.1}
+.pill.dyp{line-height:1.25}
+.toast-undo{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:12.5px;font-weight:600;padding:3px 12px;border-radius:999px;cursor:pointer;margin-inline-start:4px}
+.toast-undo:hover{background:rgba(255,255,255,.24)}
+.toast.show{pointer-events:auto}
+.vtoggle{margin-inline-start:auto}
+.mgrid{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.mgrid-wrap{overflow-x:auto;margin:0 -4px}
+.mgrid th{font-size:11.5px;font-weight:600;color:var(--mut);padding:6px 6px 8px;text-align:center;white-space:nowrap}
+.mgrid th small{display:block;font-weight:400;font-size:10.5px}
+.mgrid th.today{color:var(--teal)}
+.mgrid td{padding:4px;text-align:center;border-top:1px dashed var(--line)}
+.mgrid td:first-child{text-align:right;white-space:nowrap;padding-inline-end:10px}
+.mgrid .cell{display:inline-block;min-width:64px;border-radius:10px;padding:3px 8px;font-size:12px;font-weight:500;white-space:nowrap}
+.mgrid .cell.m{background:var(--teal-soft);color:var(--teal-d)}
+.mgrid .cell.c{background:var(--camel-soft);color:var(--camel-ink)}
+.mgrid .cell.off{color:var(--terra-ink);background:transparent;font-size:11px}
+.mgrid .cell.no{color:#c3ced5}
+.mgrid .tot{font-weight:600;color:var(--mut)}
+.mgrid tr.hl td{background:var(--teal-soft)}
+.mgrid tr.hl td:first-child{border-radius:0 10px 10px 0}
+.mgrid tr.hl td:last-child{border-radius:10px 0 0 10px}
+.hint{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--mut)}
+.hint kbd{font:inherit;font-size:10.5px;background:var(--card);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px}
+.icon-btn.plain:hover{color:var(--teal);border-color:var(--teal)}
+input.name:hover{border-color:#bfd0d8}
+.card{transition:box-shadow .2s,border-color .2s}
+.chip{user-select:none}
+.empty-note{font-size:12px;color:var(--mut);padding:4px 2px}
+@media print{
+body{background:#fff;padding:0}
+header.top .hstats,nav.tabs,.ctrl,#resAlts,.dbtns,.toast,.warnbox{display:none!important}
+.view{display:none!important}#v-plan{display:block!important}
+.card,.dayblk{box-shadow:none;break-inside:avoid}
+.sched.focus .chip{opacity:1}
+}
 @media(max-width:640px){
+body{padding-bottom:86px}
+nav.tabs{position:fixed;top:auto;bottom:10px;left:10px;right:10px;width:auto;margin:0;justify-content:space-between;box-shadow:var(--sh2);background:var(--card)}
+.tab{flex-direction:column;gap:1px;padding:6px 8px;font-size:10.5px;flex:1;justify-content:center}
+.tab.on{background:var(--teal-soft);box-shadow:none}
+.tab .ic{width:19px;height:19px}
+.tnum{position:absolute;margin-top:-4px;margin-inline-start:22px}
+.tab{position:relative}
+header.top{padding:18px 0 12px}
+.hstats{width:100%}
+.hint{display:none}
+.moff .sep{margin-inline-start:0;width:100%}
+.toast{bottom:92px;max-width:calc(100% - 32px)}
 h1{font-size:17px}
 .card,.dayblk{padding:14px}
 .dbtns{margin-inline-start:0}
 .genrow .btn.big{width:100%;justify-content:center}
+.dbtns .btn{flex:1;justify-content:center}
+.daygrid{grid-template-columns:1fr}
 .cline{gap:8px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -245,7 +304,7 @@ h1{font-size:17px}
 <header class="top">
 <div class="brand">
 <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><rect x="1.5" y="1.5" width="45" height="45" rx="14" fill="#3f7f8c"/><path d="M24 9c-6.1 0-11 4.9-11 11 0 8 11 19 11 19s11-11 11-19c0-6.1-4.9-11-11-11z" fill="#fbfcfd"/><path class="pulse" d="M17.5 20h3.4l1.6-4.2 3.2 8.4 1.7-4.2h3.7" fill="none" stroke="#3f7f8c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<div><h1>مُخطِّط الزيارات</h1><div class="sub">جدولة أسبوعية للفرق السريرية والإدارية</div></div>
+<div><h1>مُخطِّط الزيارات</h1><div class="weeknav"><button class="wkbtn" data-act="week" data-v="-7" aria-label="الأسبوع السابق">›</button><button class="wklabel" data-act="weeknow" id="weeklabel" title="العودة لهذا الأسبوع"></button><button class="wkbtn" data-act="week" data-v="7" aria-label="الأسبوع التالي">‹</button></div></div>
 </div>
 <div class="hstats">
 <span class="schip" id="stM"></span>
@@ -263,15 +322,16 @@ h1{font-size:17px}
 <span class="stepper"><button data-act="vstep" data-v="-1">−</button><b id="vnum"></b><button data-act="vstep" data-v="1">+</button></span>
 <span class="tiny mut" id="vmax"></span>
 <span class="split" id="split"></span>
-<button type="button" class="swlab" role="switch" aria-checked="false" data-act="alldays" title="اضمن زيارة واحدة على الأقل في كل يوم عمل"><span class="sw"></span> استخدم كل الأيام</button>
+<button type="button" class="swlab" role="switch" aria-checked="false" data-act="alldays" id="alldaysSw" title="زيارة واحدة على الأقل في كل يوم"><span class="sw"></span> كل الأيام</button>
 <span style="flex:1"></span>
-<span class="clab">نسبة الرئيسية</span>
+<span class="clab">رئيسية : متعاقدة</span>
 <div class="seg" id="ratioseg" title="رئيسية : متعاقدة"></div>
 </div>
 <div class="cline genrow">
 <button class="btn primary big" id="genbtn" data-act="gen"></button>
-<button class="wbtn" id="stale" data-act="gen">المدخلات تغيّرت — أعد التوليد</button>
+<button class="wbtn" id="stale" data-act="gen">تغيّرت المدخلات — حدِّث</button>
 <span class="tiny mut" id="lastrun"></span>
+<span class="hint" style="margin-inline-start:auto"><kbd>G</kbd> توليد <kbd>←</kbd><kbd>→</kbd> الخطط <kbd>C</kbd> نسخ</span>
 </div>
 </div>
 <div id="res" class="stack"></div>
@@ -297,9 +357,17 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const icon=(id,cls='ic')=>`<svg class="${cls}"><use href="#${id}"/></svg>`;
 const $=s=>document.querySelector(s);
 let _uid=100;const nid=()=>++_uid;
+const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+function thisSaturday(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+1)%7));return isoD(d);}
+function dayDate(i){const [y,m,d]=state.weekStart.split('-').map(Number);return new Date(y,m-1,d+i);}
+const fmtD=dt=>ar(dt.getDate())+' '+MONTHS[dt.getMonth()];
+const dateOf=i=>fmtD(dayDate(i));
+function weekLabel(){const a=dayDate(0),b=dayDate(6);return a.getMonth()===b.getMonth()?ar(a.getDate())+' – '+ar(b.getDate())+' '+MONTHS[b.getMonth()]:fmtD(a)+' – '+fmtD(b);}
+const isToday=i=>isoD(dayDate(i))===isoD(new Date());
 const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
-tab:'plan',running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
+tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
 visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,
 cap:{mainPerDay:2,conPerDay:1,pairTotal:3,pairWeighted:5},
 pairs:{enabled:false,mode:'soft',rules:[]},
@@ -332,11 +400,14 @@ function visitsWord(n){if(n===0)return'لا زيارات';if(n===1)return'زيا
 const plural=(n,one,two,few,many)=>n===1?one:n===2?two:n<11?ar(n)+' '+few:ar(n)+' '+many;
 function kCombos(arr,k){const res=[];(function rec(s,cur){if(cur.length===k){res.push(cur.slice());return;}for(let i=s;i<=arr.length-(k-cur.length);i++){cur.push(arr[i]);rec(i+1,cur);cur.pop();}})(0,[]);return res;}
 function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=Math.random()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
+const teamCap=()=>({c:state.members.filter(m=>m.pool===1).length,a:state.members.filter(m=>m.pool===2).length});
+const dayFits=(nm,nc,T)=>2*(nm+nc)<=T.c&&2*nm+nc<=T.a;
 let _reachCache=new Map();
 function reachTotals(){
 const maxM=Math.min(state.cap.mainPerDay,state.locations.filter(l=>l.type==='main').length);
 const maxC=Math.min(state.cap.conPerDay,state.locations.filter(l=>l.type==='contracted').length);
-const key=state.days.map(d=>d.on?1:0).join('')+'|'+maxM+'|'+maxC;
+const T=teamCap();
+const key=state.days.map(d=>d.on?1:0).join('')+'|'+maxM+'|'+maxC+'|'+T.c+'|'+T.a;
 if(!_reachCache.has(key))
 _reachCache.set(key,[...reach(state.days.map(d=>d.on),maxM,maxC)].map(s=>s.split(',').map(Number)));
 return _reachCache.get(key);
@@ -381,6 +452,7 @@ const sp=effSplit();
 return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs()};
 }
 function reach(on,maxM,maxC){
+const T=teamCap();
 let states=new Set(['0,0,0,0']);
 for(let d=0;d<7;d++){
 if(!on[d]){const ns=new Set();for(const s of states){const p=s.split(',');ns.add(p[0]+','+p[1]+',0,0');}states=ns;continue;}
@@ -388,8 +460,8 @@ const ns=new Set();
 for(const s of states){
 const q=s.split(',').map(Number);
 for(let nm=0;nm<=maxM;nm++)for(let nc=0;nc<=maxC;nc++){
-if(q[2]+q[3]+nm+nc>state.cap.pairTotal)continue;
-if(2*q[2]+q[3]+2*nm+nc>state.cap.pairWeighted)continue;
+if(!dayFits(nm,nc,T))continue;
+if(!dayFits(q[2]+nm,q[3]+nc,T))continue;
 ns.add((q[0]+nm)+','+(q[1]+nc)+','+nm+','+nc);
 }
 }
@@ -453,10 +525,11 @@ if(loc.type==='main'){if(L.m>=maxM)return null;L.m++;m++;}else{if(L.c>=maxC)retu
 out.push({loc,day:s.day});
 }
 if(m!==cfg.nMain||c!==cfg.nCon)return null;
-for(const [d,L] of load)for(const nb of[d-1,d+1]){
-const L2=load.get(nb);if(!L2)continue;
-if(L.m+L.c+L2.m+L2.c>state.cap.pairTotal)return null;
-if(2*L.m+L.c+2*L2.m+L2.c>state.cap.pairWeighted)return null;
+const T=teamCap();
+for(const [d,L] of load){
+if(!dayFits(L.m,L.c,T))return null;
+const L2=load.get(d+1);
+if(L2&&!dayFits(L.m+L2.m,L.c+L2.c,T))return null;
 }
 if(cfg.useAll){for(const [,L] of load)if(!L.m&&!L.c)return null;}
 return out;
@@ -470,14 +543,15 @@ const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.c
 if((cfg.nMain>0&&!maxM)||(cfg.nCon>0&&!maxC))return null;
 if(cfg.useAll&&cfg.days.length>cfg.visits)return null;
 const load=new Map(cfg.days.map(d=>[d,{m:0,c:0}]));
+const T=teamCap();
 const addOK=(d,t)=>{
 const L=load.get(d);
 if(t==='main'?L.m>=maxM:L.c>=maxC)return false;
 const nm=L.m+(t==='main'?1:0),nc=L.c+(t==='contracted'?1:0);
+if(!dayFits(nm,nc,T))return false;
 for(const nb of[d-1,d+1]){
 const L2=load.get(nb);if(!L2)continue;
-if(nm+nc+L2.m+L2.c>state.cap.pairTotal)return false;
-if(2*nm+nc+2*L2.m+L2.c>state.cap.pairWeighted)return false;
+if(!dayFits(nm+L2.m,nc+L2.c,T))return false;
 }
 return true;
 };
@@ -709,42 +783,42 @@ for(let i=0;i<c.length-1;i++)for(let j=i+1;j<c.length;j++)if(!blocked(c[i].id,c[
 return false;
 };
 for(const d of cfg.days){
-if(!hasPair(1,d)){out.push('قواعد «ليس مع» تمنع تشكيل ثنائي سريري يوم '+DAYS[d]);break;}
+if(!hasPair(1,d)){out.push('«ليس مع» تمنع ثنائيًا سريريًا يوم '+DAYS[d]);break;}
 }
 if(cfg.nMain>0)for(const d of cfg.days){
-if(!hasPair(2,d)){out.push('قواعد «ليس مع» تمنع تشكيل ثنائي إداري للمواقع الرئيسية يوم '+DAYS[d]);break;}
+if(!hasPair(2,d)){out.push('«ليس مع» تمنع ثنائيًا إداريًا يوم '+DAYS[d]);break;}
 }
 return out;
 }
 function diagnose(cfg){
 const msgs=[];
-if(cfg.useAll&&cfg.visits<cfg.days.length)msgs.push('«استخدام كل الأيام» مفعّل، لكن الزيارات ('+ar(cfg.visits)+') أقل من أيام العمل ('+ar(cfg.days.length)+') — ارفع العدد أو عطّل يومًا');
+if(cfg.useAll&&cfg.visits<cfg.days.length)msgs.push('الزيارات ('+ar(cfg.visits)+') أقل من أيام العمل ('+ar(cfg.days.length)+') مع «كل الأيام»');
 const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.cap.conPerDay,cfg.cons.length);
 const p1=cfg.members.filter(m=>m.pool===1).length,p2=cfg.members.filter(m=>m.pool===2).length;
-if(p1<2||p2<1)msgs.push('التشكيل يتطلب عضوَين سريريَّين وإداريًّا واحدًا على الأقل لكل موقع');
+if(p1<2||p2<1)msgs.push('يلزم عضوان سريريان وعضو إداري على الأقل');
 const key=cfg.nMain+','+cfg.nCon;
 const t1=reach(cfg.dayCfg.map(d=>d.on),maxM,maxC);
 if(!t1.has(key)){
 let best=[0,0];
 for(const t of t1){const q=t.split(',').map(Number);if(q[0]+q[1]>best[0]+best[1])best=q;}
-msgs.push('توزيع '+ar(cfg.nMain)+' رئيسية و'+ar(cfg.nCon)+' متعاقدة يتجاوز طاقة هذه الأيام مع منع التتابع — الأقصى '+ar(best[0])+' رئيسية و'+ar(best[1])+' متعاقدة');
+msgs.push('الطاقة القصوى: '+ar(best[0])+' رئيسية و'+ar(best[1])+' متعاقدة');
 }else{
 const t2=reachOff(cfg,maxM,maxC);
 if(!t2.has(key)){
 let b2=[0,0];
 for(const t of t2){const q=t.split(',').map(Number);if(q[0]+q[1]>b2[0]+b2[1])b2=q;}
-msgs.push('الإجازات تقلّص الطاقة — الأقصى المتاح معها '+ar(b2[0])+' رئيسية و'+ar(b2[1])+' متعاقدة (المطلوب '+ar(cfg.nMain)+' و'+ar(cfg.nCon)+')');
+msgs.push('مع الإجازات: الأقصى '+ar(b2[0])+' رئيسية و'+ar(b2[1])+' متعاقدة');
 }
 }
 const short=cfg.days.filter(d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length<2||cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length<1);
-if(short.length)msgs.push('يوم '+DAYS[short[0]]+' يفتقد الحد الأدنى من المتاحين بعد الإجازات');
+if(short.length)msgs.push('يوم '+DAYS[short[0]]+': المتاحون أقل من الحد الأدنى');
 if(cfg.locs.some(l=>l.genderRule))for(const d of cfg.days){
 const av=cfg.members.filter(m=>!m.off.includes(d));
 if(av.length&&av.every(m=>m.gender===av[0].gender)){
-msgs.push('قاعدة الخلط النوعي تمنع تشكيل فريق يوم '+DAYS[d]+' — المتاحون من نوع واحد');break;
+msgs.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب');break;
 }
 }
-if(!msgs.length)msgs.push('القيود مشدودة على هذا التوزيع — خفّف الإجازات أو عدّل عدد الزيارات والنسبة');
+if(!msgs.length)msgs.push('القيود ضيقة — قلّل الزيارات أو الإجازات');
 msgs.unshift(...diagnosePairs(cfg));
 return msgs.slice(0,3);
 }
@@ -753,7 +827,7 @@ try{
 localStorage.setItem('visitplan.v1',JSON.stringify({
 v:1,days:state.days,members:state.members,locations:state.locations,
 visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
-bulk:state.bulk,pairs:state.pairs,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges
+bulk:state.bulk,pairs:state.pairs,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view
 }));
 }catch(err){}
 }
@@ -776,6 +850,10 @@ if(d.pairs)state.pairs=d.pairs;
 if(d.cap)state.cap=d.cap;
 if(typeof d.autoRegen==='boolean')state.autoRegen=d.autoRegen;
 if(typeof d.minChanges==='boolean')state.minChanges=d.minChanges;
+if(typeof d.weekStart==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.weekStart))state.weekStart=d.weekStart;
+if(d.view==='day'||d.view==='member')state.view=d.view;
+state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];if(m.pref==null)m.pref='';});
+state.ratioIdx=clamp(state.ratioIdx|0,0,RATIOS.length-1);
 const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id)];
 _uid=Math.max(...ids);
 }catch(err){}
@@ -784,9 +862,11 @@ let genRun=0;
 function startGen(mode){
 const cfg=buildCfg();
 const run=++genRun;
-if(!cfg.days.length||!cfg.locs.length||!cfg.members.length){
+const T=teamCap();
+const pre=!cfg.days.length?'لا توجد أيام عمل مفعّلة':!cfg.locs.length?'أضف موقعًا واحدًا على الأقل':!cfg.members.length?'أضف أعضاء أولًا':(T.c<2||T.a<1)?'يلزم عضوان سريريان وعضو إداري على الأقل':state.vcap<=0?'لا طاقة زيارات بهذه الإعدادات':'';
+if(pre){
 state.running=false;state.plans=[];state.selected=null;state.lastRun=null;state.flexOffer=false;state.stale=false;
-state.fail=[!cfg.days.length?'فعّل أيام العمل أولًا — لا أيام مفعّلة حاليًا':!cfg.locs.length?'أضف مواقع من تبويب «المواقع» قبل التوليد':'أضف أعضاء من تبويب «الأعضاء» قبل التوليد'];
+state.fail=[pre];state._quiet=false;
 {const s=$('#stale');if(s)s.classList.remove('show');}
 {const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.remove('dirty');}
 updateGenUI();updateLastRun();renderResults();
@@ -835,7 +915,7 @@ const all=[...pool.values()];
 if(!all.length){
 state.plans=[];state.selected=null;state.flexOffer=mode!=='flex';
 state.fail=diagnose(cfg);
-if(mode==='flex')state.fail.unshift('حتى الوضع المرن لم يجد حلًا بهذه المدخلات');
+if(mode==='flex')state.fail.unshift('لا حل حتى مع الوضع المرن');
 }else{
 all.forEach(p=>p.score=scorePlan(p));
 all.sort((a,b)=>b.score-a.score);
@@ -852,16 +932,26 @@ state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;
 }
 updateGenUI();updateLastRun();renderResults();
 const tn=$('#tnum');if(tn)tn.textContent=state.plans.length?ar(state.plans.length):'';
-if(all.length)toast('تم العثور على '+plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')+' صالحة من '+plural(attempts,'محاولة واحدة','محاولتين','محاولات','محاولة'));
+if(all.length&&!state._quiet)toast('جاهزة: '+plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة'));
+state._quiet=false;
 }
-function planText(p){return p.rows.map(r=>DAYS[r.day]+': '+r.loc.name+' — '+r.team.map(id=>{const m=byId(id);return m?m.name:'؟';}).join(' - ')).join('\n');}
+const nm=id=>{const m=byId(id);return m?m.name:'؟';};
+function planText(p){
+const days=[...new Set(p.rows.map(r=>r.day))].sort((a,b)=>a-b);
+const out=['خطة الزيارات — '+weekLabel()];
+for(const d of days){
+out.push('','▪ '+DAYS[d]+' '+dateOf(d));
+for(const r of p.rows.filter(x=>x.day===d))out.push(r.loc.name+': '+r.team.map(nm).join('، '));
+}
+return out.join('\n');
+}
 function detailText(p){
 const lines=[];
 for(const m of state.members){
 const rs=p.rows.filter(r=>r.team.includes(m.id));
-if(rs.length)lines.push(m.name+': '+rs.map(r=>DAYS[r.day]+' — '+r.loc.name).join(' · '));
+if(rs.length)lines.push(m.name+': '+rs.sort((a,b)=>a.day-b.day).map(r=>DAYS[r.day]+' ('+r.loc.name+')').join('، '));
 }
-return lines.join('\n');
+return 'جدول الأعضاء — '+weekLabel()+'\n\n'+lines.join('\n');
 }
 async function copyPlan(det){
 const p=state.plans[state.selected];if(!p)return;
@@ -870,10 +960,23 @@ try{await navigator.clipboard.writeText(txt);}
 catch(err){
 const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
 }
-toast(det?'تم نسخ جدول كل عضو':'تم نسخ الجدول بصيغة الأسطر');
+toast(det?'نُسخ جدول الأعضاء':'نُسخ الجدول');
+}
+async function sharePlan(){
+const p=state.plans[state.selected];if(!p)return;
+const text=planText(p);
+if(navigator.share){try{await navigator.share({title:'خطة الزيارات',text});return;}catch(err){if(err&&err.name==='AbortError')return;}}
+window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+}
+function setUndo(label,fn){
+state.undo=fn;
+const t=$('#toast');
+t.innerHTML=icon('i-trash')+'<span>'+label+'</span><button class="toast-undo" data-act="undo">تراجع</button>';
+t.classList.add('show');clearTimeout(toastT);
+toastT=setTimeout(()=>{t.classList.remove('show');state.undo=null;},5000);
 }
 let toastT,hoverM=null;
-function toast(msg){const t=$('#toast');t.innerHTML=icon('i-check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function toast(msg){state.undo=null;const t=$('#toast');t.innerHTML=icon('i-check')+'<span>'+msg+'</span>';t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 function renderTabs(){
  $('#tabs').innerHTML=TABS.map(t=>`<button class="tab${state.tab===t.id?' on':''}" role="tab" aria-selected="${state.tab===t.id}" data-act="tab" data-id="${t.id}">${icon(t.ic)}${t.l}${t.id==='results'?'<span class="tnum" id="tnum"></span>':''}</button>`).join('');
 }
@@ -891,10 +994,11 @@ function patchHeader(){
 }
 function updateVisitUI(){
  $('#vnum').textContent=ar(state.visits);
- $('#vmax').textContent=state.vcap>0?'الحد '+ar(state.vcap):'لا توجد طاقة — فعّل يومًا أو أضف موقعًا';
+ $('#vmax').textContent=state.vcap>0?'من '+ar(state.vcap):'لا طاقة';
+ $('#vnum').parentElement.querySelectorAll('button').forEach(b=>b.disabled=+b.dataset.v>0?state.visitsWanted>=state.vcap:state.visitsWanted<=1);
 const sp=effSplit();
  $('#split').innerHTML=state.locations.length
-?`<i class="pdot d1"></i>${ar(sp.nm)} رئيسية<i class="pdot d2"></i>${ar(sp.nc)} متعاقدة`+(sp.capped?` <span class="tiny" style="color:var(--terra-ink)">— مقيّدة بطاقة المواقع</span>`:'')
+?`<i class="pdot d1"></i>${ar(sp.nm)} رئيسية<i class="pdot d2"></i>${ar(sp.nc)} متعاقدة`+(sp.capped?` <span class="tiny" style="color:var(--terra-ink)">(الأقصى)</span>`:'')
 :'أضف مواقع';
  $('#stV').innerHTML=icon('i-cal')+' '+visitsWord(state.visits);
 updateGenUI();
@@ -902,10 +1006,10 @@ updateGenUI();
 function updateGenUI(){
 const b=$('#genbtn');
 b.disabled=state.running||state.vcap<=0;
-b.innerHTML=state.running?icon('i-gen')+' جارٍ التوليد…':icon('i-gen')+' توليد الخطط';
+b.innerHTML=state.running?icon('i-gen')+' جارٍ التوليد…':icon('i-gen')+(state.plans.length?' توليد جديد':' توليد الخطط');
 }
 function updateLastRun(){
- $('#lastrun').textContent=state.plans.length&&state.lastRun?('آخر توليد: '+plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')+' من '+plural(state.lastRun.attempts,'محاولة واحدة','محاولتين','محاولات','محاولة')):(state.lastRun?'آخر توليد: تعذّر بعد '+plural(state.lastRun.attempts,'محاولة واحدة','محاولتين','محاولات','محاولة'):'');
+ $('#lastrun').textContent=state.plans.length&&state.lastRun?plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة'):'';
 }
 function recalcCap(){
 _reachCache.clear();
@@ -914,7 +1018,7 @@ const maxV=Math.max(1,state.vcap);
 const derived=clamp(state.visitsWanted,1,maxV);
 if(derived!==state.visits){
 state.visits=derived;
-if(derived!==state.visitsWanted)toast('خُفِّض عدد الزيارات إلى '+ar(derived)+' — الحد الأقصى بهذه الأيام');
+if(derived<state.visitsWanted)toast('خُفِّض عدد الزيارات إلى '+ar(derived));
 }
 updateVisitUI();
 }
@@ -928,14 +1032,14 @@ const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.add('
 }
 const rn=$('#rnote');if(rn)rn.classList.add('show');
 scheduleSave();
-if(state.autoRegen){clearTimeout(_autoT);_autoT=setTimeout(()=>startGen('normal'),900);}
+if(state.autoRegen){clearTimeout(_autoT);_autoT=setTimeout(()=>{state._quiet=true;startGen('normal');},900);}
 }
 function segOn(t){t.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));t.classList.add('on');}
 function pillsOn(t){t.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('on'));t.classList.add('on');}
 function syncDayUI(i){
 const on=state.days[i].on;
 const p=document.querySelector('#daypills [data-day="'+i+'"]');
-if(p)p.classList.toggle('on',on);
+if(p){p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));}
 const c=document.querySelector('[data-dcard="'+i+'"]');
 if(c){
 c.classList.toggle('off',!on);
@@ -946,6 +1050,7 @@ const btn=c.querySelector('[data-act="dsw"]');if(btn)btn.setAttribute('aria-chec
 function toggleDay(d){
 state.days[d].on=!state.days[d].on;
 syncDayUI(d);
+const di=$('#dIntro');if(di)di.outerHTML=daysTabHTML().split('</div>')[0]+'</div>';
 recalcCap();
 markStale();
 }
@@ -965,7 +1070,7 @@ markStale();
 }
 function changeVisits(dv){
 if(dv<0&&state.useAllDays&&state.visitsWanted-1<workingDays().length){
-toast('«استخدام كل الأيام» مفعّل — لا يمكن خفض الزيارات تحت عدد أيام العمل');
+toast('«كل الأيام» تتطلب زيارة لكل يوم');
 return;
 }
 const nv=clamp(state.visitsWanted+dv,1,Math.max(1,state.vcap));
@@ -984,7 +1089,7 @@ function dayCardHTML(i){
 const d=state.days[i];
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur===o.v?'on':''}" data-act="${act}" data-d="${i}" data-v="${o.v}">${o.l}</button>`).join('')}</div>`;
 return `<div class="card daycard${d.dist==='near'?' thu':''}${d.on?'':' off'}" data-dcard="${i}">
-<div class="dc-head"><span class="dname">${DAYS[i]}</span>${d.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[d.dist]}</span>`:''}<button type="button" class="swlab" role="switch" aria-checked="${d.on?'true':'false'}" data-act="dsw" data-d="${i}"><span class="sw${d.on?' on':''}"></span> عمل</button></div>
+<div class="dc-head"><span class="dname">${DAYS[i]}</span><span class="ddate">${dateOf(i)}</span>${isToday(i)?'<span class="today-tag">اليوم</span>':''}${d.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[d.dist]}</span>`:''}<button type="button" class="swlab" role="switch" aria-checked="${d.on?'true':'false'}" data-act="dsw" data-d="${i}"><span class="sw${d.on?' on':''}"></span> عمل</button></div>
 <div class="dc-body">
 <div class="dcrow"><span class="tiny mut">نوع الموقع</span>${seg('dfav',[{v:'',l:'متوازن'},{v:'main',l:'رئيسية'},{v:'contracted',l:'متعاقد'}],d.fav)}</div>
 <div class="dcrow"><span class="tiny mut">المسافة</span>${seg('ddist',[{v:'',l:'متوازن'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],d.dist)}</div>
@@ -992,26 +1097,26 @@ return `<div class="card daycard${d.dist==='near'?' thu':''}${d.on?'':' off'}" d
 </div>`;
 }
 function daysTabHTML(){
-return `<div class="card introbar rv">${icon('i-days')}<span>فعّل أيام العمل ووجّه كل يوم: نوع المواقع التي تُزار فيه والمسافة المفضلة. <b>الخميس</b> يطبّق قاعدة القرب افتراضيًا.</span></div>
+return `<div class="card introbar rv" id="dIntro">${icon('i-days')}<span>أسبوع <b>${weekLabel()}</b> · ${plural(workingDays().length,'يوم عمل واحد','يوما عمل','أيام عمل','يوم عمل')}</span></div>
 <div class="daygrid">${DAYS.map((d,i)=>dayCardHTML(i)).join('')}</div>`;
 }
 function memberIntroHTML(){
 const p1=state.members.filter(m=>m.pool===1).length;
-return `<div class="card introbar">${icon('i-users')}<span><b>${ar(state.members.length)}</b> أعضاء — <b>${ar(p1)}</b> سريري و<b>${ar(state.members.length-p1)}</b> إداري. تفضيل «قريب / بعيد» يسري على كامل أسبوع العضو لا على يوم واحد.</span></div>`;
+return `<div class="card introbar">${icon('i-users')}<span><b>${ar(p1)}</b> سريري · <b>${ar(state.members.length-p1)}</b> إداري</span></div>`;
 }
 function memberCardHTML(m,i){
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur===o.v?'on':''}" data-act="${act}" data-m="${m.id}" data-v="${o.v}">${o.l}</button>`).join('')}</div>`;
 return `<div class="card rv" style="--i:${i}" data-mcard="${m.id}">
 <div class="mhead">
  ${seg('mpool',[{v:'1',l:'سريري'},{v:'2',l:'إداري'}],String(m.pool))}
-<input class="name" data-name="${m.id}" value="${esc(m.name)}" aria-label="اسم العضو">
+<input class="name" data-name="${m.id}" value="${esc(m.name)}" placeholder="الاسم" aria-label="اسم العضو" enterkeyhint="done">
  ${seg('mgender',[{v:'M',l:'ذكر'},{v:'F',l:'أنثى'}],m.gender)}
 <button class="icon-btn" data-act="mdel" data-m="${m.id}" title="حذف العضو">${icon('i-trash')}</button>
 </div>
 <div class="moff">
 <span class="tiny mut">الإجازات</span>
  ${DAYS.map((d,di)=>`<button class="pill off${m.off.includes(di)?' on':''}" data-act="moff" data-m="${m.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
-<span class="tiny mut sep">يفضّل المواقع</span>
+<span class="tiny mut sep">يفضّل</span>
  ${seg('mpref',[{v:'',l:'بدون'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],m.pref)}
 </div>
 </div>`;
@@ -1034,11 +1139,11 @@ return `<div class="card rv" style="--i:${i}" data-lcard="${l.id}">
 function bulkBarHTML(){
 const disabled=state.bulk.main===0&&state.bulk.cont===0;
 return `<div class="card bulkbar rv">
-<span class="stepper"><span class="lb">إضافة رئيسية</span><button data-act="bst" data-k="main" data-v="-1">−</button><b id="bmainN">${ar(state.bulk.main)}</b><button data-act="bst" data-k="main" data-v="1">+</button></span>
-<span class="stepper"><span class="lb">إضافة متعاقدة</span><button data-act="bst" data-k="cont" data-v="-1">−</button><b id="bconN">${ar(state.bulk.cont)}</b><button data-act="bst" data-k="cont" data-v="1">+</button></span>
-<button class="btn primary" id="baddBtn" data-act="ladd"${disabled?' disabled':''}>${icon('i-plus')} إضافة دفعة</button>
+<span class="stepper"><span class="lb">رئيسي</span><button data-act="bst" data-k="main" data-v="-1">−</button><b id="bmainN">${ar(state.bulk.main)}</b><button data-act="bst" data-k="main" data-v="1">+</button></span>
+<span class="stepper"><span class="lb">متعاقد</span><button data-act="bst" data-k="cont" data-v="-1">−</button><b id="bconN">${ar(state.bulk.cont)}</b><button data-act="bst" data-k="cont" data-v="1">+</button></span>
+<button class="btn primary" id="baddBtn" data-act="ladd"${disabled?' disabled':''}>${icon('i-plus')} إضافة</button>
 <span class="tiny mut" id="lcount"></span>
-<button class="linky" data-act="gomain" style="margin-inline-start:auto">تعديل نسبة الزيارات في «الخطة» ←</button>
+
 </div>`;
 }
 function patchLocIntro(){
@@ -1046,8 +1151,8 @@ const m=state.locations.filter(l=>l.type==='main').length;
 const sp=effSplit(),el=$('#lcount');
 if(!el)return;
 el.innerHTML=state.locations.length
-?`<b>${ar(state.locations.length)}</b> موقع — <b>${ar(m)}</b> رئيسي و<b>${ar(state.locations.length-m)}</b> متعاقد · الخطة: <b>${ar(sp.nm)}</b> رئيسية و<b>${ar(sp.nc)}</b> متعاقدة`
-:'لا مواقع بعد';
+?`<b>${ar(m)}</b> رئيسي · <b>${ar(state.locations.length-m)}</b> متعاقد`
+:'لا مواقع';
 }
 function addLoc(type){
 const base=type==='main'?'رئيسي ':'متعاقد ';
@@ -1059,6 +1164,8 @@ state.locations.push(l);
 return l;
 }
 function removeMember(id){
+const idx=state.members.findIndex(m=>m.id===id);if(idx<0)return;
+const gone=state.members[idx],goneRules=state.pairs.rules.filter(r=>r.a===id||r.b===id);
 state.members=state.members.filter(m=>m.id!==id);
 state.pairs.rules=state.pairs.rules.filter(r=>r.a!==id&&r.b!==id);
 if(state.hl===id)state.hl=null;
@@ -1069,15 +1176,29 @@ recalcCap();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
 patchHeader();markStale();renderResults();
+setUndo('حُذف '+esc(gone.name),()=>{
+state.members.splice(idx,0,gone);state.pairs.rules.push(...goneRules);
+refreshMembers();recalcCap();patchHeader();markStale();
+});
+}
+function refreshMembers(){
+ $('#mlist').innerHTML=state.members.map((m,i)=>memberCardHTML(m,i)).join('');
+ $('#mIntro').innerHTML=memberIntroHTML();
 }
 function addMember(){
-const m={id:nid(),name:'عضو جديد',pool:1,gender:'M',off:[],pref:''};
+const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:''};
 state.members.push(m);
  $('#mlist').insertAdjacentHTML('beforeend',memberCardHTML(m,0));
  $('#mIntro').innerHTML=memberIntroHTML();
-patchHeader();markStale();
+const inp=document.querySelector('input[data-name="'+m.id+'"]');
+if(inp){inp.focus();inp.scrollIntoView({block:'center',behavior:'smooth'});}
+m.name='عضو '+ar(state.members.length);
+if(inp)inp.placeholder=m.name;
+recalcCap();patchHeader();markStale();
 }
 function removeLocation(id){
+const idx=state.locations.findIndex(l=>l.id===id);if(idx<0)return;
+const gone=state.locations[idx];
 state.locations=state.locations.filter(l=>l.id!==id);
 const card=document.querySelector('[data-lcard="'+id+'"]');
 if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
@@ -1085,6 +1206,11 @@ patchLocIntro();patchHeader();recalcCap();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
 markStale();renderResults();
+setUndo('حُذف '+esc(gone.name),()=>{
+state.locations.splice(idx,0,gone);
+ $('#llist').innerHTML=state.locations.map((l,i)=>locationCardHTML(l,i)).join('');
+patchLocIntro();patchHeader();recalcCap();markStale();
+});
 }
 function bulkAdd(){
 if(!state.bulk.main&&!state.bulk.cont)return;
@@ -1109,18 +1235,17 @@ return `<div class="card rv" style="--i:${i}" data-prule="${r.id}">
 }
 function settingsTabHTML(){
 const on=state.pairs.enabled;
-const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv">${icon('i-users')} لا قواعد اقتران بعد</div>`;
-return `<div class="card introbar rv">${icon('i-cog')}<span>تُطبَّق قواعد الاقتران <b>داخل فريق الزيارة الواحدة</b> فقط، وليست عبر الأسبوع.</span></div>
-<div class="card rv">
+const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv">${icon('i-users')} لا قواعد</div>`;
+return `<div class="card rv">
 <div class="mhead">
-<span class="clab">طاقة الزيارات في اليوم</span>
+<span class="clab">الحد اليومي</span>
 <span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1">−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1">+</button></span>
 <span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1">−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1">+</button></span>
 </div>
 </div>
 <div class="card rv">
 <div class="mhead">
-<button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> تفعيل تفضيلات الاقتران</button>
+<button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> قواعد الاقتران</button><span class="tiny mut">داخل الفريق الواحد</span><span style="flex:1"></span>
 <div class="seg"><button class="${state.pairs.mode==='soft'?'on':''}" data-act="pmode" data-v="soft">مرن</button><button class="${state.pairs.mode==='hard'?'on':''}" data-act="pmode" data-v="hard">صارم</button></div>
 </div>
 </div>
@@ -1130,7 +1255,7 @@ ${list}
 </div>
 <div class="card rv">
 <div class="mhead">
-<button type="button" class="swlab" role="switch" aria-checked="${state.autoRegen?'true':'false'}" data-act="autoregen"><span class="sw${state.autoRegen?' on':''}"></span> إعادة توليد تلقائية عند التعديل</button>
+<button type="button" class="swlab" role="switch" aria-checked="${state.autoRegen?'true':'false'}" data-act="autoregen"><span class="sw${state.autoRegen?' on':''}"></span> تحديث تلقائي</button>
 <span style="flex:1"></span>
 <button class="btn terra" data-act="resetall">${icon('i-trash')} إعادة الضبط</button>
 </div>
@@ -1171,11 +1296,26 @@ return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbrea
 }).join('');
 return `<div class="vrow"><div class="vloc"><b>${esc(r.loc.name)}</b><span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
 }).join('');
-return `<div class="dayblk rv${dp.dist==='near'?' thu':''}" style="--i:${k++}">
-<div class="dayhead"><span class="dname">${DAYS[d]}</span>${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">يفضّل ${dp.fav==='main'?'الرئيسية':'المتعاقد'}</span>`:''}<span class="tiny mut">${visitsWord(rows.length)}</span></div>
+return `<div class="dayblk rv${dp.dist==='near'?' thu':''}${isToday(d)?' today':''}" style="--i:${k++}">
+<div class="dayhead"><span class="dname">${DAYS[d]}</span><span class="ddate">${dateOf(d)}</span>${isToday(d)?'<span class="today-tag">اليوم</span>':''}${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">${dp.fav==='main'?'رئيسية':'متعاقد'}</span>`:''}<span class="tiny mut" style="margin-inline-start:auto">${visitsWord(rows.length)}</span></div>
  ${vrows}
 </div>`;
 }).join('');
+}
+function memberGridHTML(p){
+const days=p.days.slice().sort((a,b)=>a-b);
+const head=`<tr><th></th>${days.map(d=>`<th class="${isToday(d)?'today':''}">${DAY_SHORT[d]}<small>${ar(dayDate(d).getDate())}</small></th>`).join('')}<th>المجموع</th></tr>`;
+const rows=state.members.map(m=>{
+let t=0;
+const cells=days.map(d=>{
+const r=p.rows.find(x=>x.day===d&&x.team.includes(m.id));
+if(r){t++;return `<td><span class="cell ${r.loc.type==='main'?'m':'c'}">${esc(r.loc.name)}</span></td>`;}
+if(m.off.includes(d))return '<td><span class="cell off">إجازة</span></td>';
+return '<td><span class="cell no">–</span></td>';
+}).join('');
+return `<tr data-mrow="${m.id}"><td><span class="chip c${m.pool}" data-act="hl" data-m="${m.id}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span></td>${cells}<td class="tot">${ar(t)}</td></tr>`;
+}).join('');
+return `<div class="card rv" style="--i:1"><div class="mgrid-wrap"><table class="mgrid"><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function resheadHTML(p){
 const i=state.selected;
@@ -1189,20 +1329,21 @@ p.pairTotal?`<span class="stat">اقتران <b>${ar(p.pairHit)}/${ar(p.pairTota
 p.pairBreak?`<span class="stat bad">تعارض <b>${ar(p.pairBreak)}</b></span>`:'',
 p.consecViol?`<span class="stat bad">مخالفات <b>${ar(p.consecViol)}</b></span>`:''
 ].filter(Boolean).join('');
-const warn=(p.consecViol||p.pairBreak)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${ar(p.consecViol)} عضوية في أيام متتالية${p.prefMiss?' · '+ar(p.prefMiss)+' خارج التفضيل':''}${p.pairBreak?' · '+ar(p.pairBreak)+' تعارض اقتران':''} — معلَّمة بالأحمر</div>`:'';
+const warn=(p.consecViol||p.pairBreak)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${p.consecViol?ar(p.consecViol)+' تتابع':''}${p.consecViol&&p.pairBreak?' · ':''}${p.pairBreak?ar(p.pairBreak)+' تعارض اقتران':''} — معلّمة بالأحمر</div>`:'';
 return `<div class="card reshead rv" style="--i:0">
 <div class="rh-top">
 <div class="rh-name"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
 <div class="strow">${stats}</div>
-<div class="dbtns"><button class="btn sm primary" data-act="copy">${icon('i-copy')} نسخ الجدول</button><button class="btn sm" data-act="copydet">نسخ تفصيلي</button></div>
+<div class="dbtns"><button class="btn sm primary" data-act="copy">${icon('i-copy')} نسخ</button><button class="btn sm" data-act="copydet">نسخ بالأعضاء</button><button class="btn sm" data-act="share">مشاركة</button><button class="btn sm" data-act="print">طباعة</button></div>
 </div>
  ${warn}
+<div class="cline" style="margin-top:12px"><div class="seg" id="viewseg"><button class="${state.view==='day'?'on':''}" data-act="view" data-v="day">حسب اليوم</button><button class="${state.view==='member'?'on':''}" data-act="view" data-v="member">حسب العضو</button></div><button class="linky hlclear" data-act="hlclear" hidden>إلغاء التمييز</button></div>
 </div>`;
 }
 function resMainInner(){
 const p=state.plans[state.selected];
 if(!p)return'';
-return resheadHTML(p)+`<div class="sched stack">${schedHTML(p)}</div>`;
+return resheadHTML(p)+(state.view==='member'?memberGridHTML(p):`<div class="sched stack">${schedHTML(p)}</div>`);
 }
 function altsHTML(){
 const cards=state.plans.map((p,i)=>`
@@ -1212,18 +1353,18 @@ const cards=state.plans.map((p,i)=>`
 <span class="tiny mut">توازن ${ar(Math.round(p.fair*100))}٪${p.prefTotal?` · تفضيلات ${ar(p.prefHit)}/${ar(p.prefTotal)}`:''}</span>
 </button>`).join('');
 return `<div class="card alts rv" style="--i:9">
-<div class="alts-head"><span class="kicker" style="margin:0">خطط بديلة جاهزة</span><button class="linky" data-act="goresults">التفاصيل والمقارنة في «النتائج» ←</button></div>
+<div class="alts-head"><span class="kicker" style="margin:0">بدائل</span><button class="linky" data-act="goresults">مقارنة ←</button></div>
 <div class="astrip">${cards}</div>
 </div>`;
 }
 function failHTML(){
-return `<div class="card failcard rv"><div class="fhead">${icon('i-alert')} لم نجد خطة مستوفية لكل الشروط</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">محاولة مرنة</button><span class="tiny mut">تسمح بأيام متتالية عند الضرورة مع تعليم المخالفات</span>`:`<span class="tiny mut">عدّل المدخلات ثم أعد المحاولة</span>`}<button class="btn" data-act="gen">إعادة المحاولة</button></div></div>`;
+return `<div class="card failcard rv"><div class="fhead">${icon('i-alert')} تعذّرت الخطة</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">جرّب الوضع المرن</button><span class="tiny mut">يسمح بأيام متتالية ويُعلّمها</span>`:''}<button class="btn" data-act="gen">أعد المحاولة</button></div></div>`;
 }
 function resHTML(){
-if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums" aria-live="polite">جارٍ استكشاف التوليفات — <b id="gn">٠</b> محاولة · <b id="gf">٠</b> خطة صالحة</div></div>`;
+if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums" aria-live="polite">جارٍ البحث · <b id="gf">٠</b> خطة</div><span id="gn" hidden></span></div>`;
 if(state.plans.length&&state.selected!=null)return `<div id="resMain" class="stack">${resMainInner()}</div><div id="resAlts">${altsHTML()}</div>`;
 if(state.fail)return failHTML();
-return `<div class="card idle rv">${icon('i-cal')} جاهز — اضغط «توليد الخطط»</div>`;
+return `<div class="card idle rv">${icon('i-cal')} اضغط «توليد الخطط»</div>`;
 }
 function pcardHTML(p,i){
 return `<button class="pcard rv${i===state.selected?' sel':''}" style="--i:${i}" data-act="rplan" data-i="${i}">
@@ -1251,7 +1392,7 @@ const lu=new Map();
 for(const r of p.rows)lu.set(r.loc.id,(lu.get(r.loc.id)||0)+1);
 const locs=[...lu.entries()].map(([id,c])=>{const l=state.locations.find(x=>x.id===id);return l?`${esc(l.name)} <b>×${ar(c)}</b>`:'';}).filter(Boolean).join(' · ');
 return `<div class="card rdetail rv">
-<div class="dayhead" style="margin-bottom:12px"><span class="dname">أحمال خطة ${ar((state.selected??0)+1)}</span><span class="lg"><i class="pdot d1"></i>سريري</span><span class="lg"><i class="pdot d2"></i>إداري</span><span class="tiny mut" style="margin-inline-start:auto">اضغط اسمًا لإبراز زياراته في الجدول</span></div>
+<div class="dayhead" style="margin-bottom:12px"><span class="dname">أحمال خطة ${ar((state.selected??0)+1)}</span><span class="lg"><i class="pdot d1"></i>سريري</span><span class="lg"><i class="pdot d2"></i>إداري</span><span class="tiny mut" style="margin-inline-start:auto">اضغط اسمًا لتمييزه</span></div>
 <div class="mloads">${loads}</div>
  ${locs?`<div class="locuse">${icon('i-pin')}<span>${locs}</span></div>`:''}
  ${p.consecViol?`<div class="warnbox">${icon('i-alert')} ${ar(p.consecViol)} مخالفة تتابع (وضع مرن)</div>`:''}
@@ -1261,14 +1402,14 @@ function resultsTabHTML(){
 if(state.running)return `<div class="card idle rv"><div class="dots"><i></i><i></i><i></i></div><span>جارٍ توليد الخطط…</span></div>`;
 if(!state.plans.length){
 if(state.fail)return failHTML();
-return `<div class="card idle rv">${icon('i-res')} لا نتائج بعد — ولّد الخطط من تبويب «الخطة»</div>`;
+return `<div class="card idle rv">${icon('i-res')} لا نتائج بعد</div>`;
 }
 const sel=state.plans[state.selected];
 const bar=`<div class="card rbar rv">
 <div class="rb-in">
 <span class="rb-t">${plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')} · المختارة <b id="rselname">خطة ${ar(state.selected+1)}</b></span>
-<span id="rnote">المدخلات تغيّرت — أعد التوليد</span>
-<button type="button" class="swlab" role="switch" aria-checked="${state.minChanges?'true':'false'}" data-act="minch" title="عند إعادة التوليد، حافظ على أكبر قدر من الخطة المختارة"><span class="sw${state.minChanges?' on':''}"></span> أقل تغييرًا</button>
+<span id="rnote">تغيّرت المدخلات</span>
+<button type="button" class="swlab" role="switch" aria-checked="${state.minChanges?'true':'false'}" data-act="minch" title="الحفاظ على الخطة المختارة قدر الإمكان"><span class="sw${state.minChanges?' on':''}"></span> أقل تغييرًا</button>
 <span style="flex:1"></span>
 <button class="btn sm" data-act="copy">${icon('i-copy')} نسخ</button>
 <button class="btn sm primary" data-act="gomain">عرض الجدول</button>
@@ -1299,10 +1440,27 @@ function paintHl(){
 const id=state.hl??hoverM;
 document.querySelectorAll('.sched,.mloads').forEach(el=>el.classList.toggle('focus',id!=null));
 document.querySelectorAll('.chip[data-m]').forEach(ch=>ch.classList.toggle('hl',id!=null&&+ch.dataset.m===id));
+document.querySelectorAll('.hlclear').forEach(b=>b.hidden=state.hl==null);
+document.querySelectorAll('.mgrid tr[data-mrow]').forEach(tr=>tr.classList.toggle('hl',id!=null&&+tr.dataset.mrow===id));
 }
+function patchWeek(){
+const el=$('#weeklabel');if(!el)return;
+el.textContent=weekLabel();
+el.classList.toggle('cur',state.weekStart===thisSaturday());
+document.querySelectorAll('#daypills [data-day]').forEach(p=>{const s=p.querySelector('small');if(s)s.textContent=ar(dayDate(+p.dataset.day).getDate());});
+}
+function shiftWeek(n){
+const d=dayDate(n);state.weekStart=isoD(d);
+patchWeek();
+if(state.tab==='days')$('#daysWrap').innerHTML=daysTabHTML();
+renderResults();scheduleSave();
+}
+function refreshResMain(){const rm=$('#resMain');if(rm){rm.innerHTML=resMainInner();paintHl();}}
 function buildStaticUI(){
 renderTabs();
- $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' thu':''}" data-act="wday" data-day="${i}">${d}</button>`).join('');
+ $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' thu':''}" data-act="wday" data-day="${i}" aria-pressed="${state.days[i].on}">${d}<small></small></button>`).join('');
+{const s=$('#alldaysSw');s.setAttribute('aria-checked',String(state.useAllDays));s.querySelector('.sw').classList.toggle('on',state.useAllDays);}
+patchWeek();
  $('#ratioseg').innerHTML=RATIOS.map((r,i)=>`<button class="${state.ratioIdx===i?'on':''}" data-act="ratio" data-i="${i}">${r.l}</button>`).join('');
 state.vcap=visitCap();
 updateVisitUI();updateGenUI();
@@ -1340,12 +1498,19 @@ case'genflex':startGen('flex');break;
 case'plan-sel':case'rplan':selectPlan(+a.i);break;
 case'copy':copyPlan(false);break;
 case'copydet':copyPlan(true);break;
+case'share':sharePlan();break;
+case'print':window.print();break;
+case'view':if(state.view!==a.v){state.view=a.v;refreshResMain();scheduleSave();}break;
+case'hlclear':state.hl=null;paintHl();break;
+case'undo':{const fn=state.undo;state.undo=null;$('#toast').classList.remove('show');if(fn)fn();break;}
+case'week':shiftWeek(+a.v);break;
+case'weeknow':state.weekStart=thisSaturday();shiftWeek(0);break;
 case'hl':{const id=+a.m;state.hl=state.hl===id?null:id;paintHl();break;}
 case'goresults':setTab('results');break;
 case'gomain':setTab('plan');break;
 case'dfav':setDayPref(+a.d,'fav',a.v,t);break;
 case'ddist':setDayPref(+a.d,'dist',a.v,t);break;
-case'mpool':{const m=byId(+a.m);if(m){m.pool=+a.v;segOn(t);markStale();}break;}
+case'mpool':{const m=byId(+a.m);if(m){m.pool=+a.v;segOn(t);$('#mIntro').innerHTML=memberIntroHTML();recalcCap();markStale();}break;}
 case'mgender':{const m=byId(+a.m);if(m){m.gender=a.v;segOn(t);markStale();}break;}
 case'mpref':{const m=byId(+a.m);if(m){m.pref=a.v;segOn(t);markStale();}break;}
 case'moff':{const m=byId(+a.m);if(m){const i=m.off.indexOf(+a.day);if(i>=0)m.off.splice(i,1);else m.off.push(+a.day);t.classList.toggle('on');markStale();}break;}
@@ -1415,9 +1580,21 @@ document.addEventListener('input',e=>{
 const t=e.target.closest('input[data-name]');if(!t)return;
 const id=+t.dataset.name;
 const m=state.members.find(x=>x.id===id);
-if(m){m.name=t.value||'عضو';schedulePaint();return;}
+if(m){m.name=t.value.trim()||t.placeholder||'عضو';schedulePaint();return;}
 const l=state.locations.find(x=>x.id===id);
-if(l){l.name=t.value||'موقع';patchLocIntro();schedulePaint();}
+if(l){l.name=t.value.trim()||'موقع';patchLocIntro();schedulePaint();}
+});
+document.addEventListener('keydown',e=>{
+if(e.key==='Enter'&&e.target.matches('input.name')){e.target.blur();return;}
+if(e.key==='Escape'&&state.hl!=null){state.hl=null;paintHl();return;}
+if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,select,textarea'))return;
+const k=e.key.toLowerCase();
+if(k==='g'||k==='ل'){if(!state.running&&state.vcap>0)startGen('normal');e.preventDefault();}
+else if(k==='c'||k==='ؤ'){if(state.plans.length)copyPlan(false);}
+else if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&state.plans.length&&(state.tab==='plan'||state.tab==='results')){
+const n=state.plans.length,dir=e.key==='ArrowLeft'?1:-1;
+selectPlan((state.selected+dir+n)%n);e.preventDefault();
+}
 });
 document.addEventListener('pointerover',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=+c.dataset.m;paintHl();}});
 document.addEventListener('pointerout',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=null;paintHl();}});
@@ -1425,7 +1602,7 @@ loadState();
 buildStaticUI();
 patchHeader();
 renderResults();
-setTimeout(()=>startGen('normal'),320);
+setTimeout(()=>{state._quiet=true;startGen('normal');},320);
 </script>
 </body>
 </html>
