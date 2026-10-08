@@ -254,6 +254,26 @@ input.name:hover{border-color:#bfd0d8}
 .card{transition:box-shadow .2s,border-color .2s}
 .chip{user-select:none}
 .empty-note{font-size:12px;color:var(--mut);padding:4px 2px}
+.bgoal{background:var(--lav-soft);color:var(--lav-ink);gap:4px}
+.bgoal .ic{width:12px;height:12px}
+.chip.req{border-color:var(--lav);box-shadow:0 0 0 2px var(--lav-soft)}
+.chip .ic.lk{width:11px;height:11px;stroke-width:2}
+.vrow.goal{background:linear-gradient(90deg,transparent,var(--lav-soft));border-radius:12px;padding-inline:8px;margin-inline:-8px}
+.gcard.off{opacity:.6}
+.gcard.off .grow{pointer-events:none;opacity:.55}
+.grow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.grow>.tiny{flex:none;min-width:48px}
+.gtitle{font-weight:600;font-size:14px;display:inline-flex;align-items:center;gap:7px}
+.gtitle .ic{width:16px;height:16px;color:var(--lav-ink)}
+.pill.ppl{display:inline-flex;align-items:center;gap:6px}
+.pill.ppl.on.p1{background:var(--sage-soft);border-color:var(--sage);color:var(--sage-ink)}
+.pill.ppl.on.p2{background:var(--camel-soft);border-color:var(--camel);color:var(--camel-ink)}
+.pill.ppl.on .ic{width:11px;height:11px;stroke-width:2}
+.pill.dim{opacity:.45}
+.pill.auto.on{background:var(--lav);border-color:var(--lav);color:#fff}
+.gwarn{display:flex;gap:7px;align-items:center;background:var(--terra-soft);color:var(--terra-ink);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:500;margin-top:10px}
+.gwarn .ic{width:14px;height:14px}
+.gsum{font-size:12px;color:var(--mut);margin-inline-start:auto}
 @media print{
 body{background:#fff;padding:0}
 header.top .hstats,nav.tabs,.ctrl,#resAlts,.dbtns,.toast,.warnbox{display:none!important}
@@ -264,10 +284,10 @@ header.top .hstats,nav.tabs,.ctrl,#resAlts,.dbtns,.toast,.warnbox{display:none!i
 @media(max-width:640px){
 body{padding-bottom:86px}
 nav.tabs{position:fixed;top:auto;bottom:10px;left:10px;right:10px;width:auto;margin:0;justify-content:space-between;box-shadow:var(--sh2);background:var(--card)}
-.tab{flex-direction:column;gap:1px;padding:6px 8px;font-size:10.5px;flex:1;justify-content:center}
+.tab{flex-direction:column;gap:1px;padding:6px 2px;font-size:9.5px;flex:1 1 0;min-width:0;justify-content:center}
 .tab.on{background:var(--teal-soft);box-shadow:none}
 .tab .ic{width:19px;height:19px}
-.tnum{position:absolute;margin-top:-4px;margin-inline-start:22px}
+.tnum{position:absolute;top:1px;inset-inline-start:calc(50% + 6px);padding:0 5px;font-size:9.5px}
 .tab{position:relative}
 header.top{padding:18px 0 12px}
 .hstats{width:100%}
@@ -298,6 +318,8 @@ h1{font-size:17px}
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.6 21.5 20.5h-19z"/><path d="M12 9.8v4.4M12 17.4v.01"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 4v2.5M6.5 6.5 7.5 20a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13.5M10 10.5v6.5M14 10.5v6.5"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r=".9"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></symbol>
 <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7 16 16M8 8 6.3 6.3"/></symbol>
 </svg>
 <div class="wrap">
@@ -338,6 +360,7 @@ h1{font-size:17px}
 </section>
 <section class="view" id="v-days"><div id="daysWrap" class="stack"></div></section>
 <section class="view" id="v-members"><div id="mIntro"></div><div id="mlist" class="stack"></div><div id="mAddWrap"></div></section>
+<section class="view" id="v-goals"><div id="goalsWrap" class="stack"></div></section>
 <section class="view" id="v-locations"><div id="lBulk"></div><div id="llist" class="stack"></div></section>
 <section class="view" id="v-settings"><div id="setWrap" class="stack"></div></section>
 <section class="view" id="v-results"><div id="resTab" class="stack"></div></section>
@@ -365,12 +388,13 @@ const fmtD=dt=>ar(dt.getDate())+' '+MONTHS[dt.getMonth()];
 const dateOf=i=>fmtD(dayDate(i));
 function weekLabel(){const a=dayDate(0),b=dayDate(6);return a.getMonth()===b.getMonth()?ar(a.getDate())+' – '+ar(b.getDate())+' '+MONTHS[b.getMonth()]:fmtD(a)+' – '+fmtD(b);}
 const isToday=i=>isoD(dayDate(i))===isoD(new Date());
-const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
+const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'goals',l:'الأهداف',ic:'i-target'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
 visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,
 cap:{mainPerDay:2,conPerDay:1,pairTotal:3,pairWeighted:5},
 pairs:{enabled:false,mode:'soft',rules:[]},
+goals:[],
 days:Array.from({length:7},(_,i)=>({on:i>=2&&i<=5,fav:'',dist:i===THU?'near':''})),
 members:[
 {id:nid(),name:'شوقي',pool:1,gender:'M',off:[],pref:''},
@@ -415,7 +439,9 @@ return _reachCache.get(key);
 function effSplit(){
 const V=state.visits,r=RATIOS[state.ratioIdx],want=r.rm/(r.rm+r.rc);
 if(!state.locations.length)return{nm:0,nc:0,capped:true};
-const totals=reachTotals();
+const G=goalCounts();
+let totals=reachTotals().filter(([m,c])=>m>=G.gm&&c>=G.gc);
+if(!totals.length)totals=reachTotals();
 let pool=totals.filter(([m,c])=>m+c===V);
 if(!pool.length){
 const best=Math.max(...totals.map(t=>t[0]+t[1]));
@@ -445,11 +471,61 @@ P.list.push({a:r.a,b:r.b,kind:r.kind});
 P.on=P.list.length>0; P.hard=state.pairs.mode==='hard';
 return P;
 }
+function goalLabel(g){const i=state.goals.indexOf(g);return 'هدف '+ar(i+1);}
+function compileGoals(){
+const list=[],issues=new Map();
+const alive=new Set(state.members.map(m=>m.id));
+const P=compilePairs();
+const add=(g,msg)=>{if(!issues.has(g.id))issues.set(g.id,[]);issues.get(g.id).push(msg);};
+const active=state.goals.filter(g=>g.on);
+for(const g of active){
+const people=g.people.filter(id=>alive.has(id));
+const loc=locById(g.loc);
+if(!loc){add(g,'اختر موقعًا');continue;}
+if(g.day>=0&&!state.days[g.day].on)add(g,'يوم '+DAYS[g.day]+' ليس يوم عمل');
+const ppl=people.map(byId);
+const n1=ppl.filter(m=>m.pool===1).length,n2=ppl.length-n1,need2=loc.type==='main'?2:1;
+if(n1>2)add(g,'الفريق يتسع لعضوين سريريين فقط');
+if(n2>need2)add(g,loc.type==='main'?'الفريق يتسع لعضوين إداريين فقط':'الموقع المتعاقد يتسع لعضو إداري واحد');
+if(g.day>=0)for(const m of ppl)if(m.off.includes(g.day))add(g,m.name+' في إجازة يوم '+DAYS[g.day]);
+if(g.day<0&&ppl.length&&!state.days.some((d,i)=>d.on&&ppl.every(m=>!m.off.includes(i))))add(g,'لا يوم عمل يتاح فيه كل الأعضاء المحددين');
+if(P.on&&P.hard)for(let i=0;i<ppl.length;i++)for(let j=i+1;j<ppl.length;j++)if(P.avoid.get(ppl[i].id)&&P.avoid.get(ppl[i].id).has(ppl[j].id))add(g,'قاعدة «ليس مع» تمنع '+ppl[i].name+' و'+ppl[j].name);
+if(loc.genderRule&&ppl.length===(2+need2)){
+const c=ppl.filter(m=>m.gender==='M').length;
+if(!(loc.type==='main'?(c===1||c===3):(c===1||c===2)))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
+}
+if(!issues.has(g.id))list.push({id:g.id,loc,day:g.day,people});
+}
+const fixed=list.filter(g=>g.day>=0);
+for(let i=0;i<fixed.length;i++)for(let j=i+1;j<fixed.length;j++){
+const a=fixed[i],b=fixed[j],ga=state.goals.find(x=>x.id===a.id),gb=state.goals.find(x=>x.id===b.id);
+if(a.day===b.day&&a.loc.id===b.loc.id)add(gb,'يتكرر مع '+goalLabel(ga)+' في نفس الموقع واليوم');
+const shared=a.people.filter(id=>b.people.includes(id));
+if(shared.length){
+if(a.day===b.day)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' بنفس اليوم');
+else if(Math.abs(a.day-b.day)===1)add(gb,byId(shared[0]).name+' في يومين متتاليين مع '+goalLabel(ga));
+}
+}
+for(const d of workingDays()){
+const fm=fixed.filter(g=>g.day===d&&g.loc.type==='main').length,fc=fixed.filter(g=>g.day===d&&g.loc.type==='contracted').length;
+const T=teamCap();
+if(fm>state.cap.mainPerDay||fc>state.cap.conPerDay||!dayFits(fm,fc,T)){
+const last=fixed.filter(g=>g.day===d).pop();
+add(state.goals.find(x=>x.id===last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
+}
+}
+const valid=list.filter(g=>!issues.has(g.id));
+return{list:valid,issues,active:active.length};
+}
+function goalCounts(){
+const G=compileGoals().list;
+return{gm:G.filter(g=>g.loc.type==='main').length,gc:G.filter(g=>g.loc.type==='contracted').length,n:G.length};
+}
 function buildCfg(){
 const days=workingDays().sort((a,b)=>a-b);
 const locs=state.locations;
 const sp=effSplit();
-return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs()};
+return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs(),goals:compileGoals().list,relax:false};
 }
 function reach(on,maxM,maxC){
 const T=teamCap();
@@ -532,7 +608,29 @@ const L2=load.get(d+1);
 if(L2&&!dayFits(L.m+L2.m,L.c+L2.c,T))return null;
 }
 if(cfg.useAll){for(const [,L] of load)if(!L.m&&!L.c)return null;}
-return out;
+return attachGoals(cfg,out);
+}
+function attachGoals(cfg,slots){
+const order=cfg.goals.slice().sort((a,b)=>(b.day>=0)-(a.day>=0));
+const taken=[];
+for(const g of order){
+const cands=slots.filter(s=>!s.goal&&s.loc.id===g.loc.id&&goalDayOK(cfg,g,s.day,taken));
+if(!cands.length)return null;
+const s=cands[Math.floor(Math.random()*cands.length)];
+s.goal=g.id;s.req=g.people.slice();
+taken.push({loc:g.loc,day:s.day,people:g.people});
+}
+return slots;
+}
+function goalDayOK(cfg,g,d,taken){
+if(g.day>=0&&g.day!==d)return false;
+if(g.people.some(id=>byId(id).off.includes(d)))return false;
+for(const t of taken){
+if(t.day===d&&t.loc.id===g.loc.id)return false;
+const shared=g.people.some(id=>t.people.includes(id));
+if(shared&&(t.day===d||(!cfg.relax&&Math.abs(t.day-d)===1)))return false;
+}
+return true;
 }
 function buildSlots(cfg,refSlots){
 if(refSlots&&Math.random()<0.45){
@@ -556,10 +654,28 @@ if(!dayFits(nm+L2.m,nc+L2.c,T))return false;
 return true;
 };
 const rem={main:cfg.nMain,contracted:cfg.nCon};
+const pre=[];
+if(cfg.goals.length){
+const gs=cfg.goals.slice();
+for(let i=gs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[gs[i],gs[j]]=[gs[j],gs[i]];}
+gs.sort((a,b)=>(b.day>=0)-(a.day>=0)||b.people.length-a.people.length);
+for(const g of gs){
+const t=g.loc.type;
+if(rem[t]<=0)return null;
+const cands=cfg.days.filter(d=>goalDayOK(cfg,g,d,pre)&&addOK(d,t));
+if(!cands.length)return null;
+const ws=cands.map(d=>{const dp=cfg.dayCfg[d],L=load.get(d);let w=dp.fav===t?3:(dp.fav?0.6:1.5);if(dp.dist&&g.loc.dist===dp.dist)w*=2.5;w*=1-(L.m+L.c)*0.3;return Math.max(0.05,w)*(0.4+Math.random());});
+const d=pickWeighted(cands,ws);
+if(t==='main')load.get(d).m++;else load.get(d).c++;
+rem[t]--;
+pre.push({loc:g.loc,day:d,goal:g.id,people:g.people});
+}
+}
 if(cfg.useAll){
 const order=cfg.days.slice();
 for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
 for(const d of order){
+if(load.get(d).m+load.get(d).c>0)continue;
 const dp=cfg.dayCfg[d],opts=[];
 if(rem.main>0&&addOK(d,'main'))opts.push('main');
 if(rem.contracted>0&&addOK(d,'contracted'))opts.push('contracted');
@@ -587,8 +703,12 @@ if(t==='main')load.get(d).m++;else load.get(d).c++;
 }
 }
 const usage=new Map(),slots=[];
+for(const p of pre)usage.set(p.loc.id,(usage.get(p.loc.id)||0)+1);
 for(const d of cfg.days){
 const L=load.get(d),used=new Set(),dp=cfg.dayCfg[d];
+const dayPre=pre.filter(p=>p.day===d);
+for(const p of dayPre){used.add(p.loc.id);slots.push({loc:p.loc,day:d,goal:p.goal,req:p.people.slice()});}
+const pm=dayPre.filter(p=>p.loc.type==='main').length,pc=dayPre.length-pm;
 const pick=(pool,count)=>{
 for(let k=0;k<count;k++){
 const cands=pool.filter(l=>!used.has(l.id));
@@ -608,7 +728,7 @@ slots.push({loc:best,day:d});
 }
 return true;
 };
-if(!pick(cfg.mains,L.m)||!pick(cfg.cons,L.c))return null;
+if(!pick(cfg.mains,L.m-pm)||!pick(cfg.cons,L.c-pc))return null;
 }
 return slots;
 }
@@ -617,6 +737,9 @@ const vs=slots.slice().sort((a,b)=>a.day-b.day);
 const n=vs.length,teams=new Array(n),missRows=new Array(n),violRows=new Array(n);
 const busy=new Set(),md=new Map(),cnt=new Map();
 let steps=cfg.pairs.hard?5200:3600,prefMiss=0,consecViol=0;
+const resv=new Map();
+vs.forEach((s,i)=>{if(s.req)for(const id of s.req)resv.set(id+':'+s.day,i);});
+const reservedElse=(id,d,i)=>{const r=resv.get(id+':'+d);return r!=null&&r!==i;};
 const gOK=(gs,v)=>{
 if(!v.loc.genderRule)return true;
 const c=gs.filter(x=>x==='M').length;
@@ -626,8 +749,11 @@ function dfs(i){
 if(i===n)return true;
 if(--steps<0)return false;
 const v=vs[i],need2=v.loc.type==='main'?2:1,c1=[],c2=[];
+const req=v.req&&v.req.length?new Set(v.req):null;
 for(const m of cfg.members){
 if(m.off.includes(v.day)||busy.has(m.id+':'+v.day))continue;
+if(reservedElse(m.id,v.day,i))continue;
+if(!opts.relax&&(reservedElse(m.id,v.day-1,i)||reservedElse(m.id,v.day+1,i)))continue;
 const s=md.get(m.id);
 const free=!s||(!s.has(v.day-1)&&!s.has(v.day+1));
 const viol=free?0:1;
@@ -637,6 +763,7 @@ if(m.pref&&v.loc.dist&&v.loc.dist!=='mid'&&(m.pref==='near'||m.pref==='far'))pv=
 let rb=0;
 if(opts.refMD&&opts.refMD.has(m.id+':'+v.day))rb-=16;
 if(opts.refTR&&opts.refTR.has(m.id+':'+v.day+':'+v.loc.id))rb-=26;
+if(req&&req.has(m.id))rb-=5000;
 let rem=0;
 for(const d of cfg.days){
 if(d<v.day||m.off.includes(d)||busy.has(m.id+':'+d))continue;
@@ -646,6 +773,7 @@ rem++;
 (m.pool===1?c1:c2).push({m,pv,viol,rem,rb});
 }
 if(c1.length<2||c2.length<need2)return false;
+if(req){const ok=new Set(c1.concat(c2).map(x=>x.m.id));for(const id of req)if(!ok.has(id))return false;}
 const P=cfg.pairs;
 const availSet=P.on?new Set(c1.concat(c2).map(x=>x.m.id)):null;
 const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb;
@@ -654,9 +782,11 @@ const c2s=c2.length>6?c2.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c
 const combos=[];
 for(const a of kCombos(c1s,2))for(const b of kCombos(c2s,need2)){
 const team=a.concat(b);
+if(req&&team.filter(x=>req.has(x.m.id)).length!==req.size)continue;
 if(!gOK(team.map(x=>x.m.gender),v))continue;
 let sc=0,miss=0,vio=0;
 for(const x of team){
+if(req&&req.has(x.m.id)){sc+=x.viol*140;if(x.viol)vio++;continue;}
 sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb+Math.random()*7;
 if(x.pv===1)sc-=52;else if(x.pv===-1){sc+=52;miss++;}
 if(x.viol)vio++;
@@ -707,7 +837,7 @@ prefMiss-=c.miss;consecViol-=c.vio;
 }
 return false;
 }
-return dfs(0)?{teams,missRows,violRows,prefMiss,consecViol}:null;
+return dfs(0)?{teams,missRows,violRows,prefMiss,consecViol,order:vs}:null;
 }
 function hashSol(slots,sol){
 return slots.map((s,i)=>s.day+':'+s.loc.id+':'+sol.teams[i].slice().sort((x,y)=>x-y).join('.')).join('|');
@@ -720,7 +850,7 @@ const un=A.size+B.size-inter;
 return un?1-inter/un:1;
 }
 function makePlan(cfg,slots,sol,ref){
-const rows=slots.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[]}));
+const rows=slots.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[],goal:s.goal||null,req:s.req||[]}));
 const counts=new Map();
 for(const r of rows)for(const id of r.team)counts.set(id,(counts.get(id)||0)+1);
 let pairHit=0,pairTotal=0,pairBreak=0;
@@ -763,7 +893,7 @@ const tot=cs.reduce((a,b)=>a+b,0),avg=cs.length?tot/cs.length:0;
 let vr=0,ss=0;
 for(const c of cs){vr+=(c-avg)**2;ss+=c*c;}
 const fair=ss?clamp(1-vr/ss,0,1):1;
-return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak};
+return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak,goalHit:rows.filter(r=>r.goal).length,goalTotal:cfg.goals.length};
 }
 function scorePlan(p){
 let s=0.55*p.fair+0.15*(p.dayTotal?p.dayHit/p.dayTotal:0.5);
@@ -818,6 +948,11 @@ if(av.length&&av.every(m=>m.gender===av[0].gender)){
 msgs.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب');break;
 }
 }
+if(cfg.goals.length){
+const gm=cfg.goals.filter(g=>g.loc.type==='main').length,gc=cfg.goals.length-gm;
+if(gm>cfg.nMain||gc>cfg.nCon)msgs.push('الأهداف تحتاج '+ar(gm)+' رئيسية و'+ar(gc)+' متعاقدة — ارفع عدد الزيارات أو غيّر النسبة');
+else if(!msgs.length)msgs.push('الأهداف المحددة تضيّق الحل — جرّب تخفيف الأيام أو الأعضاء المحددين فيها');
+}
 if(!msgs.length)msgs.push('القيود ضيقة — قلّل الزيارات أو الإجازات');
 msgs.unshift(...diagnosePairs(cfg));
 return msgs.slice(0,3);
@@ -827,7 +962,7 @@ try{
 localStorage.setItem('visitplan.v1',JSON.stringify({
 v:1,days:state.days,members:state.members,locations:state.locations,
 visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
-bulk:state.bulk,pairs:state.pairs,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view
+bulk:state.bulk,pairs:state.pairs,goals:state.goals,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view
 }));
 }catch(err){}
 }
@@ -847,6 +982,7 @@ if(typeof d.ratioIdx==='number')state.ratioIdx=d.ratioIdx;
 if(typeof d.useAllDays==='boolean')state.useAllDays=d.useAllDays;
 if(d.bulk)state.bulk=d.bulk;
 if(d.pairs)state.pairs=d.pairs;
+if(Array.isArray(d.goals))state.goals=d.goals.filter(g=>g&&typeof g.id==='number').map(g=>({id:g.id,on:g.on!==false,loc:g.loc,day:typeof g.day==='number'?clamp(g.day,-1,6):-1,people:Array.isArray(g.people)?g.people:[]}));
 if(d.cap)state.cap=d.cap;
 if(typeof d.autoRegen==='boolean')state.autoRegen=d.autoRegen;
 if(typeof d.minChanges==='boolean')state.minChanges=d.minChanges;
@@ -854,13 +990,14 @@ if(typeof d.weekStart==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.weekStart))state.
 if(d.view==='day'||d.view==='member')state.view=d.view;
 state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];if(m.pref==null)m.pref='';});
 state.ratioIdx=clamp(state.ratioIdx|0,0,RATIOS.length-1);
-const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id)];
+const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id),...state.goals.map(g=>g.id)];
 _uid=Math.max(...ids);
 }catch(err){}
 }
 let genRun=0;
 function startGen(mode){
 const cfg=buildCfg();
+cfg.relax=mode==='flex';
 const run=++genRun;
 const T=teamCap();
 const pre=!cfg.days.length?'لا توجد أيام عمل مفعّلة':!cfg.locs.length?'أضف موقعًا واحدًا على الأقل':!cfg.members.length?'أضف أعضاء أولًا':(T.c<2||T.a<1)?'يلزم عضوان سريريان وعضو إداري على الأقل':state.vcap<=0?'لا طاقة زيارات بهذه الإعدادات':'';
@@ -941,7 +1078,7 @@ const days=[...new Set(p.rows.map(r=>r.day))].sort((a,b)=>a-b);
 const out=['خطة الزيارات — '+weekLabel()];
 for(const d of days){
 out.push('','▪ '+DAYS[d]+' '+dateOf(d));
-for(const r of p.rows.filter(x=>x.day===d))out.push(r.loc.name+': '+r.team.map(nm).join('، '));
+for(const r of p.rows.filter(x=>x.day===d))out.push((r.goal?'◎ ':'')+r.loc.name+': '+r.team.map(nm).join('، '));
 }
 return out.join('\n');
 }
@@ -986,6 +1123,7 @@ state.tab=id;
 document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));});
 document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
 if(id==='settings')$('#setWrap').innerHTML=settingsTabHTML();
+if(id==='goals')refreshGoals();
 }
 function patchHeader(){
  $('#stM').innerHTML=icon('i-users')+' '+plural(state.members.length,'عضو واحد','عضوان','أعضاء','عضوًا');
@@ -1015,10 +1153,11 @@ function recalcCap(){
 _reachCache.clear();
 state.vcap=visitCap();
 const maxV=Math.max(1,state.vcap);
-const derived=clamp(state.visitsWanted,1,maxV);
+const derived=clamp(Math.max(state.visitsWanted,goalCounts().n),1,maxV);
 if(derived!==state.visits){
 state.visits=derived;
 if(derived<state.visitsWanted)toast('خُفِّض عدد الزيارات إلى '+ar(derived));
+else if(derived>state.visitsWanted){state.visitsWanted=derived;toast('رُفع عدد الزيارات إلى '+ar(derived)+' لتغطية الأهداف');}
 }
 updateVisitUI();
 }
@@ -1073,6 +1212,7 @@ if(dv<0&&state.useAllDays&&state.visitsWanted-1<workingDays().length){
 toast('«كل الأيام» تتطلب زيارة لكل يوم');
 return;
 }
+if(dv<0&&state.visits-1<goalCounts().n){toast('الأهداف تتطلب '+visitsWord(goalCounts().n)+' على الأقل');return;}
 const nv=clamp(state.visitsWanted+dv,1,Math.max(1,state.vcap));
 if(nv===state.visitsWanted)return;
 state.visitsWanted=nv;
@@ -1275,6 +1415,70 @@ if(card){card.classList.add('rem');setTimeout(()=>{ $('#setWrap').innerHTML=sett
 else $('#setWrap').innerHTML=settingsTabHTML();
 markStale();
 }
+function goalCardHTML(g,i,issues){
+const loc=locById(g.loc);
+const iss=issues.get(g.id)||[];
+const locOpts=`<option value="">— اختر موقعًا —</option>`+state.locations.map(l=>`<option value="${l.id}"${l.id===g.loc?' selected':''}>${esc(l.name)} · ${l.type==='main'?'رئيسي':'متعاقد'}</option>`).join('');
+const dayPills=`<button class="pill auto${g.day<0?' on':''}" data-act="gday" data-g="${g.id}" data-v="-1">يختار المُخطِّط</button>`+DAYS.map((d,di)=>`<button class="pill${g.day===di?' on':''}${state.days[di].on?'':' dim'}" data-act="gday" data-g="${g.id}" data-v="${di}" title="${dateOf(di)}">${DAY_SHORT[di]}</button>`).join('');
+const sorted=state.members.slice().sort((a,b)=>a.pool-b.pool);
+const ppl=sorted.map(m=>{
+const on=g.people.includes(m.id),off=g.day>=0&&m.off.includes(g.day);
+return `<button class="pill ppl p${m.pool}${on?' on':''}${off&&!on?' dim':''}" data-act="gppl" data-g="${g.id}" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${off?' — إجازة':''}">${on?icon('i-lock'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</button>`;
+}).join('');
+const n1=g.people.filter(id=>{const m=byId(id);return m&&m.pool===1;}).length,n2=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;}).length;
+const need2=loc&&loc.type==='contracted'?1:2;
+const sum=g.people.length?`${ar(n1)}/٢ سريري · ${ar(n2)}/${ar(need2)} إداري — والباقي يكمله المُخطِّط`:'الفريق كله يختاره المُخطِّط';
+return `<div class="card gcard rv${g.on?'':' off'}" style="--i:${i}" data-gcard="${g.id}">
+<div class="mhead">
+<span class="gtitle">${icon('i-target')}${goalLabel(g)}</span>
+<select class="msel" data-act="gloc" data-g="${g.id}" aria-label="موقع الزيارة">${locOpts}</select>
+${loc?`<span class="badge ${loc.type==='main'?'bmain':'bcon'}">${loc.type==='main'?'رئيسي':'متعاقد'}</span>`:''}
+<span style="flex:1"></span>
+<button type="button" class="swlab" role="switch" aria-checked="${g.on?'true':'false'}" data-act="gon" data-g="${g.id}"><span class="sw${g.on?' on':''}"></span> مفعّل</button>
+<button class="icon-btn" data-act="gdel" data-g="${g.id}" title="حذف الهدف">${icon('i-trash')}</button>
+</div>
+<div class="grow"><span class="tiny mut">اليوم</span><div class="pills">${dayPills}</div></div>
+<div class="grow"><span class="tiny mut">الأعضاء</span><div class="pills">${ppl||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${sum}</span></div>
+${g.on&&iss.length?`<div class="gwarn">${icon('i-alert')} ${iss.map(esc).join(' · ')} — لن يُطبَّق حتى يُصلَح</div>`:''}
+</div>`;
+}
+function goalsTabHTML(){
+const C=compileGoals();
+const G=goalCounts();
+const intro=`<div class="card introbar rv">${icon('i-target')}<span>${state.goals.length?`<b>${ar(G.n)}</b> هدف مطبَّق من ${ar(state.goals.length)} · ${ar(G.gm)} رئيسية · ${ar(G.gc)} متعاقدة`:'زيارات إلزامية: حدّد الموقع، واختياريًا اليوم والأعضاء'}</span></div>`;
+const list=state.goals.length?state.goals.map((g,i)=>goalCardHTML(g,i,C.issues)).join(''):`<div class="card idle rv">${icon('i-target')} لا أهداف — كل الزيارات يوزعها المُخطِّط</div>`;
+return intro+list+`<button class="btn" data-act="gadd"${state.locations.length?'':' disabled'}>${icon('i-plus')} إضافة هدف</button>`;
+}
+function refreshGoals(){const w=$('#goalsWrap');if(w)w.innerHTML=goalsTabHTML();}
+function goalChanged(){refreshGoals();recalcCap();markStale();}
+function addGoal(){
+if(!state.locations.length){toast('أضف موقعًا أولًا');return;}
+const used=new Set(state.goals.map(g=>g.loc));
+const loc=state.locations.find(l=>!used.has(l.id))||state.locations[0];
+state.goals.push({id:nid(),on:true,loc:loc.id,day:-1,people:[]});
+goalChanged();
+}
+function removeGoal(id){
+const idx=state.goals.findIndex(g=>g.id===id);if(idx<0)return;
+const gone=state.goals[idx];
+state.goals.splice(idx,1);
+goalChanged();
+setUndo('حُذف الهدف',()=>{state.goals.splice(idx,0,gone);goalChanged();});
+}
+function toggleGoalPerson(g,mid){
+const m=byId(mid);if(!m)return;
+const i=g.people.indexOf(mid);
+if(i>=0){g.people.splice(i,1);goalChanged();return;}
+const loc=locById(g.loc);
+const cap=m.pool===1?2:(loc&&loc.type==='contracted'?1:2);
+const same=g.people.filter(id=>{const x=byId(id);return x&&x.pool===m.pool;});
+if(same.length>=cap){
+if(cap===1){g.people=g.people.filter(id=>id!==same[0]);}
+else{toast('الحد '+ar(cap)+' '+(m.pool===1?'سريري':'إداري')+' في الفريق');return;}
+}
+g.people.push(mid);
+goalChanged();
+}
 function miniStrip(p){
 const wd=p.days.slice().sort((a,b)=>a-b);
 return `<div class="wstrip">${wd.map(d=>{
@@ -1291,10 +1495,11 @@ const dp=state.days[d];
 const vrows=rows.map(r=>{
 const team=r.team.map(id=>{
 const m=byId(id);if(!m)return'';
-const miss=r.miss.includes(id),viol=r.viol.includes(id),pbreak=r.pbreak&&r.pbreak.includes(id);
-return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}${pbreak?' — تعارض اقتران':''}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
+const miss=r.miss.includes(id),viol=r.viol.includes(id),pbreak=r.pbreak&&r.pbreak.includes(id),rq=r.req&&r.req.includes(id);
+return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}${rq?' req':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${rq?' — محدد بالهدف':''}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}${pbreak?' — تعارض اقتران':''}">${rq?icon('i-lock','ic lk'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
 }).join('');
-return `<div class="vrow"><div class="vloc"><b>${esc(r.loc.name)}</b><span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
+const gi=r.goal?state.goals.findIndex(g=>g.id===r.goal):-1;
+return `<div class="vrow${r.goal?' goal':''}"><div class="vloc"><b>${esc(r.loc.name)}</b>${r.goal?`<span class="badge bgoal">${icon('i-target')}${gi>=0?'هدف '+ar(gi+1):'هدف'}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
 }).join('');
 return `<div class="dayblk rv${dp.dist==='near'?' thu':''}${isToday(d)?' today':''}" style="--i:${k++}">
 <div class="dayhead"><span class="dname">${DAYS[d]}</span><span class="ddate">${dateOf(d)}</span>${isToday(d)?'<span class="today-tag">اليوم</span>':''}${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">${dp.fav==='main'?'رئيسية':'متعاقد'}</span>`:''}<span class="tiny mut" style="margin-inline-start:auto">${visitsWord(rows.length)}</span></div>
@@ -1309,7 +1514,7 @@ const rows=state.members.map(m=>{
 let t=0;
 const cells=days.map(d=>{
 const r=p.rows.find(x=>x.day===d&&x.team.includes(m.id));
-if(r){t++;return `<td><span class="cell ${r.loc.type==='main'?'m':'c'}">${esc(r.loc.name)}</span></td>`;}
+if(r){t++;return `<td><span class="cell ${r.loc.type==='main'?'m':'c'}">${r.goal?'◎ ':''}${esc(r.loc.name)}</span></td>`;}
 if(m.off.includes(d))return '<td><span class="cell off">إجازة</span></td>';
 return '<td><span class="cell no">–</span></td>';
 }).join('');
@@ -1322,6 +1527,7 @@ const i=state.selected;
 const stats=[
 `<span class="stat"><b>${ar(p.rows.length)}</b> زيارة</span>`,
 `<span class="stat">توازن <b>${ar(Math.round(p.fair*100))}٪</b></span>`,
+p.goalTotal?`<span class="stat">أهداف <b>${ar(p.goalHit)}/${ar(p.goalTotal)}</b></span>`:'',
 p.prefTotal?`<span class="stat${p.prefHit<p.prefTotal?' bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:'',
 p.dayTotal?`<span class="stat">الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:'',
 p.sim!=null?`<span class="stat">تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:'',
@@ -1373,6 +1579,7 @@ return `<button class="pcard rv${i===state.selected?' sel':''}" style="--i:${i}"
 <div class="pstats">
 <span><b>${ar(p.rows.length)}</b> زيارة</span>
 <span>توازن <b>${ar(Math.round(p.fair*100))}٪</b></span>
+ ${p.goalTotal?`<span>أهداف <b>${ar(p.goalHit)}/${ar(p.goalTotal)}</b></span>`:''}
  ${p.prefTotal?`<span class="${p.prefHit<p.prefTotal?'bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:''}
  ${p.dayTotal?`<span>الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:''}
  ${p.sim!=null?`<span>تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:''}
@@ -1558,10 +1765,25 @@ case'pmode':{state.pairs.mode=a.v;segOn(t);markStale();break;}
 case'pkind':{const r=state.pairs.rules.find(x=>x.id===+a.r);if(r){r.kind=a.v;segOn(t);markStale();}break;}
 case'padd':addPairRule();break;
 case'pdel':removePairRule(+a.r);break;
+case'gadd':addGoal();break;
+case'gdel':removeGoal(+a.g);break;
+case'gon':{const g=state.goals.find(x=>x.id===+a.g);if(g){g.on=!g.on;goalChanged();}break;}
+case'gday':{const g=state.goals.find(x=>x.id===+a.g);if(g&&g.day!==+a.v){g.day=+a.v;goalChanged();}break;}
+case'gppl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalPerson(g,+a.m);break;}
 }
 });
 document.addEventListener('change',e=>{
 const t=e.target.closest('select[data-act]');if(!t)return;
+if(t.dataset.act==='gloc'){
+const g=state.goals.find(x=>x.id===+t.dataset.g);
+if(g){
+g.loc=t.value?+t.value:null;
+const loc=locById(g.loc);
+if(loc&&loc.type==='contracted'){const ad=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;});if(ad.length>1)g.people=g.people.filter(id=>id!==ad[1]);}
+goalChanged();
+}
+return;
+}
 const r=state.pairs.rules.find(x=>x.id===+t.dataset.r);if(!r)return;
 if(t.dataset.act==='pa')r.a=+t.value;else r.b=+t.value;
 if(r.a===r.b)toast('اختر عضوين مختلفين');

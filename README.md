@@ -10,6 +10,20 @@ A single-file planner for one week of visits. It builds visit schedules for clin
 - Lets you undo deleting a member or location from the toast.
 - Keyboard shortcuts: `G` generates, `←/→` switch plans, `C` copies, `Esc` clears the highlight, `Enter` confirms a name.
 - On mobile, the tab bar sits at the bottom of the screen.
+
+## Goals (الأهداف)
+A goal is a visit that must be in every plan. Each goal has:
+- **Location**: required.
+- **Day**: "يختار المُخطِّط" lets the solver pick the day, or you fix it to one day.
+- **People**: optional. Pin up to 2 clinical and 2 admin members (1 admin at contracted sites). The solver fills any empty seats.
+- An on/off switch, delete with undo.
+
+Rules:
+- Pinned people are reserved for that visit. They are not used anywhere else that day, or on the days around it (unless flex mode is on).
+- The visit count rises automatically to cover the goals, and can't go below the goal count.
+- Goals that can't work are flagged in red and skipped until fixed. This covers a non-working day, a pinned person on leave, too many people, a gender-mix conflict, a hard "ليس مع" conflict, a person double-booked or on back-to-back days across goals, or a day over its cap.
+- In the plan, goal visits show a purple "هدف" badge and pinned people show a lock. The member grid and copied text mark them with ◎. Plan stats show how many goals were met.
+- Goals are saved in `localStorage` under the `goals` key: `{id,on,loc,day(-1=auto),people[]}`.
 - Saves everything in `localStorage` (`visitplan.v1`), including the chosen week and view.
 
 ## Fixes
@@ -26,4 +40,5 @@ A single-file planner for one week of visits. It builds visit schedules for clin
 
 ## Next steps
 - Export to image or PDF.
-- Lock a single visit and regenerate the rest.
+- Create a goal straight from a visit in the plan ("pin this visit").
+- Recurring goals across weeks (goals are not tied to the week right now).
