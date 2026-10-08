@@ -26,6 +26,15 @@ Rules:
 - Goals are saved in `localStorage` under the `goals` key: `{id,on,loc,day(-1=auto),people[]}`.
 - Saves everything in `localStorage` (`visitplan.v1`), including the chosen week and view.
 
+## UI polish
+- Every dropdown (goal location, pair-rule members) is a custom pill dropdown that matches the app style. It has grouped headers (clinical/admin, main/contracted), gender dots, distance badges and a check on the selected option. It opens up or down depending on the space available. Keyboard: `↑/↓`, `Home/End`, `Enter`, `Esc`.
+- The browser's `confirm()` is replaced by a styled dialog (blurred backdrop, focus trap, `Esc` to cancel).
+- No full DOM refresh: all views update through a small keyed morph (`morph()`) that patches only what changed. Cards, scroll position, open focus and typed text stay in place. Removed cards fade out.
+- While regenerating, the current plan stays on screen, dims slightly and shows a spinner on the button, instead of being swapped for a loader.
+- Entry animations run once on first load. Later updates use a short, subtle fade.
+- Steppers disable at their limits, and focus rings are consistent.
+- Deleting a pair rule can now be undone.
+
 ## Fixes
 - Visit capacity now comes from the real team size. Before, it used hard-coded pair caps that didn't match the team rules. Removing members now updates the maximum correctly.
 - If there are too few clinical/admin members, the app now says so clearly instead of spinning through a pointless search.

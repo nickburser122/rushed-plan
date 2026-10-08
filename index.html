@@ -118,8 +118,6 @@ main>.view>*+*{margin-top:14px}
 .genstat{display:flex;align-items:center;gap:15px}
 .gnums{font-size:13px;color:var(--mut)}
 .gnums b{color:var(--ink)}
-#resMain{transition:opacity .18s ease,transform .18s ease}
-#resMain.out{opacity:0;transform:translateY(6px)}
 .reshead .rh-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .rh-name{display:flex;align-items:center;gap:8px}
 .pname{font-weight:600;font-size:15px}
@@ -179,7 +177,51 @@ main>.view>*+*{margin-top:14px}
 .daycard.thu{background:#f8f7fc;border-color:#ddd8f0}
 .daycard.off{opacity:.55}
 .daycard.off .dc-body{pointer-events:none;opacity:.55}
-.msel{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:4.5px 13px;font:inherit;font-size:12.5px;color:var(--ink)}
+.dd{position:relative;display:inline-flex;max-width:100%}
+.dd-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:138px;max-width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 13px 5px 10px;font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;box-shadow:var(--sh)}
+.dd-btn:hover{border-color:#b9ccd5}
+.dd-btn[aria-expanded="true"]{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+.dd-btn.ph .dd-lab{color:var(--mut)}
+.dd-lab{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dd-lab .badge{padding:1px 8px;font-size:10.5px}
+.dd-chev{width:14px;height:14px;color:var(--mut);transition:transform .2s ease}
+.dd-btn[aria-expanded="true"] .dd-chev{transform:rotate(180deg);color:var(--teal)}
+.ddmenu{position:fixed;z-index:80;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh2);padding:5px;overflow-y:auto;max-width:calc(100vw - 20px);opacity:0;transform:translateY(-4px) scale(.98);transform-origin:top right;transition:opacity .14s ease,transform .14s ease;scrollbar-width:thin}
+.ddmenu.up{transform-origin:bottom right;transform:translateY(4px) scale(.98)}
+.ddmenu.show{opacity:1;transform:none}
+.ddmenu::-webkit-scrollbar{width:6px}
+.ddmenu::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.dd-opt{display:flex;align-items:center;gap:8px;width:100%;border:none;background:transparent;font:inherit;font-size:13px;color:var(--ink);padding:7px 10px;border-radius:11px;cursor:pointer;text-align:right;white-space:nowrap;transition:background .12s}
+.dd-opt:hover,.dd-opt:focus-visible{background:var(--card2);outline:none}
+.dd-opt.sel{background:var(--teal-soft);color:var(--teal-d);font-weight:600}
+.dd-opt .dd-name{flex:1}
+.dd-opt .badge{padding:1px 8px;font-size:10.5px}
+.dd-opt .ck{width:14px;height:14px;color:var(--teal);visibility:hidden;stroke-width:2.2}
+.dd-opt.sel .ck{visibility:visible}
+.dd-opt:disabled{opacity:.4;cursor:default;background:transparent}
+.dd-head{font-size:10.5px;font-weight:600;color:var(--mut);padding:7px 10px 3px;letter-spacing:.3px}
+.dd-head+.dd-opt{margin-top:1px}
+.dd-opt+.dd-head{margin-top:4px;border-top:1px dashed var(--line);padding-top:9px}
+.dlg-back{position:fixed;inset:0;z-index:90;background:rgba(51,61,74,.28);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .18s ease}
+.dlg-back.show{opacity:1}
+.dlg{max-width:380px;width:100%;display:flex;flex-direction:column;gap:10px;padding:20px 22px;transform:translateY(8px) scale(.98);transition:transform .2s cubic-bezier(.22,.85,.3,1);box-shadow:var(--sh2)}
+.dlg-back.show .dlg{transform:none}
+.dlg-ic{width:40px;height:40px;border-radius:14px;background:var(--terra-soft);color:var(--terra-ink);display:flex;align-items:center;justify-content:center}
+.dlg-ic .ic{width:20px;height:20px}
+.dlg b{font-size:15.5px;font-weight:600}
+.dlg p{font-size:13px;color:var(--mut)}
+.dlg-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+#res,#resTab{transition:opacity .2s ease}
+#res.busy,#resTab.busy{opacity:.5;pointer-events:none;transition:opacity .25s ease .25s}
+.ddmenu[hidden],.dlg-back[hidden]{display:none}
+.stepper button{transition:background .15s,color .15s,opacity .15s}
+.stepper button:hover:not(:disabled){background:var(--teal-soft)}
+.stepper button:disabled{opacity:.38;cursor:default;box-shadow:none}
+.icon-btn:focus-visible,.pill:focus-visible,.seg button:focus-visible,.dd-btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.rem{pointer-events:none}
+.vrow,.dayblk,.acard,.pcard,.chip,.cell,.stat{transition:background-color .2s,border-color .2s,box-shadow .2s,opacity .2s,color .2s}
 .pblock.off{opacity:.55;pointer-events:none}
 .dc-body{display:flex;flex-direction:column;gap:9px}
 .dcrow{display:flex;align-items:center;gap:8px}
@@ -216,6 +258,7 @@ input.name:focus{outline:none;border-color:var(--teal)}
 .toast .ic{width:15px;height:15px;color:#9fd3c0}
 .rv{animation:rise .5s cubic-bezier(.22,.85,.3,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
 @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+body.ready .rv{animation-duration:.32s;animation-delay:0s}
 .weeknav{display:inline-flex;align-items:center;gap:2px;margin-top:2px}
 .wkbtn{width:22px;height:22px;border:none;background:transparent;border-radius:50%;color:var(--mut);font:inherit;font-size:16px;line-height:1;cursor:pointer}
 .wkbtn:hover{background:var(--card2);color:var(--ink)}
@@ -320,6 +363,7 @@ h1{font-size:17px}
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 4v2.5M6.5 6.5 7.5 20a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13.5M10 10.5v6.5M14 10.5v6.5"/></symbol>
 <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r=".9"/></symbol>
 <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
 <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.4M12 18.1v2.4M20.5 12h-2.4M5.9 12H3.5M17.7 6.3l-1.7 1.7M8 16l-1.7 1.7M17.7 17.7 16 16M8 8 6.3 6.3"/></symbol>
 </svg>
 <div class="wrap">
@@ -367,6 +411,8 @@ h1{font-size:17px}
 </main>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="ddmenu" id="ddmenu" role="listbox" hidden></div>
+<div class="dlg-back" id="dlg" hidden><div class="card dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgt" aria-describedby="dlgm"><span class="dlg-ic"><svg class="ic"><use href="#i-alert"/></svg></span><b id="dlgt"></b><p id="dlgm"></p><div class="dlg-btns"><button class="btn" data-act="dlgno">إلغاء</button><button class="btn terra" data-act="dlgok" id="dlgok"></button></div></div></div>
 <script>
 const DAYS=['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
 const DAY_SHORT=['سبت','أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة'];
@@ -379,6 +425,46 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=(id,cls='ic')=>`<svg class="${cls}"><use href="#${id}"/></svg>`;
 const $=s=>document.querySelector(s);
+const KEY_ATTRS=['data-key','data-mcard','data-lcard','data-gcard','data-prule','data-dcard'];
+const keyOf=n=>{if(n.nodeType!==1)return null;for(const k of KEY_ATTRS){const v=n.getAttribute(k);if(v!=null)return k+'='+v;}return n.id?'#'+n.id:null;};
+function leave(c){
+if(c.nodeType!==1||!c.matches('[data-mcard],[data-lcard],[data-gcard],[data-prule]')){c.remove();return;}
+c.classList.add('rem');
+c._leave=setTimeout(()=>c.remove(),230);
+}
+function morphNode(a,b){
+if(a.nodeType!==b.nodeType||a.nodeName!==b.nodeName){a.replaceWith(b);return b;}
+if(a.nodeType!==1){if(a.nodeValue!==b.nodeValue)a.nodeValue=b.nodeValue;return a;}
+if(a._leave){clearTimeout(a._leave);a._leave=null;}
+for(const at of[...a.attributes])if(!b.hasAttribute(at.name))a.removeAttribute(at.name);
+for(const at of b.attributes)if(a.getAttribute(at.name)!==at.value)a.setAttribute(at.name,at.value);
+if(a.nodeName==='INPUT'&&a!==document.activeElement){const v=b.getAttribute('value')||'';if(a.value!==v)a.value=v;}
+morphChildren(a,b);
+return a;
+}
+function morphChildren(a,b){
+const nk=new Set();
+for(const c of b.childNodes){const k=keyOf(c);if(k)nk.add(k);}
+const keyed=new Map();
+for(const c of[...a.childNodes]){const k=keyOf(c);if(!k)continue;if(nk.has(k))keyed.set(k,c);else if(!c._leave)leave(c);}
+let cur=a.firstChild;
+for(const nb of[...b.childNodes]){
+while(cur&&cur._leave)cur=cur.nextSibling;
+const k=keyOf(nb);let m=null;
+if(k){m=keyed.get(k)||null;if(m)keyed.delete(k);}
+else if(cur&&!keyOf(cur)&&cur.nodeName===nb.nodeName)m=cur;
+if(m){if(m!==cur)a.insertBefore(m,cur);cur=morphNode(m,nb).nextSibling;}
+else a.insertBefore(nb,cur);
+}
+while(cur){const n=cur.nextSibling;if(!cur._leave)cur.remove();cur=n;}
+}
+function morph(el,html){
+if(typeof el==='string')el=$(el);
+if(!el)return;
+const t=document.createElement('template');
+t.innerHTML=html;
+morphChildren(el,t.content);
+}
 let _uid=100;const nid=()=>++_uid;
 const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -1122,29 +1208,32 @@ if(state.tab===id)return;
 state.tab=id;
 document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.id===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));});
 document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
-if(id==='settings')$('#setWrap').innerHTML=settingsTabHTML();
+if(id==='settings')refreshSettings();
+ddClose(true);
+window.scrollTo({top:0,behavior:'smooth'});
 if(id==='goals')refreshGoals();
 }
 function patchHeader(){
- $('#stM').innerHTML=icon('i-users')+' '+plural(state.members.length,'عضو واحد','عضوان','أعضاء','عضوًا');
- $('#stL').innerHTML=icon('i-pin')+' '+plural(state.locations.length,'موقع واحد','موقعان','مواقع','موقعًا');
- $('#stV').innerHTML=icon('i-cal')+' '+visitsWord(state.visits);
+morph('#stM',icon('i-users')+' '+plural(state.members.length,'عضو واحد','عضوان','أعضاء','عضوًا'));
+morph('#stL',icon('i-pin')+' '+plural(state.locations.length,'موقع واحد','موقعان','مواقع','موقعًا'));
+morph('#stV',icon('i-cal')+' '+visitsWord(state.visits));
 }
 function updateVisitUI(){
  $('#vnum').textContent=ar(state.visits);
  $('#vmax').textContent=state.vcap>0?'من '+ar(state.vcap):'لا طاقة';
  $('#vnum').parentElement.querySelectorAll('button').forEach(b=>b.disabled=+b.dataset.v>0?state.visitsWanted>=state.vcap:state.visitsWanted<=1);
 const sp=effSplit();
- $('#split').innerHTML=state.locations.length
+morph('#split',state.locations.length
 ?`<i class="pdot d1"></i>${ar(sp.nm)} رئيسية<i class="pdot d2"></i>${ar(sp.nc)} متعاقدة`+(sp.capped?` <span class="tiny" style="color:var(--terra-ink)">(الأقصى)</span>`:'')
-:'أضف مواقع';
- $('#stV').innerHTML=icon('i-cal')+' '+visitsWord(state.visits);
+:'أضف مواقع');
+morph('#stV',icon('i-cal')+' '+visitsWord(state.visits));
 updateGenUI();
 }
 function updateGenUI(){
 const b=$('#genbtn');
 b.disabled=state.running||state.vcap<=0;
-b.innerHTML=state.running?icon('i-gen')+' جارٍ التوليد…':icon('i-gen')+(state.plans.length?' توليد جديد':' توليد الخطط');
+morph(b,state.running?'<span class="spin"></span> جارٍ التوليد…':icon('i-gen')+(state.plans.length?' توليد جديد':' توليد الخطط'));
+b.setAttribute('aria-busy',String(state.running));
 }
 function updateLastRun(){
  $('#lastrun').textContent=state.plans.length&&state.lastRun?plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة'):'';
@@ -1189,7 +1278,8 @@ const btn=c.querySelector('[data-act="dsw"]');if(btn)btn.setAttribute('aria-chec
 function toggleDay(d){
 state.days[d].on=!state.days[d].on;
 syncDayUI(d);
-const di=$('#dIntro');if(di)di.outerHTML=daysTabHTML().split('</div>')[0]+'</div>';
+refreshDays();
+if(state.tab==='goals')refreshGoals();
 recalcCap();
 markStale();
 }
@@ -1236,6 +1326,7 @@ return `<div class="card daycard${d.dist==='near'?' thu':''}${d.on?'':' off'}" d
 </div>
 </div>`;
 }
+function refreshDays(){morph('#daysWrap',daysTabHTML());}
 function daysTabHTML(){
 return `<div class="card introbar rv" id="dIntro">${icon('i-days')}<span>أسبوع <b>${weekLabel()}</b> · ${plural(workingDays().length,'يوم عمل واحد','يوما عمل','أيام عمل','يوم عمل')}</span></div>
 <div class="daygrid">${DAYS.map((d,i)=>dayCardHTML(i)).join('')}</div>`;
@@ -1290,9 +1381,9 @@ function patchLocIntro(){
 const m=state.locations.filter(l=>l.type==='main').length;
 const sp=effSplit(),el=$('#lcount');
 if(!el)return;
-el.innerHTML=state.locations.length
+morph(el,state.locations.length
 ?`<b>${ar(m)}</b> رئيسي · <b>${ar(state.locations.length-m)}</b> متعاقد`
-:'لا مواقع';
+:'لا مواقع');
 }
 function addLoc(type){
 const base=type==='main'?'رئيسي ':'متعاقد ';
@@ -1310,8 +1401,8 @@ state.members=state.members.filter(m=>m.id!==id);
 state.pairs.rules=state.pairs.rules.filter(r=>r.a!==id&&r.b!==id);
 if(state.hl===id)state.hl=null;
 const card=document.querySelector('[data-mcard="'+id+'"]');
-if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
- $('#mIntro').innerHTML=memberIntroHTML();
+if(card)leave(card);
+morph('#mIntro',memberIntroHTML());
 recalcCap();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
@@ -1322,14 +1413,14 @@ refreshMembers();recalcCap();patchHeader();markStale();
 });
 }
 function refreshMembers(){
- $('#mlist').innerHTML=state.members.map((m,i)=>memberCardHTML(m,i)).join('');
- $('#mIntro').innerHTML=memberIntroHTML();
+morph('#mlist',state.members.map((m,i)=>memberCardHTML(m,i)).join(''));
+morph('#mIntro',memberIntroHTML());
 }
 function addMember(){
 const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:''};
 state.members.push(m);
  $('#mlist').insertAdjacentHTML('beforeend',memberCardHTML(m,0));
- $('#mIntro').innerHTML=memberIntroHTML();
+morph('#mIntro',memberIntroHTML());
 const inp=document.querySelector('input[data-name="'+m.id+'"]');
 if(inp){inp.focus();inp.scrollIntoView({block:'center',behavior:'smooth'});}
 m.name='عضو '+ar(state.members.length);
@@ -1341,14 +1432,14 @@ const idx=state.locations.findIndex(l=>l.id===id);if(idx<0)return;
 const gone=state.locations[idx];
 state.locations=state.locations.filter(l=>l.id!==id);
 const card=document.querySelector('[data-lcard="'+id+'"]');
-if(card){card.classList.add('rem');setTimeout(()=>card.remove(),240);}
+if(card)leave(card);
 patchLocIntro();patchHeader();recalcCap();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
 markStale();renderResults();
 setUndo('حُذف '+esc(gone.name),()=>{
 state.locations.splice(idx,0,gone);
- $('#llist').innerHTML=state.locations.map((l,i)=>locationCardHTML(l,i)).join('');
+morph('#llist',state.locations.map((l,i)=>locationCardHTML(l,i)).join(''));
 patchLocIntro();patchHeader();recalcCap();markStale();
 });
 }
@@ -1360,30 +1451,147 @@ for(let i=0;i<state.bulk.cont;i++)added.push(addLoc('contracted'));
 added.forEach(l=>$('#llist').insertAdjacentHTML('beforeend',locationCardHTML(l,0)));
 patchLocIntro();patchHeader();recalcCap();markStale();
 }
-function memberOptionsHTML(sel){
-return state.members.map(m=>`<option value="${m.id}"${+sel===m.id?' selected':''}>${esc(m.name)}</option>`).join('');
+const typeBadge=t=>`<span class="badge ${t==='main'?'bmain':'bcon'}">${t==='main'?'رئيسي':'متعاقد'}</span>`;
+function memberOpts(){
+const out=[];
+for(const p of[1,2]){
+const ms=state.members.filter(m=>m.pool===p);
+if(!ms.length)continue;
+out.push({head:poolName(p)});
+for(const m of ms)out.push({v:m.id,l:esc(m.name),pre:`<i class="dot ${m.gender==='M'?'m':'f'}"></i>`});
+}
+return out;
+}
+function ddOptions(kind){
+if(kind==='gloc'){
+const out=[];
+for(const t of['main','contracted']){
+const ls=state.locations.filter(l=>l.type===t);
+if(!ls.length)continue;
+out.push({head:t==='main'?'مواقع رئيسية':'مواقع متعاقدة'});
+for(const l of ls)out.push({v:l.id,l:esc(l.name),post:l.dist?`<span class="badge bdist">${DISTL[l.dist]}</span>`:''});
+}
+return out;
+}
+return memberOpts();
+}
+function ddLabel(kind,val){
+if(kind==='gloc'){const l=locById(val);return l?esc(l.name)+typeBadge(l.type):'';}
+const m=byId(val);return m?`<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}`:'';
+}
+function ddHTML(kind,ref,val,ph,aria){
+const lab=ddLabel(kind,val);
+return `<span class="dd"><button type="button" class="dd-btn${lab?'':' ph'}" data-act="dd" data-kind="${kind}" data-ref="${ref}" data-val="${val??''}" aria-haspopup="listbox" aria-expanded="false" aria-label="${aria}"><span class="dd-lab">${lab||ph}</span>${icon('i-chev','ic dd-chev')}</button></span>`;
+}
+const dd={btn:null};
+function ddOpen(btn){
+if(dd.btn===btn){ddClose();return;}
+ddClose(true);
+dd.btn=btn;
+const menu=$('#ddmenu'),val=btn.dataset.val;
+menu.innerHTML=ddOptions(btn.dataset.kind).map(o=>o.head?`<div class="dd-head">${o.head}</div>`:`<button type="button" class="dd-opt${String(o.v)===val?' sel':''}" role="option" aria-selected="${String(o.v)===val}" data-act="ddpick" data-v="${o.v}">${o.pre||''}<span class="dd-name">${o.l}</span>${o.post||''}${icon('i-check','ic ck')}</button>`).join('')||'<div class="dd-head">لا خيارات</div>';
+menu.hidden=false;
+btn.setAttribute('aria-expanded','true');
+ddPlace();
+requestAnimationFrame(()=>{menu.classList.add('show');const s=menu.querySelector('.dd-opt.sel')||menu.querySelector('.dd-opt');if(s){s.focus({preventScroll:true});s.scrollIntoView({block:'nearest'});}});
+}
+function ddPlace(){
+if(!dd.btn)return;
+const menu=$('#ddmenu'),r=dd.btn.getBoundingClientRect();
+if(!r.width){ddClose(true);return;}
+const vh=window.innerHeight,vw=window.innerWidth;
+const w=Math.min(Math.max(r.width,210),vw-20);
+menu.style.width=w+'px';
+menu.style.maxHeight='';
+const h=Math.min(menu.scrollHeight,300);
+const below=vh-r.bottom-12,above=r.top-12;
+const up=below<h&&above>below;
+menu.classList.toggle('up',up);
+menu.style.maxHeight=Math.max(120,Math.min(300,up?above:below))+'px';
+menu.style.top=(up?Math.max(10,r.top-6-Math.min(h,above)):r.bottom+6)+'px';
+menu.style.left=clamp(r.right-w,10,vw-w-10)+'px';
+}
+function ddClose(silent){
+const menu=$('#ddmenu');
+if(!dd.btn)return;
+const b=dd.btn;dd.btn=null;
+b.setAttribute('aria-expanded','false');
+menu.classList.remove('show');
+if(silent)menu.hidden=true;else setTimeout(()=>{if(!dd.btn)menu.hidden=true;},140);
+if(!silent&&document.activeElement&&menu.contains(document.activeElement))b.focus({preventScroll:true});
+}
+function ddPick(v){
+const b=dd.btn;if(!b)return;
+const kind=b.dataset.kind,ref=+b.dataset.ref;
+ddClose();
+if(String(v)===b.dataset.val)return;
+v=+v;
+if(kind==='gloc'){
+const g=state.goals.find(x=>x.id===ref);if(!g)return;
+g.loc=v;
+const loc=locById(v);
+if(loc&&loc.type==='contracted'){const ad=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;});if(ad.length>1)g.people=g.people.filter(id=>id!==ad[1]);}
+goalChanged();
+}else{
+const r=state.pairs.rules.find(x=>x.id===ref);if(!r)return;
+if(kind==='pa')r.a=v;else r.b=v;
+if(r.a===r.b)toast('اختر عضوين مختلفين');
+refreshSettings();markStale();
+}
+}
+function ddKey(e){
+const menu=$('#ddmenu');
+const opts=[...menu.querySelectorAll('.dd-opt:not(:disabled)')];
+const i=opts.indexOf(document.activeElement);
+if(e.key==='Escape'){e.preventDefault();ddClose();return true;}
+if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+e.preventDefault();
+const n=opts.length;if(!n)return true;
+const j=i<0?0:(i+(e.key==='ArrowDown'?1:-1)+n)%n;
+opts[j].focus();opts[j].scrollIntoView({block:'nearest'});return true;
+}
+if(e.key==='Home'||e.key==='End'){e.preventDefault();const o=opts[e.key==='Home'?0:opts.length-1];if(o)o.focus();return true;}
+if(e.key==='Tab'){ddClose();return false;}
+return true;
+}
+let _dlgFn=null,_dlgPrev=null,_dlgT=null;
+function askConfirm(title,msg,okLabel,fn){
+const d=$('#dlg');
+$('#dlgt').textContent=title;$('#dlgm').textContent=msg;$('#dlgok').textContent=okLabel;
+_dlgFn=fn;_dlgPrev=document.activeElement;
+clearTimeout(_dlgT);
+d.hidden=false;
+requestAnimationFrame(()=>{d.classList.add('show');$('#dlgok').focus();});
+}
+function closeDlg(ok){
+const d=$('#dlg');if(d.hidden)return;
+d.classList.remove('show');
+_dlgT=setTimeout(()=>{d.hidden=true;},180);
+const fn=_dlgFn;_dlgFn=null;
+if(_dlgPrev&&_dlgPrev.focus)_dlgPrev.focus({preventScroll:true});
+if(ok&&fn)fn();
 }
 function pairRuleHTML(r,i){
 return `<div class="card rv" style="--i:${i}" data-prule="${r.id}">
 <div class="mhead">
-<select class="msel" data-act="pa" data-r="${r.id}">${memberOptionsHTML(r.a)}</select>
+${ddHTML('pa',r.id,r.a,'اختر عضوًا','العضو الأول')}
 <div class="seg"><button class="${r.kind==='with'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="with">يفضّل مع</button><button class="${r.kind==='avoid'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="avoid">ليس مع</button></div>
-<select class="msel" data-act="pb" data-r="${r.id}">${memberOptionsHTML(r.b)}</select>
+${ddHTML('pb',r.id,r.b,'اختر عضوًا','العضو الثاني')}
 <button class="icon-btn" data-act="pdel" data-r="${r.id}" title="حذف القاعدة">${icon('i-trash')}</button>
 </div>
 </div>`;
 }
 function settingsTabHTML(){
 const on=state.pairs.enabled;
-const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv">${icon('i-users')} لا قواعد</div>`;
-return `<div class="card rv">
+const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv" data-key="pempty">${icon('i-users')} لا قواعد</div>`;
+return `<div class="card rv" data-key="scap">
 <div class="mhead">
 <span class="clab">الحد اليومي</span>
-<span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1">−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1">+</button></span>
-<span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1">−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1">+</button></span>
+<span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1"${state.cap.mainPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1"${state.cap.mainPerDay>=3?' disabled':''}>+</button></span>
+<span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1"${state.cap.conPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1"${state.cap.conPerDay>=3?' disabled':''}>+</button></span>
 </div>
 </div>
-<div class="card rv">
+<div class="card rv" data-key="spair">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> قواعد الاقتران</button><span class="tiny mut">داخل الفريق الواحد</span><span style="flex:1"></span>
 <div class="seg"><button class="${state.pairs.mode==='soft'?'on':''}" data-act="pmode" data-v="soft">مرن</button><button class="${state.pairs.mode==='hard'?'on':''}" data-act="pmode" data-v="hard">صارم</button></div>
@@ -1391,9 +1599,9 @@ return `<div class="card rv">
 </div>
 <div class="stack pblock${on?'':' off'}" id="pblock">
 ${list}
-<button class="btn" data-act="padd">${icon('i-plus')} إضافة قاعدة</button>
+<button class="btn" data-act="padd" data-key="padd">${icon('i-plus')} إضافة قاعدة</button>
 </div>
-<div class="card rv">
+<div class="card rv" data-key="sauto">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${state.autoRegen?'true':'false'}" data-act="autoregen"><span class="sw${state.autoRegen?' on':''}"></span> تحديث تلقائي</button>
 <span style="flex:1"></span>
@@ -1405,25 +1613,26 @@ function addPairRule(){
 if(state.members.length<2){toast('أضف عضوين على الأقل أولًا');return;}
 const r={id:nid(),a:state.members[0].id,b:state.members[1].id,kind:'with'};
 state.pairs.rules.push(r);
- $('#setWrap').innerHTML=settingsTabHTML();
+refreshSettings();
 markStale();
 }
 function removePairRule(id){
-state.pairs.rules=state.pairs.rules.filter(r=>r.id!==id);
-const card=document.querySelector('[data-prule="'+id+'"]');
-if(card){card.classList.add('rem');setTimeout(()=>{ $('#setWrap').innerHTML=settingsTabHTML(); },240);}
-else $('#setWrap').innerHTML=settingsTabHTML();
+const idx=state.pairs.rules.findIndex(r=>r.id===id);if(idx<0)return;
+const gone=state.pairs.rules[idx];
+state.pairs.rules.splice(idx,1);
+refreshSettings();
 markStale();
+setUndo('حُذفت القاعدة',()=>{state.pairs.rules.splice(idx,0,gone);refreshSettings();markStale();});
 }
+function refreshSettings(){morph('#setWrap',settingsTabHTML());}
 function goalCardHTML(g,i,issues){
 const loc=locById(g.loc);
 const iss=issues.get(g.id)||[];
-const locOpts=`<option value="">— اختر موقعًا —</option>`+state.locations.map(l=>`<option value="${l.id}"${l.id===g.loc?' selected':''}>${esc(l.name)} · ${l.type==='main'?'رئيسي':'متعاقد'}</option>`).join('');
 const dayPills=`<button class="pill auto${g.day<0?' on':''}" data-act="gday" data-g="${g.id}" data-v="-1">يختار المُخطِّط</button>`+DAYS.map((d,di)=>`<button class="pill${g.day===di?' on':''}${state.days[di].on?'':' dim'}" data-act="gday" data-g="${g.id}" data-v="${di}" title="${dateOf(di)}">${DAY_SHORT[di]}</button>`).join('');
 const sorted=state.members.slice().sort((a,b)=>a.pool-b.pool);
 const ppl=sorted.map(m=>{
 const on=g.people.includes(m.id),off=g.day>=0&&m.off.includes(g.day);
-return `<button class="pill ppl p${m.pool}${on?' on':''}${off&&!on?' dim':''}" data-act="gppl" data-g="${g.id}" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${off?' — إجازة':''}">${on?icon('i-lock'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</button>`;
+return `<button class="pill ppl p${m.pool}${on?' on':''}${off&&!on?' dim':''}" data-key="m${m.id}" aria-pressed="${on}" data-act="gppl" data-g="${g.id}" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${off?' — إجازة':''}">${on?icon('i-lock'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</button>`;
 }).join('');
 const n1=g.people.filter(id=>{const m=byId(id);return m&&m.pool===1;}).length,n2=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;}).length;
 const need2=loc&&loc.type==='contracted'?1:2;
@@ -1431,25 +1640,24 @@ const sum=g.people.length?`${ar(n1)}/٢ سريري · ${ar(n2)}/${ar(need2)} إ�
 return `<div class="card gcard rv${g.on?'':' off'}" style="--i:${i}" data-gcard="${g.id}">
 <div class="mhead">
 <span class="gtitle">${icon('i-target')}${goalLabel(g)}</span>
-<select class="msel" data-act="gloc" data-g="${g.id}" aria-label="موقع الزيارة">${locOpts}</select>
-${loc?`<span class="badge ${loc.type==='main'?'bmain':'bcon'}">${loc.type==='main'?'رئيسي':'متعاقد'}</span>`:''}
+${ddHTML('gloc',g.id,loc?loc.id:'','اختر موقعًا','موقع الزيارة')}
 <span style="flex:1"></span>
 <button type="button" class="swlab" role="switch" aria-checked="${g.on?'true':'false'}" data-act="gon" data-g="${g.id}"><span class="sw${g.on?' on':''}"></span> مفعّل</button>
 <button class="icon-btn" data-act="gdel" data-g="${g.id}" title="حذف الهدف">${icon('i-trash')}</button>
 </div>
-<div class="grow"><span class="tiny mut">اليوم</span><div class="pills">${dayPills}</div></div>
-<div class="grow"><span class="tiny mut">الأعضاء</span><div class="pills">${ppl||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${sum}</span></div>
-${g.on&&iss.length?`<div class="gwarn">${icon('i-alert')} ${iss.map(esc).join(' · ')} — لن يُطبَّق حتى يُصلَح</div>`:''}
+<div class="grow" data-key="gd"><span class="tiny mut">اليوم</span><div class="pills">${dayPills}</div></div>
+<div class="grow" data-key="gp"><span class="tiny mut">الأعضاء</span><div class="pills">${ppl||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${sum}</span></div>
+${g.on&&iss.length?`<div class="gwarn" data-key="gw">${icon('i-alert')} ${iss.map(esc).join(' · ')} — لن يُطبَّق حتى يُصلَح</div>`:''}
 </div>`;
 }
 function goalsTabHTML(){
 const C=compileGoals();
 const G=goalCounts();
-const intro=`<div class="card introbar rv">${icon('i-target')}<span>${state.goals.length?`<b>${ar(G.n)}</b> هدف مطبَّق من ${ar(state.goals.length)} · ${ar(G.gm)} رئيسية · ${ar(G.gc)} متعاقدة`:'زيارات إلزامية: حدّد الموقع، واختياريًا اليوم والأعضاء'}</span></div>`;
-const list=state.goals.length?state.goals.map((g,i)=>goalCardHTML(g,i,C.issues)).join(''):`<div class="card idle rv">${icon('i-target')} لا أهداف — كل الزيارات يوزعها المُخطِّط</div>`;
-return intro+list+`<button class="btn" data-act="gadd"${state.locations.length?'':' disabled'}>${icon('i-plus')} إضافة هدف</button>`;
+const intro=`<div class="card introbar rv" data-key="gintro">${icon('i-target')}<span>${state.goals.length?`<b>${ar(G.n)}</b> هدف مطبَّق من ${ar(state.goals.length)} · ${ar(G.gm)} رئيسية · ${ar(G.gc)} متعاقدة`:'زيارات إلزامية: حدّد الموقع، واختياريًا اليوم والأعضاء'}</span></div>`;
+const list=state.goals.length?state.goals.map((g,i)=>goalCardHTML(g,i,C.issues)).join(''):`<div class="card idle rv" data-key="gempty">${icon('i-target')} لا أهداف — كل الزيارات يوزعها المُخطِّط</div>`;
+return intro+list+`<button class="btn" data-key="gadd" data-act="gadd"${state.locations.length?'':' disabled'}>${icon('i-plus')} إضافة هدف</button>`;
 }
-function refreshGoals(){const w=$('#goalsWrap');if(w)w.innerHTML=goalsTabHTML();}
+function refreshGoals(){morph('#goalsWrap',goalsTabHTML());}
 function goalChanged(){refreshGoals();recalcCap();markStale();}
 function addGoal(){
 if(!state.locations.length){toast('أضف موقعًا أولًا');return;}
@@ -1499,9 +1707,9 @@ const miss=r.miss.includes(id),viol=r.viol.includes(id),pbreak=r.pbreak&&r.pbrea
 return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}${rq?' req':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${rq?' — محدد بالهدف':''}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}${pbreak?' — تعارض اقتران':''}">${rq?icon('i-lock','ic lk'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
 }).join('');
 const gi=r.goal?state.goals.findIndex(g=>g.id===r.goal):-1;
-return `<div class="vrow${r.goal?' goal':''}"><div class="vloc"><b>${esc(r.loc.name)}</b>${r.goal?`<span class="badge bgoal">${icon('i-target')}${gi>=0?'هدف '+ar(gi+1):'هدف'}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
+return `<div class="vrow${r.goal?' goal':''}" data-key="v${r.loc.id}"><div class="vloc"><b>${esc(r.loc.name)}</b>${r.goal?`<span class="badge bgoal">${icon('i-target')}${gi>=0?'هدف '+ar(gi+1):'هدف'}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
 }).join('');
-return `<div class="dayblk rv${dp.dist==='near'?' thu':''}${isToday(d)?' today':''}" style="--i:${k++}">
+return `<div class="dayblk rv${dp.dist==='near'?' thu':''}${isToday(d)?' today':''}" data-key="d${d}" style="--i:${k++}">
 <div class="dayhead"><span class="dname">${DAYS[d]}</span><span class="ddate">${dateOf(d)}</span>${isToday(d)?'<span class="today-tag">اليوم</span>':''}${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">${dp.fav==='main'?'رئيسية':'متعاقد'}</span>`:''}<span class="tiny mut" style="margin-inline-start:auto">${visitsWord(rows.length)}</span></div>
  ${vrows}
 </div>`;
@@ -1518,9 +1726,9 @@ if(r){t++;return `<td><span class="cell ${r.loc.type==='main'?'m':'c'}">${r.goal
 if(m.off.includes(d))return '<td><span class="cell off">إجازة</span></td>';
 return '<td><span class="cell no">–</span></td>';
 }).join('');
-return `<tr data-mrow="${m.id}"><td><span class="chip c${m.pool}" data-act="hl" data-m="${m.id}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span></td>${cells}<td class="tot">${ar(t)}</td></tr>`;
+return `<tr data-mrow="${m.id}" data-key="r${m.id}"><td><span class="chip c${m.pool}" data-act="hl" data-m="${m.id}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span></td>${cells}<td class="tot">${ar(t)}</td></tr>`;
 }).join('');
-return `<div class="card rv" style="--i:1"><div class="mgrid-wrap"><table class="mgrid"><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
+return `<div class="card rv" data-key="mgrid" style="--i:1"><div class="mgrid-wrap"><table class="mgrid"><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function resheadHTML(p){
 const i=state.selected;
@@ -1536,7 +1744,7 @@ p.pairBreak?`<span class="stat bad">تعارض <b>${ar(p.pairBreak)}</b></span>`
 p.consecViol?`<span class="stat bad">مخالفات <b>${ar(p.consecViol)}</b></span>`:''
 ].filter(Boolean).join('');
 const warn=(p.consecViol||p.pairBreak)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${p.consecViol?ar(p.consecViol)+' تتابع':''}${p.consecViol&&p.pairBreak?' · ':''}${p.pairBreak?ar(p.pairBreak)+' تعارض اقتران':''} — معلّمة بالأحمر</div>`:'';
-return `<div class="card reshead rv" style="--i:0">
+return `<div class="card reshead rv" data-key="rhead" style="--i:0">
 <div class="rh-top">
 <div class="rh-name"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
 <div class="strow">${stats}</div>
@@ -1549,31 +1757,31 @@ return `<div class="card reshead rv" style="--i:0">
 function resMainInner(){
 const p=state.plans[state.selected];
 if(!p)return'';
-return resheadHTML(p)+(state.view==='member'?memberGridHTML(p):`<div class="sched stack">${schedHTML(p)}</div>`);
+return resheadHTML(p)+(state.view==='member'?memberGridHTML(p):`<div class="sched stack" data-key="sched">${schedHTML(p)}</div>`);
 }
 function altsHTML(){
 const cards=state.plans.map((p,i)=>`
-<button class="acard${i===state.selected?' sel':''}" data-act="plan-sel" data-i="${i}">
+<button class="acard${i===state.selected?' sel':''}" data-key="a${i}" aria-pressed="${i===state.selected}" data-act="plan-sel" data-i="${i}">
 <span class="aname">خطة ${ar(i+1)}</span>
  ${miniStrip(p)}
 <span class="tiny mut">توازن ${ar(Math.round(p.fair*100))}٪${p.prefTotal?` · تفضيلات ${ar(p.prefHit)}/${ar(p.prefTotal)}`:''}</span>
 </button>`).join('');
-return `<div class="card alts rv" style="--i:9">
+return `<div class="card alts rv" data-key="alts" style="--i:9">
 <div class="alts-head"><span class="kicker" style="margin:0">بدائل</span><button class="linky" data-act="goresults">مقارنة ←</button></div>
 <div class="astrip">${cards}</div>
 </div>`;
 }
 function failHTML(){
-return `<div class="card failcard rv"><div class="fhead">${icon('i-alert')} تعذّرت الخطة</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">جرّب الوضع المرن</button><span class="tiny mut">يسمح بأيام متتالية ويُعلّمها</span>`:''}<button class="btn" data-act="gen">أعد المحاولة</button></div></div>`;
+return `<div class="card failcard rv" data-key="fail"><div class="fhead">${icon('i-alert')} تعذّرت الخطة</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">جرّب الوضع المرن</button><span class="tiny mut">يسمح بأيام متتالية ويُعلّمها</span>`:''}<button class="btn" data-act="gen">أعد المحاولة</button></div></div>`;
 }
 function resHTML(){
-if(state.running)return `<div class="card genstat rv"><div class="dots"><i></i><i></i><i></i></div><div class="gnums" aria-live="polite">جارٍ البحث · <b id="gf">٠</b> خطة</div><span id="gn" hidden></span></div>`;
 if(state.plans.length&&state.selected!=null)return `<div id="resMain" class="stack">${resMainInner()}</div><div id="resAlts">${altsHTML()}</div>`;
+if(state.running)return `<div class="card genstat rv" data-key="gen"><div class="dots"><i></i><i></i><i></i></div><div class="gnums" aria-live="polite">جارٍ البحث · <b id="gf">٠</b> خطة</div><span id="gn" hidden></span></div>`;
 if(state.fail)return failHTML();
-return `<div class="card idle rv">${icon('i-cal')} اضغط «توليد الخطط»</div>`;
+return `<div class="card idle rv" data-key="idle">${icon('i-cal')} اضغط «توليد الخطط»</div>`;
 }
 function pcardHTML(p,i){
-return `<button class="pcard rv${i===state.selected?' sel':''}" style="--i:${i}" data-act="rplan" data-i="${i}">
+return `<button class="pcard rv${i===state.selected?' sel':''}" data-key="p${i}" aria-pressed="${i===state.selected}" style="--i:${i}" data-act="rplan" data-i="${i}">
 <div class="ptop"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
  ${miniStrip(p)}
 <div class="pstats">
@@ -1598,7 +1806,7 @@ return `<div class="ml"><span class="chip c${m.pool}" data-act="hl" data-m="${m.
 const lu=new Map();
 for(const r of p.rows)lu.set(r.loc.id,(lu.get(r.loc.id)||0)+1);
 const locs=[...lu.entries()].map(([id,c])=>{const l=state.locations.find(x=>x.id===id);return l?`${esc(l.name)} <b>×${ar(c)}</b>`:'';}).filter(Boolean).join(' · ');
-return `<div class="card rdetail rv">
+return `<div class="card rdetail rv" data-key="rdet">
 <div class="dayhead" style="margin-bottom:12px"><span class="dname">أحمال خطة ${ar((state.selected??0)+1)}</span><span class="lg"><i class="pdot d1"></i>سريري</span><span class="lg"><i class="pdot d2"></i>إداري</span><span class="tiny mut" style="margin-inline-start:auto">اضغط اسمًا لتمييزه</span></div>
 <div class="mloads">${loads}</div>
  ${locs?`<div class="locuse">${icon('i-pin')}<span>${locs}</span></div>`:''}
@@ -1606,42 +1814,39 @@ return `<div class="card rdetail rv">
 </div>`;
 }
 function resultsTabHTML(){
-if(state.running)return `<div class="card idle rv"><div class="dots"><i></i><i></i><i></i></div><span>جارٍ توليد الخطط…</span></div>`;
 if(!state.plans.length){
+if(state.running)return `<div class="card idle rv" data-key="gen"><div class="dots"><i></i><i></i><i></i></div><span>جارٍ توليد الخطط…</span></div>`;
 if(state.fail)return failHTML();
-return `<div class="card idle rv">${icon('i-res')} لا نتائج بعد</div>`;
+return `<div class="card idle rv" data-key="idle">${icon('i-res')} لا نتائج بعد</div>`;
 }
 const sel=state.plans[state.selected];
-const bar=`<div class="card rbar rv">
+const bar=`<div class="card rbar rv" data-key="rbar">
 <div class="rb-in">
 <span class="rb-t">${plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة')} · المختارة <b id="rselname">خطة ${ar(state.selected+1)}</b></span>
-<span id="rnote">تغيّرت المدخلات</span>
+<span id="rnote" class="${state.stale?'show':''}">تغيّرت المدخلات</span>
 <button type="button" class="swlab" role="switch" aria-checked="${state.minChanges?'true':'false'}" data-act="minch" title="الحفاظ على الخطة المختارة قدر الإمكان"><span class="sw${state.minChanges?' on':''}"></span> أقل تغييرًا</button>
 <span style="flex:1"></span>
 <button class="btn sm" data-act="copy">${icon('i-copy')} نسخ</button>
 <button class="btn sm primary" data-act="gomain">عرض الجدول</button>
 </div>
 </div>`;
-return bar+`<div class="rgrid">${state.plans.map((p,i)=>pcardHTML(p,i)).join('')}</div>`+`<div id="rdetail">${rdetailHTML(sel)}</div>`;
+return bar+`<div class="rgrid" data-key="rgrid">${state.plans.map((p,i)=>pcardHTML(p,i)).join('')}</div>`+`<div id="rdetail">${rdetailHTML(sel)}</div>`;
 }
 function renderResults(){
- $('#res').innerHTML=resHTML();
- $('#resTab').innerHTML=resultsTabHTML();
+const busy=state.running&&state.plans.length>0;
+morph('#res',resHTML());
+morph('#resTab',resultsTabHTML());
+$('#res').classList.toggle('busy',busy);
+$('#resTab').classList.toggle('busy',busy);
+$('#res').setAttribute('aria-busy',String(state.running));
 paintHl();
 }
 function selectPlan(i){
 if(!state.plans[i]||i===state.selected)return;
 state.selected=i;
-const rm=$('#resMain');
-if(rm){
-rm.classList.add('out');
-setTimeout(()=>{rm.innerHTML=resMainInner();rm.classList.remove('out');paintHl();},180);
-}
-document.querySelectorAll('#resAlts .acard').forEach(c=>c.classList.toggle('sel',+c.dataset.i===i));
-document.querySelectorAll('.pcard').forEach(c=>c.classList.toggle('sel',+c.dataset.i===i));
-const rn=$('#rselname');if(rn)rn.textContent='خطة '+ar(i+1);
-const rd=$('#rdetail');if(rd)rd.innerHTML=rdetailHTML(state.plans[i]);
-paintHl();
+renderResults();
+const a=document.querySelector('#resAlts .acard.sel');
+if(a)a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
 }
 function paintHl(){
 const id=state.hl??hoverM;
@@ -1659,10 +1864,11 @@ document.querySelectorAll('#daypills [data-day]').forEach(p=>{const s=p.querySel
 function shiftWeek(n){
 const d=dayDate(n);state.weekStart=isoD(d);
 patchWeek();
-if(state.tab==='days')$('#daysWrap').innerHTML=daysTabHTML();
+refreshDays();
+if(state.tab==='goals')refreshGoals();
 renderResults();scheduleSave();
 }
-function refreshResMain(){const rm=$('#resMain');if(rm){rm.innerHTML=resMainInner();paintHl();}}
+function refreshResMain(){renderResults();}
 function buildStaticUI(){
 renderTabs();
  $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' thu':''}" data-act="wday" data-day="${i}" aria-pressed="${state.days[i].on}">${d}<small></small></button>`).join('');
@@ -1680,6 +1886,8 @@ updateVisitUI();updateGenUI();
 patchLocIntro();
 }
 document.addEventListener('click',e=>{
+if(dd.btn&&!e.target.closest('#ddmenu,.dd-btn'))ddClose(true);
+if(e.target.id==='dlg'){closeDlg(false);return;}
 const t=e.target.closest('[data-act]');if(!t)return;
 const a=t.dataset;
 switch(a.act){
@@ -1717,7 +1925,7 @@ case'goresults':setTab('results');break;
 case'gomain':setTab('plan');break;
 case'dfav':setDayPref(+a.d,'fav',a.v,t);break;
 case'ddist':setDayPref(+a.d,'dist',a.v,t);break;
-case'mpool':{const m=byId(+a.m);if(m){m.pool=+a.v;segOn(t);$('#mIntro').innerHTML=memberIntroHTML();recalcCap();markStale();}break;}
+case'mpool':{const m=byId(+a.m);if(m){m.pool=+a.v;segOn(t);morph('#mIntro',memberIntroHTML());recalcCap();markStale();}break;}
 case'mgender':{const m=byId(+a.m);if(m){m.gender=a.v;segOn(t);markStale();}break;}
 case'mpref':{const m=byId(+a.m);if(m){m.pref=a.v;segOn(t);markStale();}break;}
 case'moff':{const m=byId(+a.m);if(m){const i=m.off.indexOf(+a.day);if(i>=0)m.off.splice(i,1);else m.off.push(+a.day);t.classList.toggle('on');markStale();}break;}
@@ -1740,20 +1948,18 @@ if(nv!==state.cap[a.k]){
 state.cap[a.k]=nv;
 if(state.cap.pairTotal<state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairTotal=state.cap.mainPerDay+state.cap.conPerDay;
 if(state.cap.pairWeighted<2*state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairWeighted=2*state.cap.mainPerDay+state.cap.conPerDay;
- $('#setWrap').innerHTML=settingsTabHTML();
+refreshSettings();
 recalcCap();patchLocIntro();markStale();
 }
 break;
 }
 case'minch':{state.minChanges=!state.minChanges;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.minChanges));scheduleSave();break;}
 case'autoregen':{state.autoRegen=!state.autoRegen;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.autoRegen));scheduleSave();break;}
-case'resetall':{
-if(confirm('سيتم مسح كل البيانات المحفوظة وإعادة تحميل الصفحة. متابعة؟')){
-try{localStorage.removeItem('visitplan.v1');}catch(err){}
-location.reload();
-}
-break;
-}
+case'resetall':askConfirm('إعادة الضبط؟','سيتم مسح كل الأعضاء والمواقع والأهداف والإعدادات المحفوظة والبدء من جديد.','مسح الكل',()=>{try{localStorage.removeItem('visitplan.v1');}catch(err){}location.reload();});break;
+case'dd':ddOpen(t);break;
+case'ddpick':ddPick(a.v);break;
+case'dlgok':closeDlg(true);break;
+case'dlgno':closeDlg(false);break;
 case'ptoggle':{
 state.pairs.enabled=!state.pairs.enabled;
 const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');
@@ -1772,29 +1978,15 @@ case'gday':{const g=state.goals.find(x=>x.id===+a.g);if(g&&g.day!==+a.v){g.day=+
 case'gppl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalPerson(g,+a.m);break;}
 }
 });
-document.addEventListener('change',e=>{
-const t=e.target.closest('select[data-act]');if(!t)return;
-if(t.dataset.act==='gloc'){
-const g=state.goals.find(x=>x.id===+t.dataset.g);
-if(g){
-g.loc=t.value?+t.value:null;
-const loc=locById(g.loc);
-if(loc&&loc.type==='contracted'){const ad=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;});if(ad.length>1)g.people=g.people.filter(id=>id!==ad[1]);}
-goalChanged();
-}
-return;
-}
-const r=state.pairs.rules.find(x=>x.id===+t.dataset.r);if(!r)return;
-if(t.dataset.act==='pa')r.a=+t.value;else r.b=+t.value;
-if(r.a===r.b)toast('اختر عضوين مختلفين');
-markStale();
-});
+window.addEventListener('resize',()=>ddPlace());
+document.addEventListener('scroll',e=>{if(dd.btn&&!(e.target&&e.target.id==='ddmenu'))ddPlace();},true);
 let _paintT;
 function schedulePaint(){
 clearTimeout(_paintT);
 _paintT=setTimeout(()=>{
 renderResults();
-if(state.tab==='settings'){const sw=$('#setWrap');if(sw)sw.innerHTML=settingsTabHTML();}
+if(state.tab==='settings')refreshSettings();
+if(state.tab==='goals')refreshGoals();
 scheduleSave();
 },250);
 }
@@ -1807,9 +1999,16 @@ const l=state.locations.find(x=>x.id===id);
 if(l){l.name=t.value.trim()||'موقع';patchLocIntro();schedulePaint();}
 });
 document.addEventListener('keydown',e=>{
+if(!$('#dlg').hidden){
+if(e.key==='Escape'){e.preventDefault();closeDlg(false);}
+else if(e.key==='Tab'){const bs=[...$('#dlg').querySelectorAll('button')];const i=bs.indexOf(document.activeElement);e.preventDefault();bs[(i+(e.shiftKey?-1:1)+bs.length)%bs.length].focus();}
+return;
+}
+if(dd.btn){if(ddKey(e))return;}
+if((e.key==='ArrowDown'||e.key==='ArrowUp')&&e.target.matches('.dd-btn')){e.preventDefault();ddOpen(e.target);return;}
 if(e.key==='Enter'&&e.target.matches('input.name')){e.target.blur();return;}
 if(e.key==='Escape'&&state.hl!=null){state.hl=null;paintHl();return;}
-if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,select,textarea'))return;
+if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,select,textarea,.dd-btn'))return;
 const k=e.key.toLowerCase();
 if(k==='g'||k==='ل'){if(!state.running&&state.vcap>0)startGen('normal');e.preventDefault();}
 else if(k==='c'||k==='ؤ'){if(state.plans.length)copyPlan(false);}
@@ -1824,6 +2023,8 @@ loadState();
 buildStaticUI();
 patchHeader();
 renderResults();
+refreshGoals();
+setTimeout(()=>document.body.classList.add('ready'),900);
 setTimeout(()=>{state._quiet=true;startGen('normal');},320);
 </script>
 </body>
