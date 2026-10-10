@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<script>(function(){var d='light';try{var p=localStorage.getItem('visitplan.theme')||'system';if(p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches))d='dark';}catch(e){}document.documentElement.dataset.theme=d;})();</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -19,7 +20,23 @@
 --camel:#c3a179;--camel-soft:#f4eadc;--camel-ink:#8a6b45;
 --lav:#9a92c4;--lav-soft:#eae7f4;--lav-ink:#6b639e;
 --terra:#c4726a;--terra-soft:#f7e4e1;--terra-ink:#9c4f47;
---sh:0 2px 10px rgba(51,61,74,.06);--sh2:0 8px 26px rgba(51,61,74,.11);
+--sh:0 2px 10px rgba(var(--shadow-rgb),.06);--sh2:0 8px 26px rgba(var(--shadow-rgb),.11);
+--line-h:#bfd0d8;--faint:#c3ced5;--sage-line:#d5e6dc;--camel-line:#eddcc3;--lav-line:#d9d4ef;--terra-d:#b26058;--terra-line:#e8bcb5;--fail-line:#eccfc9;--miss-line:#e0b6b0;
+--near-bg:#f8f7fc;--near-line:#ddd8f0;--sw-off:#cfdae0;--knob:#fff;--on-accent:#fff;--dot-m:#5d7383;
+--toast-bg:#333d4a;--toast-ink:#fff;--toast-ic:#9fd3c0;--toast-hi:rgba(255,255,255,.14);--toast-hi2:rgba(255,255,255,.24);--shadow-rgb:51,61,74;--backdrop:rgba(51,61,74,.28);
+color-scheme:light;
+}
+html[data-theme="dark"]{
+--bg:#11171b;--card:#182026;--card2:#212b32;--line:#2c3942;--line-h:#3d4d58;
+--ink:#e2e8ec;--mut:#93a2ae;--faint:#46545e;
+--teal:#5ea8b5;--teal-d:#7cbcc7;--teal-soft:#1b3237;
+--sage:#7fb08f;--sage-soft:#1c2c23;--sage-ink:#9ccdaa;--sage-line:#2d4536;
+--camel:#cfa977;--camel-soft:#2e261b;--camel-ink:#e0c196;--camel-line:#4a3c29;
+--lav:#a39bd6;--lav-soft:#26233a;--lav-ink:#c4bdf0;--lav-line:#3b3658;
+--terra:#d47e75;--terra-d:#e0928a;--terra-soft:#33201e;--terra-ink:#f0aaa2;--terra-line:#5a332f;--fail-line:#4a2e2a;--miss-line:#5a3a35;
+--near-bg:#1c1b2a;--near-line:#34304d;--sw-off:#34424b;--knob:#e9eef1;--on-accent:#0e171b;--dot-m:#8ea3b1;
+--toast-bg:#e2e8ec;--toast-ink:#11171b;--toast-ic:#2f7d68;--toast-hi:rgba(0,0,0,.08);--toast-hi2:rgba(0,0,0,.16);--shadow-rgb:0,0,0;--backdrop:rgba(0,0,0,.5);
+color-scheme:dark;
 }
 html{-webkit-text-size-adjust:100%}
 body{font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.6;min-height:100vh;font-variant-numeric:tabular-nums;padding-bottom:70px}
@@ -28,7 +45,7 @@ body{font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;background:
 .wrap{max-width:980px;margin:0 auto;padding:0 20px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:26px 0 16px}
 .brand{display:flex;align-items:center;gap:13px}
-.mark{width:46px;height:46px;flex:none;filter:drop-shadow(0 2px 6px rgba(51,61,74,.18))}
+.mark{width:46px;height:46px;flex:none;filter:drop-shadow(0 2px 6px rgba(var(--shadow-rgb),.18))}
 .mark .pulse{stroke-dasharray:26;stroke-dashoffset:26;animation:pulse 3.4s cubic-bezier(.4,0,.2,1) infinite}
 @keyframes pulse{0%{stroke-dashoffset:26;opacity:0}10%{opacity:1}42%{stroke-dashoffset:0;opacity:1}62%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:26;opacity:0}}
 h1{font-size:19px;font-weight:600;letter-spacing:-.2px}
@@ -56,24 +73,24 @@ main>.view>*+*{margin-top:14px}
 .ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;padding:8px 16px;border-radius:999px;cursor:pointer;transition:.16s;box-shadow:var(--sh)}
 .btn .ic{width:16px;height:16px}
-.btn:hover{transform:translateY(-1px);border-color:#bfd0d8}
+.btn:hover{transform:translateY(-1px);border-color:var(--line-h)}
 .btn:active{transform:none}
-.btn.primary{background:var(--teal);border-color:transparent;color:#fff}
+.btn.primary{background:var(--teal);border-color:transparent;color:var(--on-accent)}
 .btn.primary:hover{background:var(--teal-d);border-color:transparent}
 .btn.big{padding:12px 26px;font-size:15.5px}
 .btn.sm{padding:6px 13px;font-size:12.5px}
-.btn.terra{background:var(--terra);border-color:transparent;color:#fff}
-.btn.terra:hover{background:#b26058}
+.btn.terra{background:var(--terra);border-color:transparent;color:var(--on-accent)}
+.btn.terra:hover{background:var(--terra-d)}
 .btn:disabled{opacity:.55;cursor:default;transform:none}
 .icon-btn{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;transition:.15s;flex:none}
 .icon-btn:hover{color:var(--terra);border-color:var(--terra)}
 .icon-btn .ic{width:15px;height:15px}
 .pill{border:1.5px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:12.5px;font-weight:500;padding:4.5px 13px;border-radius:999px;cursor:pointer;transition:.14s}
-.pill:hover{border-color:#b9ccd5;color:var(--ink)}
-.pill.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.pill:hover{border-color:var(--line-h);color:var(--ink)}
+.pill.on{background:var(--teal);border-color:var(--teal);color:var(--on-accent)}
 .pill.on.thu{background:var(--lav);border-color:var(--lav)}
-.pill.off.on{background:var(--terra-soft);border-color:#e8bcb5;color:var(--terra-ink)}
-.pill.dst.on{background:var(--lav-soft);border-color:#d9d4ef;color:var(--lav-ink)}
+.pill.off.on{background:var(--terra-soft);border-color:var(--terra-line);color:var(--terra-ink)}
+.pill.dst.on{background:var(--lav-soft);border-color:var(--lav-line);color:var(--lav-ink)}
 .pill.dyp{padding:5.5px 15px;font-size:13px}
 .pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .seg{display:inline-flex;background:var(--card2);border-radius:999px;padding:3px;gap:2px;flex:none}
@@ -81,19 +98,19 @@ main>.view>*+*{margin-top:14px}
 .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--sh)}
 .pdot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
 .pdot.d1{background:var(--sage)}.pdot.d2{background:var(--camel)}
-.sw{width:40px;height:23px;border-radius:999px;background:#cfdae0;border:1px solid var(--line);position:relative;cursor:pointer;transition:.2s;flex:none;display:inline-block}
-.sw::after{content:'';position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(51,61,74,.3);transition:.2s}
+.sw{width:40px;height:23px;border-radius:999px;background:var(--sw-off);border:1px solid var(--line);position:relative;cursor:pointer;transition:.2s;flex:none;display:inline-block}
+.sw::after{content:'';position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:var(--knob);box-shadow:0 1px 3px rgba(var(--shadow-rgb),.3);transition:.2s}
 .sw.on{background:var(--teal);border-color:var(--teal)}
 .sw.on::after{transform:translateX(-17px)}
 .swlab{display:inline-flex;align-items:center;gap:7px;color:var(--mut);font-size:12px;cursor:pointer;border:none;background:none;font-family:inherit;padding:0}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3.5px 11px;font-size:13px;font-weight:500;border:1.5px solid transparent;transition:.15s;cursor:pointer}
-.chip.c1{background:var(--sage-soft);border-color:#d5e6dc;color:var(--sage-ink)}
-.chip.c2{background:var(--camel-soft);border-color:#eddcc3;color:var(--camel-ink)}
-.chip.pmiss{border-style:dashed;border-color:#e0b6b0}
+.chip.c1{background:var(--sage-soft);border-color:var(--sage-line);color:var(--sage-ink)}
+.chip.c2{background:var(--camel-soft);border-color:var(--camel-line);color:var(--camel-ink)}
+.chip.pmiss{border-style:dashed;border-color:var(--miss-line)}
 .chip.viol{border-color:var(--terra);box-shadow:0 0 0 2px var(--terra-soft)}
 .chip.pbreak{border-style:dotted;border-color:var(--terra);box-shadow:0 0 0 2px var(--terra-soft)}
 .dot{width:6px;height:6px;border-radius:50%;flex:none}
-.dot.m{background:#5d7383}.dot.f{background:var(--terra)}
+.dot.m{background:var(--dot-m)}.dot.f{background:var(--terra)}
 .badge{display:inline-flex;align-items:center;border-radius:999px;padding:2.5px 10px;font-size:11px;font-weight:600;background:var(--card2);color:var(--mut)}
 .bmain{background:var(--teal-soft);color:var(--teal-d)}
 .bcon{background:var(--camel-soft);color:var(--camel-ink)}
@@ -130,10 +147,10 @@ main>.view>*+*{margin-top:14px}
 .warnbox{display:flex;gap:8px;align-items:center;background:var(--terra-soft);color:var(--terra-ink);border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:500;margin-top:12px}
 .warnbox .ic{width:15px;height:15px}
 .dayblk{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);padding:14px 16px}
-.dayblk.thu{background:#f8f7fc;border-color:#ddd8f0}
+.dayblk.thu{background:var(--near-bg);border-color:var(--near-line)}
 .dayhead{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
 .dname{font-size:13px;font-weight:600;background:var(--card2);padding:4px 14px;border-radius:999px}
-.thu .dname,.daycard.thu .dname{background:var(--lav-soft);color:var(--lav-ink)}
+.dnear .dname,.daycard.thu .dname{background:var(--lav-soft);color:var(--lav-ink)}
 .thutag{display:inline-flex;gap:5px;align-items:center;font-size:11px;font-weight:600;color:var(--lav-ink)}
 .thutag .ic{width:12px;height:12px}
 .vrow{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:9px 0;flex-wrap:wrap}
@@ -160,7 +177,7 @@ main>.view>*+*{margin-top:14px}
 .pstats{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11.5px;color:var(--mut)}
 .pstats b{color:var(--ink);font-weight:600}
 .pstats .bad,.pstats .bad b{color:var(--terra-ink)}
-.failcard{border-color:#eccfc9}
+.failcard{border-color:var(--fail-line)}
 .fhead{display:flex;gap:9px;align-items:center;font-weight:600;color:var(--terra-ink);margin-bottom:10px}
 .fhead .ic{width:18px;height:18px}
 .flist{display:flex;flex-direction:column;gap:7px;margin:2px 0 14px}
@@ -174,12 +191,12 @@ main>.view>*+*{margin-top:14px}
 .daygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px;margin-top:14px}
 .daycard .dc-head{display:flex;align-items:center;gap:9px;margin-bottom:11px;flex-wrap:wrap}
 .daycard .swlab{margin-inline-start:auto}
-.daycard.thu{background:#f8f7fc;border-color:#ddd8f0}
+.daycard.thu{background:var(--near-bg);border-color:var(--near-line)}
 .daycard.off{opacity:.55}
 .daycard.off .dc-body{pointer-events:none;opacity:.55}
 .dd{position:relative;display:inline-flex;max-width:100%}
 .dd-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:138px;max-width:100%;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 13px 5px 10px;font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s;box-shadow:var(--sh)}
-.dd-btn:hover{border-color:#b9ccd5}
+.dd-btn:hover{border-color:var(--line-h)}
 .dd-btn[aria-expanded="true"]{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
 .dd-btn.ph .dd-lab{color:var(--mut)}
 .dd-lab{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -202,7 +219,7 @@ main>.view>*+*{margin-top:14px}
 .dd-head{font-size:10.5px;font-weight:600;color:var(--mut);padding:7px 10px 3px;letter-spacing:.3px}
 .dd-head+.dd-opt{margin-top:1px}
 .dd-opt+.dd-head{margin-top:4px;border-top:1px dashed var(--line);padding-top:9px}
-.dlg-back{position:fixed;inset:0;z-index:90;background:rgba(51,61,74,.28);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .18s ease}
+.dlg-back{position:fixed;inset:0;z-index:90;background:var(--backdrop);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .18s ease}
 .dlg-back.show{opacity:1}
 .dlg{max-width:380px;width:100%;display:flex;flex-direction:column;gap:10px;padding:20px 22px;transform:translateY(8px) scale(.98);transition:transform .2s cubic-bezier(.22,.85,.3,1);box-shadow:var(--sh2)}
 .dlg-back.show .dlg{transform:none}
@@ -211,7 +228,7 @@ main>.view>*+*{margin-top:14px}
 .dlg b{font-size:15.5px;font-weight:600}
 .dlg p{font-size:13px;color:var(--mut)}
 .dlg-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
-.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;flex:none}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid color-mix(in srgb,var(--on-accent) 40%,transparent);border-top-color:var(--on-accent);animation:spin .7s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 #res,#resTab{transition:opacity .2s ease}
 #res.busy,#resTab.busy{opacity:.5;pointer-events:none;transition:opacity .25s ease .25s}
@@ -253,9 +270,9 @@ input.name:focus{outline:none;border-color:var(--teal)}
 .bar i{display:block;height:100%;border-radius:99px}
 .bar i.p1{background:var(--sage)}.bar i.p2{background:var(--camel)}
 .lg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--mut)}
-.toast{position:fixed;bottom:26px;left:50%;transform:translate(-50%,16px);background:var(--ink);color:#fff;display:flex;gap:9px;align-items:center;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.28s;z-index:60;box-shadow:var(--sh2)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translate(-50%,16px);background:var(--toast-bg);color:var(--toast-ink);display:flex;gap:9px;align-items:center;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.28s;z-index:60;box-shadow:var(--sh2)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-.toast .ic{width:15px;height:15px;color:#9fd3c0}
+.toast .ic{width:15px;height:15px;color:var(--toast-ic)}
 .rv{animation:rise .5s cubic-bezier(.22,.85,.3,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
 @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 body.ready .rv{animation-duration:.32s;animation-delay:0s}
@@ -266,12 +283,12 @@ body.ready .rv{animation-duration:.32s;animation-delay:0s}
 .wklabel:hover{background:var(--card2);color:var(--ink)}
 .wklabel.cur::after{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--sage);margin-inline-start:6px;vertical-align:middle}
 .ddate{font-size:11.5px;color:var(--mut)}
-.today-tag{background:var(--teal);color:#fff;font-size:10px;font-weight:600;padding:1px 8px;border-radius:999px}
+.today-tag{background:var(--teal);color:var(--on-accent);font-size:10px;font-weight:600;padding:1px 8px;border-radius:999px}
 .dayblk.today{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft),var(--sh)}
 .pill.dyp small{display:block;font-size:10px;opacity:.75;font-weight:400;line-height:1.1}
 .pill.dyp{line-height:1.25}
-.toast-undo{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:12.5px;font-weight:600;padding:3px 12px;border-radius:999px;cursor:pointer;margin-inline-start:4px}
-.toast-undo:hover{background:rgba(255,255,255,.24)}
+.toast-undo{border:none;background:var(--toast-hi);color:var(--toast-ink);font:inherit;font-size:12.5px;font-weight:600;padding:3px 12px;border-radius:999px;cursor:pointer;margin-inline-start:4px}
+.toast-undo:hover{background:var(--toast-hi2)}
 .toast.show{pointer-events:auto}
 .vtoggle{margin-inline-start:auto}
 .mgrid{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
@@ -285,7 +302,7 @@ body.ready .rv{animation-duration:.32s;animation-delay:0s}
 .mgrid .cell.m{background:var(--teal-soft);color:var(--teal-d)}
 .mgrid .cell.c{background:var(--camel-soft);color:var(--camel-ink)}
 .mgrid .cell.off{color:var(--terra-ink);background:transparent;font-size:11px}
-.mgrid .cell.no{color:#c3ced5}
+.mgrid .cell.no{color:var(--faint)}
 .mgrid .tot{font-weight:600;color:var(--mut)}
 .mgrid tr.hl td{background:var(--teal-soft)}
 .mgrid tr.hl td:first-child{border-radius:0 10px 10px 0}
@@ -293,7 +310,7 @@ body.ready .rv{animation-duration:.32s;animation-delay:0s}
 .hint{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--mut)}
 .hint kbd{font:inherit;font-size:10.5px;background:var(--card);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px}
 .icon-btn.plain:hover{color:var(--teal);border-color:var(--teal)}
-input.name:hover{border-color:#bfd0d8}
+input.name:hover{border-color:var(--line-h)}
 .card{transition:box-shadow .2s,border-color .2s}
 .chip{user-select:none}
 .empty-note{font-size:12px;color:var(--mut);padding:4px 2px}
@@ -313,12 +330,27 @@ input.name:hover{border-color:#bfd0d8}
 .pill.ppl.on.p2{background:var(--camel-soft);border-color:var(--camel);color:var(--camel-ink)}
 .pill.ppl.on .ic{width:11px;height:11px;stroke-width:2}
 .pill.dim{opacity:.45}
-.pill.auto.on{background:var(--lav);border-color:var(--lav);color:#fff}
+.pill.auto.on{background:var(--lav);border-color:var(--lav);color:var(--on-accent)}
 .gwarn{display:flex;gap:7px;align-items:center;background:var(--terra-soft);color:var(--terra-ink);border-radius:12px;padding:6px 12px;font-size:12px;font-weight:500;margin-top:10px}
 .gwarn .ic{width:14px;height:14px}
 .gsum{font-size:12px;color:var(--mut);margin-inline-start:auto}
+.pill.ppl.excl.on{background:var(--terra-soft);border-color:var(--terra);color:var(--terra-ink)}
 @media print{
-body{background:#fff;padding:0}
+:root,html[data-theme="dark"]{
+--bg:#f1f5f7;--card:#fbfcfd;--card2:#e7eef1;--line:#d6e1e6;
+--ink:#333d4a;--mut:#6b7a88;
+--teal:#3f7f8c;--teal-d:#35707c;--teal-soft:#e2eef1;
+--sage:#7fa890;--sage-soft:#e4efe8;--sage-ink:#486d59;
+--camel:#c3a179;--camel-soft:#f4eadc;--camel-ink:#8a6b45;
+--lav:#9a92c4;--lav-soft:#eae7f4;--lav-ink:#6b639e;
+--terra:#c4726a;--terra-soft:#f7e4e1;--terra-ink:#9c4f47;
+--sh:0 2px 10px rgba(var(--shadow-rgb),.06);--sh2:0 8px 26px rgba(var(--shadow-rgb),.11);
+--line-h:#bfd0d8;--faint:#c3ced5;--sage-line:#d5e6dc;--camel-line:#eddcc3;--lav-line:#d9d4ef;--terra-d:#b26058;--terra-line:#e8bcb5;--fail-line:#eccfc9;--miss-line:#e0b6b0;
+--near-bg:#f8f7fc;--near-line:#ddd8f0;--sw-off:#cfdae0;--knob:#fff;--on-accent:#fff;--dot-m:#5d7383;
+--toast-bg:#333d4a;--toast-ink:#fff;--toast-ic:#9fd3c0;--toast-hi:rgba(255,255,255,.14);--toast-hi2:rgba(255,255,255,.24);--shadow-rgb:51,61,74;--backdrop:rgba(51,61,74,.28);
+color-scheme:light;
+}
+body{background:var(--card);padding:0}
 header.top .hstats,nav.tabs,.ctrl,#resAlts,.dbtns,.toast,.warnbox{display:none!important}
 .view{display:none!important}#v-plan{display:block!important}
 .card,.dayblk{box-shadow:none;break-inside:avoid}
@@ -350,6 +382,9 @@ h1{font-size:17px}
 </head>
 <body>
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+<symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 8v8M15.5 9.5v5"/></symbol>
 <symbol id="i-gen" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></symbol>
 <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="3.5"/><path d="M4 10h16M8.5 3.5V7M15.5 3.5V7"/><path d="M8.5 14.2v.01M12 14.2v.01M15.5 14.2v.01"/></symbol>
 <symbol id="i-days" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15.5" rx="3.5"/><path d="M4 10h16M8.5 3.5V7M15.5 3.5V7"/><path d="M8.6 15.6l2.2 2.2 4.4-4.8"/></symbol>
@@ -376,6 +411,7 @@ h1{font-size:17px}
 <span class="schip" id="stM"></span>
 <span class="schip" id="stL"></span>
 <span class="schip" id="stV"></span>
+<button type="button" class="icon-btn plain" id="themeBtn" data-act="themecycle"></button>
 </div>
 </header>
 <nav class="tabs" id="tabs" role="tablist"></nav>
@@ -397,7 +433,7 @@ h1{font-size:17px}
 <button class="btn primary big" id="genbtn" data-act="gen"></button>
 <button class="wbtn" id="stale" data-act="gen">تغيّرت المدخلات — حدِّث</button>
 <span class="tiny mut" id="lastrun"></span>
-<span class="hint" style="margin-inline-start:auto"><kbd>G</kbd> توليد <kbd>←</kbd><kbd>→</kbd> الخطط <kbd>C</kbd> نسخ</span>
+<span class="hint" style="margin-inline-start:auto"><kbd>G</kbd> توليد <kbd>←</kbd><kbd>→</kbd> الخطط <kbd>C</kbd> نسخ <kbd>T</kbd> المظهر</span>
 </div>
 </div>
 <div id="res" class="stack"></div>
@@ -477,8 +513,8 @@ const isToday=i=>isoD(dayDate(i))===isoD(new Date());
 const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'goals',l:'الأهداف',ic:'i-target'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
-visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,
-cap:{mainPerDay:2,conPerDay:1,pairTotal:3,pairWeighted:5},
+visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,locRepeat:'avoid',theme:'system',priority:'balance',carryWeek:false,history:{},rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,
+cap:{mainPerDay:2,conPerDay:1},
 pairs:{enabled:false,mode:'soft',rules:[]},
 goals:[],
 days:Array.from({length:7},(_,i)=>({on:i>=2&&i<=5,fav:'',dist:i===THU?'near':''})),
@@ -496,10 +532,10 @@ members:[
 {id:nid(),name:'غادة',pool:2,gender:'F',off:[5],pref:''}
 ],
 locations:[
-{id:nid(),name:'رئيسي ١',type:'main',dist:'near',genderRule:true},
-{id:nid(),name:'رئيسي ٢',type:'main',dist:'mid',genderRule:true},
-{id:nid(),name:'رئيسي ٣',type:'main',dist:'far',genderRule:true},
-{id:nid(),name:'متعاقد ١',type:'contracted',dist:'near',genderRule:true}
+{id:nid(),name:'رئيسي ١',type:'main',dist:'near',genderRule:true,maxWeek:0},
+{id:nid(),name:'رئيسي ٢',type:'main',dist:'mid',genderRule:true,maxWeek:0},
+{id:nid(),name:'رئيسي ٣',type:'main',dist:'far',genderRule:true,maxWeek:0},
+{id:nid(),name:'متعاقد ١',type:'contracted',dist:'near',genderRule:true,maxWeek:0}
 ]
 };
 const byId=id=>state.members.find(m=>m.id===id);
@@ -512,34 +548,49 @@ function kCombos(arr,k){const res=[];(function rec(s,cur){if(cur.length===k){res
 function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=Math.random()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
 const teamCap=()=>({c:state.members.filter(m=>m.pool===1).length,a:state.members.filter(m=>m.pool===2).length});
 const dayFits=(nm,nc,T)=>2*(nm+nc)<=T.c&&2*nm+nc<=T.a;
-let _reachCache=new Map();
+let _reachCache=new Map(),_winCtx=null,_pos=null,_lg={};
 function reachTotals(){
 const maxM=Math.min(state.cap.mainPerDay,state.locations.filter(l=>l.type==='main').length);
 const maxC=Math.min(state.cap.conPerDay,state.locations.filter(l=>l.type==='contracted').length);
 const T=teamCap();
-const key=state.days.map(d=>d.on?1:0).join('')+'|'+maxM+'|'+maxC+'|'+T.c+'|'+T.a;
+const key=state.days.map(d=>d.on?1:0).join('')+'|'+maxM+'|'+maxC+'|'+T.c+'|'+T.a+'|'+JSON.stringify([state.rest,state.restCalendar,state.members.map(m=>[m.pool,m.rest||0])]);
 if(!_reachCache.has(key))
 _reachCache.set(key,[...reach(state.days.map(d=>d.on),maxM,maxC)].map(s=>s.split(',').map(Number)));
 return _reachCache.get(key);
 }
+function goalDays(g){return g.days.length?g.days.filter(d=>state.days[d]&&state.days[d].on):workingDays();}
+function locMax(l,gl){
+if(_lg.loc)return Infinity;
+const n=gl.filter(g=>g.loc.id===l.id).length;
+if(l.maxWeek>0)return Math.max(l.maxWeek,n);
+if(n>0)return n;
+return state.locRepeat==='never'?1:Infinity;
+}
+function typeCaps(gl){
+const wd=workingDays(),t={main:0,contracted:0};
+for(const l of state.locations)t[l.type]+=Math.min(locMax(l,gl),wd.filter(d=>!l.closed.includes(d)).length);
+return t;
+}
 function effSplit(){
 const V=state.visits,r=RATIOS[state.ratioIdx],want=r.rm/(r.rm+r.rc);
-if(!state.locations.length)return{nm:0,nc:0,capped:true};
-const G=goalCounts();
-let totals=reachTotals().filter(([m,c])=>m>=G.gm&&c>=G.gc);
-if(!totals.length)totals=reachTotals();
+if(!state.locations.length)return{nm:0,nc:0,capped:true,goalShort:false};
+const gl=compileGoals().list,tc=typeCaps(gl);
+const gm=gl.filter(g=>g.loc.type==='main').length,gc=gl.length-gm;
+const base=reachTotals().filter(([m,c])=>m<=tc.main&&c<=tc.contracted);
+let totals=base.filter(([m,c])=>m>=gm&&c>=gc),goalShort=false;
+if(!totals.length){totals=base;goalShort=gl.length>0;}
 let pool=totals.filter(([m,c])=>m+c===V);
 if(!pool.length){
 const best=Math.max(...totals.map(t=>t[0]+t[1]));
 pool=totals.filter(([m,c])=>m+c===best);
 }
-if(!pool.length)return{nm:0,nc:0,capped:true};
+if(!pool.length)return{nm:0,nc:0,capped:true,goalShort};
 let sel=pool[0],bd=Infinity;
 for(const [m,c] of pool){
 const d=Math.abs((m+c?m/(m+c):0)-want);
 if(d<bd-1e-9){bd=d;sel=[m,c];}
 }
-return{nm:sel[0],nc:sel[1],capped:sel[0]+sel[1]!==V};
+return{nm:sel[0],nc:sel[1],capped:sel[0]+sel[1]!==V,goalShort};
 }
 function compilePairs(){
 const P={on:false,hard:false,list:[],with:new Map(),avoid:new Map()};
@@ -567,37 +618,59 @@ const active=state.goals.filter(g=>g.on);
 for(const g of active){
 const people=g.people.filter(id=>alive.has(id));
 const loc=locById(g.loc);
-if(!loc){add(g,'اختر موقعًا');continue;}
-if(g.day>=0&&!state.days[g.day].on)add(g,'يوم '+DAYS[g.day]+' ليس يوم عمل');
+if(!loc){add(g,g.loc==null?'اختر موقعًا':'الموقع المحدد حُذف — اختر موقعًا آخر');continue;}
+for(const d of g.days)if(!state.days[d].on){add(g,'يوم '+DAYS[d]+' ليس يوم عمل');break;}
+if(g.exclude.some(id=>g.people.includes(id)))add(g,'عضو محدد ومستبعد معًا');
+const gd=goalDays(g).filter(d=>!loc.closed.includes(d));
+if(g.days.length===1&&loc.closed.includes(g.days[0]))add(g,'الموقع مغلق يوم '+DAYS[g.days[0]]);
+else if(!gd.length&&!issues.has(g.id))add(g,'الموقع مغلق في كل الأيام المتاحة');
 const ppl=people.map(byId);
+for(const m of ppl)if(m.types&&m.types!=='any'&&m.types!==loc.type)add(g,m.name+' لا يزور '+(loc.type==='main'?'المواقع الرئيسية':'المتعاقدة'));
 const n1=ppl.filter(m=>m.pool===1).length,n2=ppl.length-n1,need2=loc.type==='main'?2:1;
 if(n1>2)add(g,'الفريق يتسع لعضوين سريريين فقط');
 if(n2>need2)add(g,loc.type==='main'?'الفريق يتسع لعضوين إداريين فقط':'الموقع المتعاقد يتسع لعضو إداري واحد');
-if(g.day>=0)for(const m of ppl)if(m.off.includes(g.day))add(g,m.name+' في إجازة يوم '+DAYS[g.day]);
-if(g.day<0&&ppl.length&&!state.days.some((d,i)=>d.on&&ppl.every(m=>!m.off.includes(i))))add(g,'لا يوم عمل يتاح فيه كل الأعضاء المحددين');
+if(ppl.length&&gd.length&&!gd.some(d=>ppl.every(m=>!m.off.includes(d)))){
+if(g.days.length===1){for(const m of ppl)if(m.off.includes(g.days[0]))add(g,m.name+' في إجازة يوم '+DAYS[g.days[0]]);}
+else add(g,'لا يوم عمل يتاح فيه كل الأعضاء المحددين');
+}
 if(P.on&&P.hard)for(let i=0;i<ppl.length;i++)for(let j=i+1;j<ppl.length;j++)if(P.avoid.get(ppl[i].id)&&P.avoid.get(ppl[i].id).has(ppl[j].id))add(g,'قاعدة «ليس مع» تمنع '+ppl[i].name+' و'+ppl[j].name);
 if(loc.genderRule&&ppl.length===(2+need2)){
 const c=ppl.filter(m=>m.gender==='M').length;
 if(!(loc.type==='main'?(c===1||c===3):(c===1||c===2)))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
 }
-if(!issues.has(g.id))list.push({id:g.id,loc,day:g.day,people});
+if(!issues.has(g.id))list.push({id:g.id,loc,days:gd,people,excl:g.exclude.filter(id=>alive.has(id))});
 }
-const fixed=list.filter(g=>g.day>=0);
+const fixed=list.filter(g=>g.days.length===1);
+const gobj=id=>state.goals.find(x=>x.id===id);
 for(let i=0;i<fixed.length;i++)for(let j=i+1;j<fixed.length;j++){
-const a=fixed[i],b=fixed[j],ga=state.goals.find(x=>x.id===a.id),gb=state.goals.find(x=>x.id===b.id);
-if(a.day===b.day&&a.loc.id===b.loc.id)add(gb,'يتكرر مع '+goalLabel(ga)+' في نفس الموقع واليوم');
+const a=fixed[i],b=fixed[j],ga=gobj(a.id),gb=gobj(b.id),da=a.days[0],db=b.days[0];
+if(da===db&&a.loc.id===b.loc.id)add(gb,'يتكرر مع '+goalLabel(ga)+' في نفس الموقع واليوم');
 const shared=a.people.filter(id=>b.people.includes(id));
 if(shared.length){
-if(a.day===b.day)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' بنفس اليوم');
-else if(Math.abs(a.day-b.day)===1)add(gb,byId(shared[0]).name+' في يومين متتاليين مع '+goalLabel(ga));
+if(da===db)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' بنفس اليوم');
+else{const bad=shared.find(id=>!restOK([da,db],ruleOf(byId(id))));if(bad!=null)add(gb,byId(bad).name+' يخالف نمط الراحة مع '+goalLabel(ga));}
 }
+}
+for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
+const a=list[i],b=list[j];
+if(a.days.length===1&&b.days.length===1)continue;
+const sh=a.people.filter(id=>b.people.includes(id));
+if(!sh.length)continue;
+if(!a.days.some(x=>b.days.some(y=>x!==y&&sh.every(id=>restOK([x,y],ruleOf(byId(id)))))))add(gobj(b.id),byId(sh[0]).name+' محدد في '+goalLabel(gobj(a.id))+' ولا يوجد يومان مناسبان');
+}
+const byLoc=new Map();
+for(const g of list){if(!byLoc.has(g.loc.id))byLoc.set(g.loc.id,[]);byLoc.get(g.loc.id).push(g);}
+for(const gs of byLoc.values()){
+const l=gs[0].loc;
+if(l.maxWeek>0&&gs.length>l.maxWeek)for(const g of gs.slice(l.maxWeek))add(gobj(g.id),'عدد الأهداف في '+l.name+' يتجاوز حدها الأسبوعي');
+if(gs.length>1&&new Set(gs.flatMap(g=>g.days)).size<gs.length)add(gobj(gs[gs.length-1].id),'أيام الأهداف في '+l.name+' لا تكفي');
 }
 for(const d of workingDays()){
-const fm=fixed.filter(g=>g.day===d&&g.loc.type==='main').length,fc=fixed.filter(g=>g.day===d&&g.loc.type==='contracted').length;
+const fm=fixed.filter(g=>g.days[0]===d&&g.loc.type==='main').length,fc=fixed.filter(g=>g.days[0]===d&&g.loc.type==='contracted').length;
 const T=teamCap();
 if(fm>state.cap.mainPerDay||fc>state.cap.conPerDay||!dayFits(fm,fc,T)){
-const last=fixed.filter(g=>g.day===d).pop();
-add(state.goals.find(x=>x.id===last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
+const last=fixed.filter(g=>g.days[0]===d).pop();
+add(gobj(last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
 }
 }
 const valid=list.filter(g=>!issues.has(g.id));
@@ -611,62 +684,159 @@ function buildCfg(){
 const days=workingDays().sort((a,b)=>a-b);
 const locs=state.locations;
 const sp=effSplit();
-return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs(),goals:compileGoals().list,relax:false};
+const goals=compileGoals().list;
+return{days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),nMain:sp.nm,nCon:sp.nc,goalShort:sp.goalShort,members:state.members,visits:state.visits,useAll:state.useAllDays,pairs:compilePairs(),goals,lmax:new Map(locs.map(l=>[l.id,locMax(l,goals)])),relax:false};
 }
-function reach(on,maxM,maxC){
-const T=teamCap();
-let states=new Set(['0,0,0,0']);
-for(let d=0;d<7;d++){
-if(!on[d]){const ns=new Set();for(const s of states){const p=s.split(',');ns.add(p[0]+','+p[1]+',0,0');}states=ns;continue;}
-const ns=new Set();
-for(const s of states){
-const q=s.split(',').map(Number);
-for(let nm=0;nm<=maxM;nm++)for(let nc=0;nc<=maxC;nc++){
-if(!dayFits(nm,nc,T))continue;
-if(!dayFits(q[2]+nm,q[3]+nc,T))continue;
-ns.add((q[0]+nm)+','+(q[1]+nc)+','+nm+','+nc);
+const PRESETS=[{k:'11',rest:1,maxRun:1,l:'زيارة ثم راحة يوم'},{k:'12',rest:1,maxRun:2,l:'يومان ثم راحة يوم'},{k:'21',rest:2,maxRun:1,l:'زيارة ثم راحة يومين'},{k:'01',rest:0,maxRun:1,l:'بلا قيود (أيام متتالية)'}];
+const presetKey=r=>{const p=r&&PRESETS.find(x=>x.rest===r.rest&&(r.rest===0||x.maxRun===r.maxRun));return p?p.k:null;};
+function ruleText(R){
+if(R.rest===0)return 'بلا قيود: يجوز للعضو العمل في أيام متتالية';
+const run=['','يوم عمل واحد متتالٍ','يومي عمل متتاليين','ثلاثة أيام عمل متتالية'][R.maxRun];
+const rs=['','راحة يوم','راحة يومين','راحة ثلاثة أيام'][R.rest];
+return 'كل عضو: حتى '+run+' ثم '+rs+' على الأقل';
+}
+function calOn(){return _lg.rest?true:state.restCalendar;}
+function ruleOf(m){if(_lg.rest)return{rest:1,maxRun:1};return m.rest||state.rest;}
+function memberMin(m){return m.vmode==='exact'||m.vmode==='range'?m.vmin:0;}
+function memberMax(m){if(_lg.mem)return Infinity;return m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity;}
+function maxVisitDays(m,wd){
+const av=wd.filter(d=>!m.off.includes(d)),rule=ruleOf(m);
+let best=0;
+for(let mask=1;mask<(1<<av.length);mask++){
+const pick=[];
+for(let i=0;i<av.length;i++)if(mask&(1<<i))pick.push(av[i]);
+if(pick.length>best&&restOK(pick,rule))best=pick.length;
+}
+return best;
+}
+function compileMembers(nm,nc){
+const issues=[],wd=workingDays();
+const seats={1:2*(nm+nc),2:2*nm+nc},names={1:'السريريين',2:'الإداريين'};
+const lo={1:0,2:0},hi={1:0,2:0},custom={1:false,2:false};
+for(const m of state.members){
+const mn=memberMin(m),cap=maxVisitDays(m,wd);
+if(mn>cap)issues.push(m.name+': الحد الأدنى أكبر من أيامه المتاحة');
+lo[m.pool]+=mn;hi[m.pool]+=Math.min(memberMax(m),cap);
+if(m.vmode==='exact'||m.vmode==='range')custom[m.pool]=true;
+}
+for(const q of[1,2]){
+if(lo[q]>seats[q])issues.push('مجموع الحد الأدنى للأعضاء '+names[q]+' ('+ar(lo[q])+') أكبر من مقاعد الخطة ('+ar(seats[q])+') — ارفع الزيارات أو خفّض الأعداد');
+else if(custom[q]&&hi[q]<seats[q])issues.push('مجموع الحد الأقصى للأعضاء '+names[q]+' ('+ar(hi[q])+') أقل من مقاعد الخطة ('+ar(seats[q])+') — خفّض الزيارات أو ارفع الحدود');
+}
+return{issues,lo,hi,seats,custom:custom[1]||custom[2]};
+}
+function dayPos(d){
+if(d<0)return d;
+if(calOn())return d;
+if(!_pos){let k=0;_pos=state.days.map(x=>x.on?k++:null);}
+return _pos[d];
+}
+function restOK(days,rule){
+if(rule.rest===0)return true;
+const p=[];
+for(const d of days){const x=dayPos(d);if(x!==null&&p.indexOf(x)<0)p.push(x);}
+p.sort((a,b)=>a-b);
+let run=1;
+for(let i=1;i<p.length;i++){
+const gap=p[i]-p[i-1]-1;
+if(gap===0){if(++run>rule.maxRun)return false;}
+else{if(gap<rule.rest)return false;run=1;}
+}
+return true;
+}
+function winCap(rule,W){
+if(rule.rest===0)return W;
+const per=rule.maxRun+rule.rest;
+return Math.floor(W/per)*rule.maxRun+Math.min(W%per,rule.maxRun);
+}
+function windowSpan(){
+let w=1;
+for(const m of state.members){const r=ruleOf(m);if(r.rest>0)w=Math.max(w,r.maxRun+r.rest+1);}
+return Math.min(4,w);
+}
+function poolWinCap(pool,W,days){
+let t=0;
+for(const m of state.members){
+if(m.pool!==pool)continue;
+if(days&&days.length&&days.every(d=>m.off.includes(d)))continue;
+t+=Math.min(winCap(ruleOf(m),W),memberMax(m));
+}
+return t;
+}
+function seqDays(on){return calOn()?[0,1,2,3,4,5,6]:[0,1,2,3,4,5,6].filter(d=>on[d]);}
+function capsFor(seq,on,useOff){
+const W=windowSpan();
+return seq.map((d,k)=>{
+const c=[],a=[];
+for(let w=1;w<=Math.min(W,k+1);w++){
+const days=useOff?seq.slice(k-w+1,k+1).filter(x=>on[x]):null;
+c.push(poolWinCap(1,w,days));a.push(poolWinCap(2,w,days));
+}
+return{c,a};
+});
+}
+function winCtx(){
+if(_winCtx)return _winCtx;
+const on=state.days.map(d=>d.on),seq=seqDays(on);
+return _winCtx={seq,W:windowSpan(),caps:capsFor(seq,on,false)};
+}
+function windowLoadOK(loadAt,d,nm,nc,ctx){
+const seq=ctx.seq,k=seq.indexOf(d);
+if(k<0)return true;
+const get=i=>{if(i===k)return[nm,nc];const L=loadAt(seq[i]);return L?[L.m,L.c]:[0,0];};
+for(let w=1;w<=ctx.W;w++)for(let st=k-w+1;st<=k;st++){
+if(st<0||st+w>seq.length)continue;
+let sc=0,sa=0;
+for(let i=st;i<st+w;i++){const q=get(i);sc+=2*(q[0]+q[1]);sa+=2*q[0]+q[1];}
+const cp=ctx.caps[st+w-1];
+if(sc>cp.c[w-1]||sa>cp.a[w-1])return false;
+}
+return true;
+}
+function winOK(h,nm,nc,caps){
+let sc=2*(nm+nc),sa=2*nm+nc;
+if(sc>caps.c[0]||sa>caps.a[0])return false;
+let x=h;
+for(let w=2;w<=caps.c.length;w++){
+const ld=x%16;x=(x-ld)/16;
+sc+=2*((ld>>2)+(ld&3));sa+=2*(ld>>2)+(ld&3);
+if(sc>caps.c[w-1]||sa>caps.a[w-1])return false;
+}
+return true;
+}
+function dpTotals(on,maxM,maxC,useOff){
+const seq=seqDays(on),capsAt=capsFor(seq,on,useOff),W=windowSpan(),H=Math.pow(16,W-1);
+let st=new Set([0]);
+for(let k=0;k<seq.length;k++){
+const ns=new Set(),work=on[seq[k]],mm=work?maxM:0,mc=work?maxC:0;
+for(const key of st){
+const h=key%4096,tot=(key-h)/4096,M=tot>>5,C=tot&31;
+for(let nm=0;nm<=mm;nm++)for(let nc=0;nc<=mc;nc++){
+if(!winOK(h,nm,nc,capsAt[k]))continue;
+ns.add(((M+nm)*32+C+nc)*4096+((h*16+nm*4+nc)%H));
 }
 }
-states=ns;
+st=ns;
 }
+const wd=seq.length,wdays=useOff?seq.filter(d=>on[d]):null;
+const wc=poolWinCap(1,wd,wdays),wa=poolWinCap(2,wd,wdays);
 const totals=new Set();
-for(const s of states){const p=s.split(',');totals.add(p[0]+','+p[1]);}
+for(const key of st){
+const tot=(key-key%4096)/4096,M=tot>>5,C=tot&31;
+if(2*(M+C)<=wc&&2*M+C<=wa)totals.add(M+','+C);
+}
 return totals;
 }
-function reachOff(cfg,maxM,maxC){
-const availC=d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length;
-const availA=d=>cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length;
-const pairC=d=>cfg.members.filter(m=>m.pool===1&&!(m.off.includes(d)&&m.off.includes(d+1))).length;
-const pairA=d=>cfg.members.filter(m=>m.pool===2&&!(m.off.includes(d)&&m.off.includes(d+1))).length;
-let states=new Set(['0,0,0,0']);
-for(let d=0;d<7;d++){
-if(!cfg.dayCfg[d].on){const ns=new Set();for(const s of states){const p=s.split(',');ns.add(p[0]+','+p[1]+',0,0');}states=ns;continue;}
-const ns=new Set();
-const cC=availC(d),cA=availA(d);
-const pC=d>0&&cfg.dayCfg[d-1].on?pairC(d-1):null;
-const pA=d>0&&cfg.dayCfg[d-1].on?pairA(d-1):null;
-for(const s of states){
-const q=s.split(',').map(Number);
-for(let nm=0;nm<=maxM;nm++)for(let nc=0;nc<=maxC;nc++){
-if(2*(nm+nc)>cC||2*nm+nc>cA)continue;
-if(pC!=null&&2*(nm+nc+q[2]+q[3])>pC)continue;
-if(pA!=null&&(2*nm+nc+2*q[2]+q[3])>pA)continue;
-ns.add((q[0]+nm)+','+(q[1]+nc)+','+nm+','+nc);
-}
-}
-states=ns;
-}
-const totals=new Set();
-for(const s of states){const p=s.split(',');totals.add(p[0]+','+p[1]);}
-return totals;
-}
+function reach(on,maxM,maxC){return dpTotals(on,maxM,maxC,false);}
+function reachOff(cfg,maxM,maxC){return dpTotals(cfg.dayCfg.map(d=>d.on),maxM,maxC,true);}
 function visitCap(){
 const on=state.days.map(d=>d.on);
 const maxM=Math.min(state.cap.mainPerDay,state.locations.filter(l=>l.type==='main').length);
 const maxC=Math.min(state.cap.conPerDay,state.locations.filter(l=>l.type==='contracted').length);
 const totals=reach(on,maxM,maxC);
+const tc=typeCaps(compileGoals().list);
 let cap=0;
-for(const t of totals){const q=t.split(',').map(Number);if(q[0]+q[1]>cap)cap=q[0]+q[1];}
+for(const t of totals){const q=t.split(',').map(Number);if(q[0]<=tc.main&&q[1]<=tc.contracted&&q[0]+q[1]>cap)cap=q[0]+q[1];}
 return cap;
 }
 function slotsValid(cfg,ref){
@@ -678,7 +848,7 @@ const out=[];
 for(const s of ref){
 if(!load.has(s.day))return null;
 const loc=cfg.locs.find(l=>l.id===s.loc.id);
-if(!loc)return null;
+if(!loc||loc.closed.includes(s.day))return null;
 const U=used.get(s.day);
 if(U.has(loc.id))return null;
 U.add(loc.id);
@@ -687,34 +857,45 @@ if(loc.type==='main'){if(L.m>=maxM)return null;L.m++;m++;}else{if(L.c>=maxC)retu
 out.push({loc,day:s.day});
 }
 if(m!==cfg.nMain||c!==cfg.nCon)return null;
+const lc=new Map();
+for(const o of out)lc.set(o.loc.id,(lc.get(o.loc.id)||0)+1);
+for(const [id,k] of lc)if(k>cfg.lmax.get(id))return null;
 const T=teamCap();
 for(const [d,L] of load){
 if(!dayFits(L.m,L.c,T))return null;
-const L2=load.get(d+1);
-if(L2&&!dayFits(L.m+L2.m,L.c+L2.c,T))return null;
+if(!windowLoadOK(x=>load.get(x),d,L.m,L.c,winCtx()))return null;
 }
 if(cfg.useAll){for(const [,L] of load)if(!L.m&&!L.c)return null;}
 return attachGoals(cfg,out);
 }
 function attachGoals(cfg,slots){
-const order=cfg.goals.slice().sort((a,b)=>(b.day>=0)-(a.day>=0));
+const cand=g=>slots.filter(s=>s.loc.id===g.loc.id&&g.days.includes(s.day));
+const gs=cfg.goals.slice().sort((a,b)=>cand(a).length-cand(b).length||b.people.length-a.people.length);
 const taken=[];
-for(const g of order){
-const cands=slots.filter(s=>!s.goal&&s.loc.id===g.loc.id&&goalDayOK(cfg,g,s.day,taken));
-if(!cands.length)return null;
-const s=cands[Math.floor(Math.random()*cands.length)];
-s.goal=g.id;s.req=g.people.slice();
+function rec(i){
+if(i===gs.length)return true;
+const g=gs[i];
+const opts=cand(g).filter(s=>!s.goal&&goalDayOK(cfg,g,s.day,taken)).sort(()=>Math.random()-0.5);
+for(const s of opts){
+s.goal=g.id;s.req=g.people.slice();s.excl=g.excl.slice();
 taken.push({loc:g.loc,day:s.day,people:g.people});
+if(rec(i+1))return true;
+taken.pop();
+delete s.goal;delete s.req;delete s.excl;
 }
-return slots;
+return false;
+}
+return rec(0)?slots:null;
 }
 function goalDayOK(cfg,g,d,taken){
-if(g.day>=0&&g.day!==d)return false;
+if(!g.days.includes(d))return false;
 if(g.people.some(id=>byId(id).off.includes(d)))return false;
-for(const t of taken){
-if(t.day===d&&t.loc.id===g.loc.id)return false;
-const shared=g.people.some(id=>t.people.includes(id));
-if(shared&&(t.day===d||(!cfg.relax&&Math.abs(t.day-d)===1)))return false;
+for(const t of taken)if(t.day===d&&t.loc.id===g.loc.id)return false;
+for(const id of g.people){
+const ds=taken.filter(t=>t.people.includes(id)).map(t=>t.day);
+if(!ds.length)continue;
+if(ds.includes(d))return false;
+if(!cfg.relax&&!restOK(ds.concat(d),ruleOf(byId(id))))return false;
 }
 return true;
 }
@@ -733,18 +914,14 @@ const L=load.get(d);
 if(t==='main'?L.m>=maxM:L.c>=maxC)return false;
 const nm=L.m+(t==='main'?1:0),nc=L.c+(t==='contracted'?1:0);
 if(!dayFits(nm,nc,T))return false;
-for(const nb of[d-1,d+1]){
-const L2=load.get(nb);if(!L2)continue;
-if(!dayFits(nm+L2.m,nc+L2.c,T))return false;
-}
-return true;
+return windowLoadOK(x=>load.get(x),d,nm,nc,winCtx());
 };
 const rem={main:cfg.nMain,contracted:cfg.nCon};
 const pre=[];
 if(cfg.goals.length){
 const gs=cfg.goals.slice();
 for(let i=gs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[gs[i],gs[j]]=[gs[j],gs[i]];}
-gs.sort((a,b)=>(b.day>=0)-(a.day>=0)||b.people.length-a.people.length);
+gs.sort((a,b)=>a.days.length-b.days.length||b.people.length-a.people.length);
 for(const g of gs){
 const t=g.loc.type;
 if(rem[t]<=0)return null;
@@ -754,7 +931,7 @@ const ws=cands.map(d=>{const dp=cfg.dayCfg[d],L=load.get(d);let w=dp.fav===t?3:(
 const d=pickWeighted(cands,ws);
 if(t==='main')load.get(d).m++;else load.get(d).c++;
 rem[t]--;
-pre.push({loc:g.loc,day:d,goal:g.id,people:g.people});
+pre.push({loc:g.loc,day:d,goal:g.id,people:g.people,excl:g.excl});
 }
 }
 if(cfg.useAll){
@@ -788,20 +965,20 @@ const d=pickWeighted(cands,ws);
 if(t==='main')load.get(d).m++;else load.get(d).c++;
 }
 }
-const usage=new Map(),slots=[];
+const usage=new Map(),slots=[],pen=state.locRepeat==='avoid'?4:1.2;
 for(const p of pre)usage.set(p.loc.id,(usage.get(p.loc.id)||0)+1);
 for(const d of cfg.days){
 const L=load.get(d),used=new Set(),dp=cfg.dayCfg[d];
 const dayPre=pre.filter(p=>p.day===d);
-for(const p of dayPre){used.add(p.loc.id);slots.push({loc:p.loc,day:d,goal:p.goal,req:p.people.slice()});}
+for(const p of dayPre){used.add(p.loc.id);slots.push({loc:p.loc,day:d,goal:p.goal,req:p.people.slice(),excl:p.excl.slice()});}
 const pm=dayPre.filter(p=>p.loc.type==='main').length,pc=dayPre.length-pm;
 const pick=(pool,count)=>{
 for(let k=0;k<count;k++){
-const cands=pool.filter(l=>!used.has(l.id));
+const cands=pool.filter(l=>!used.has(l.id)&&!l.closed.includes(d)&&(usage.get(l.id)||0)<cfg.lmax.get(l.id));
 if(!cands.length)return false;
 let best=null,bs=-1e9;
 for(const l of cands){
-let s=3-(usage.get(l.id)||0)*1.2+Math.random()*1.6;
+let s=3-(usage.get(l.id)||0)*pen+Math.random()*1.6;
 if(dp.dist){
 if(l.dist===dp.dist)s+=5;
 else if(l.dist&&l.dist!=='mid')s-=2;
@@ -822,9 +999,30 @@ function solveTeams(cfg,slots,opts){
 const vs=slots.slice().sort((a,b)=>a.day-b.day);
 const n=vs.length,teams=new Array(n),missRows=new Array(n),violRows=new Array(n);
 const busy=new Set(),md=new Map(),cnt=new Map();
-let steps=cfg.pairs.hard?5200:3600,prefMiss=0,consecViol=0;
+const minMembers=cfg.members.filter(m=>memberMin(m)>0),custom=cfg.members.some(m=>m.vmode==='exact'||m.vmode==='range');
+let steps=custom?(cfg.pairs.hard?7000:5200):(cfg.pairs.hard?5200:3600),prefMiss=0,consecViol=0;
+const defi=m=>Math.max(0,memberMin(m)-(cnt.get(m.id)||0));
+const pruned=i=>{
+if(!minMembers.length)return false;
+let R1=0,R2=0,D1=0,D2=0;
+for(let j=i+1;j<n;j++){R1+=2;R2+=vs[j].loc.type==='main'?2:1;}
+for(const m of minMembers){
+const df=defi(m);if(!df)continue;
+if(m.pool===1)D1+=df;else D2+=df;
+const days=new Set(),asg=md.get(m.id),base=(asg?[...asg]:[]).concat(prevMap.get(m.id)||[]),rule=ruleOf(m);
+for(let j=i+1;j<n;j++){
+const d=vs[j].day;
+if(m.off.includes(d)||busy.has(m.id+':'+d)||(vs[j].excl&&vs[j].excl.includes(m.id)))continue;
+if(rule.rest>0&&!restOK(base.concat(d),rule))continue;
+days.add(d);
+}
+if(days.size<df)return true;
+}
+return D1>R1||D2>R2;
+};
 const resv=new Map();
-vs.forEach((s,i)=>{if(s.req)for(const id of s.req)resv.set(id+':'+s.day,i);});
+const resvDays=new Map(),prevMap=carryPrev();
+vs.forEach((s,i)=>{if(s.req)for(const id of s.req){resv.set(id+':'+s.day,i);if(!resvDays.has(id))resvDays.set(id,[]);resvDays.get(id).push({d:s.day,i});}});
 const reservedElse=(id,d,i)=>{const r=resv.get(id+':'+d);return r!=null&&r!==i;};
 const gOK=(gs,v)=>{
 if(!v.loc.genderRule)return true;
@@ -832,17 +1030,20 @@ const c=gs.filter(x=>x==='M').length;
 return v.loc.type==='main'?(c===1||c===3):(c===1||c===2);
 };
 function dfs(i){
-if(i===n)return true;
+if(i===n)return minMembers.every(m=>(cnt.get(m.id)||0)>=memberMin(m));
 if(--steps<0)return false;
 const v=vs[i],need2=v.loc.type==='main'?2:1,c1=[],c2=[];
 const req=v.req&&v.req.length?new Set(v.req):null;
 for(const m of cfg.members){
 if(m.off.includes(v.day)||busy.has(m.id+':'+v.day))continue;
+if(v.excl&&v.excl.includes(m.id))continue;
+if(m.types&&m.types!=='any'&&m.types!==v.loc.type)continue;
 if(reservedElse(m.id,v.day,i))continue;
-if(!opts.relax&&(reservedElse(m.id,v.day-1,i)||reservedElse(m.id,v.day+1,i)))continue;
-const s=md.get(m.id);
-const free=!s||(!s.has(v.day-1)&&!s.has(v.day+1));
-const viol=free?0:1;
+if((cnt.get(m.id)||0)>=memberMax(m)&&!(req&&req.has(m.id)))continue;
+const rule=ruleOf(m),s=md.get(m.id),base=s?[...s]:[];
+for(const q of(resvDays.get(m.id)||[]))if(q.i!==i)base.push(q.d);
+for(const q of(prevMap.get(m.id)||[]))base.push(q);
+const viol=restOK(base.concat(v.day),rule)?0:1;
 if(viol&&!opts.relax)continue;
 let pv=0;
 if(m.pref&&v.loc.dist&&v.loc.dist!=='mid'&&(m.pref==='near'||m.pref==='far'))pv=m.pref===v.loc.dist?1:-1;
@@ -853,7 +1054,7 @@ if(req&&req.has(m.id))rb-=5000;
 let rem=0;
 for(const d of cfg.days){
 if(d<v.day||m.off.includes(d)||busy.has(m.id+':'+d))continue;
-if(s&&(s.has(d-1)||s.has(d+1)))continue;
+if(rule.rest>0&&!restOK(base.concat(d),rule))continue;
 rem++;
 }
 (m.pool===1?c1:c2).push({m,pv,viol,rem,rb});
@@ -862,7 +1063,7 @@ if(c1.length<2||c2.length<need2)return false;
 if(req){const ok=new Set(c1.concat(c2).map(x=>x.m.id));for(const id of req)if(!ok.has(id))return false;}
 const P=cfg.pairs;
 const availSet=P.on?new Set(c1.concat(c2).map(x=>x.m.id)):null;
-const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb;
+const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb-90*defi(x.m);
 const c1s=c1.length>6?c1.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c1;
 const c2s=c2.length>6?c2.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c2;
 const combos=[];
@@ -873,8 +1074,9 @@ if(!gOK(team.map(x=>x.m.gender),v))continue;
 let sc=0,miss=0,vio=0;
 for(const x of team){
 if(req&&req.has(x.m.id)){sc+=x.viol*140;if(x.viol)vio++;continue;}
-sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb+Math.random()*7;
+sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb-90*defi(x.m)+Math.random()*7;
 if(x.pv===1)sc-=52;else if(x.pv===-1){sc+=52;miss++;}
+if(x.m.prefDays&&x.m.prefDays.length)sc+=x.m.prefDays.includes(v.day)?-20:20;
 if(x.viol)vio++;
 }
 if(P.on){
@@ -912,7 +1114,7 @@ teams[i]=c.team.map(x=>x.m.id);
 missRows[i]=c.team.filter(x=>x.pv===-1).map(x=>x.m.id);
 violRows[i]=c.team.filter(x=>x.viol).map(x=>x.m.id);
 prefMiss+=c.miss;consecViol+=c.vio;
-if(dfs(i+1))return true;
+if(!pruned(i)&&dfs(i+1))return true;
 for(const x of c.team){
 busy.delete(x.m.id+':'+v.day);
 md.get(x.m.id).delete(v.day);
@@ -926,7 +1128,7 @@ return false;
 return dfs(0)?{teams,missRows,violRows,prefMiss,consecViol,order:vs}:null;
 }
 function hashSol(slots,sol){
-return slots.map((s,i)=>s.day+':'+s.loc.id+':'+sol.teams[i].slice().sort((x,y)=>x-y).join('.')).join('|');
+return slots.map((s,i)=>[s.day,s.loc.id,s.day+':'+s.loc.id+':'+sol.teams[i].slice().sort((x,y)=>x-y).join('.')]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]).join('|');
 }
 function triples(p){const s=new Set();for(const r of p.rows)for(const id of r.team)s.add(r.day+':'+r.loc.id+':'+id);return s;}
 function diffPlans(a,b){
@@ -939,6 +1141,9 @@ function makePlan(cfg,slots,sol,ref){
 const rows=slots.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[],goal:s.goal||null,req:s.req||[]}));
 const counts=new Map();
 for(const r of rows)for(const id of r.team)counts.set(id,(counts.get(id)||0)+1);
+const lcnt=new Map();
+for(const r of rows)lcnt.set(r.loc.id,(lcnt.get(r.loc.id)||0)+1);
+for(const [id,k] of lcnt)if(cfg.lmax.has(id)&&k>cfg.lmax.get(id))console.warn('location cap exceeded',id,k,cfg.lmax.get(id));
 let pairHit=0,pairTotal=0,pairBreak=0;
 if(cfg.pairs.on){
 for(const r of rows){
@@ -964,6 +1169,7 @@ if(dp.dist){distTotal++;if(r.loc.dist===dp.dist)distHit++;}
 for(const id of r.team){
 const m=byId(id);if(!m)continue;
 if(m.pref&&(r.loc.dist==='near'||r.loc.dist==='far')){prefTotal++;if(m.pref===r.loc.dist)prefHit++;}
+if(m.prefDays&&m.prefDays.length){prefTotal++;if(m.prefDays.includes(r.day))prefHit++;}
 }
 }
 let sim=null;
@@ -974,20 +1180,14 @@ let inter=0,total=0;
 for(const r of rows)for(const id of r.team){total++;if(B.has(id+':'+r.day))inter++;}
 sim=inter/Math.max(total,B.size);
 }
-const cs=state.members.map(m=>counts.get(m.id)||0);
+const am=state.members.filter(m=>m.vmode!=='exact'&&m.vmode!=='range'),tm=state.members.filter(m=>m.vmode==='exact'||m.vmode==='range');
+const cs=am.map(m=>counts.get(m.id)||0);
+const targetOK=tm.filter(m=>{const c=counts.get(m.id)||0;return c>=memberMin(m)&&c<=memberMax(m);}).length;
 const tot=cs.reduce((a,b)=>a+b,0),avg=cs.length?tot/cs.length:0;
 let vr=0,ss=0;
 for(const c of cs){vr+=(c-avg)**2;ss+=c*c;}
-const fair=ss?clamp(1-vr/ss,0,1):1;
-return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak,goalHit:rows.filter(r=>r.goal).length,goalTotal:cfg.goals.length};
-}
-function scorePlan(p){
-let s=0.55*p.fair+0.15*(p.dayTotal?p.dayHit/p.dayTotal:0.5);
-if(p.prefTotal)s+=0.3*(p.prefHit/p.prefTotal);
-if(p.pairTotal)s+=0.28*(p.pairHit/p.pairTotal);
-if(p.pairBreak)s-=0.45*Math.min(1,p.pairBreak/Math.max(1,p.rows.length));
-if(p.sim!=null)s=0.68*s+0.32*p.sim;
-return s+Math.random()*0.001;
+const fair=ss&&cs.length?clamp(1-vr/ss,0,1):1;
+return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak,goalHit:rows.filter(r=>r.goal).length,goalTotal:cfg.goals.length,targetOK,targetTotal:tm.length};
 }
 function diagnosePairs(cfg){
 const P=cfg.pairs,out=[];
@@ -1006,60 +1206,148 @@ if(!hasPair(2,d)){out.push('«ليس مع» تمنع ثنائيًا إداريً
 }
 return out;
 }
+const WEIGHTS={balance:{f:0.55,d:0.15,p:0.3,sim:0.32},prefs:{f:0.35,d:0.2,p:0.45,sim:0.32},stable:{f:0.55,d:0.15,p:0.3,sim:0.6}};
+function scorePlan(p){
+const W=WEIGHTS[state.priority]||WEIGHTS.balance;
+let s=W.f*p.fair+W.d*(p.dayTotal?p.dayHit/p.dayTotal:0.5);
+if(p.prefTotal)s+=W.p*(p.prefHit/p.prefTotal);
+if(p.pairTotal)s+=0.28*(p.pairHit/p.pairTotal);
+if(p.pairBreak)s-=0.45*Math.min(1,p.pairBreak/Math.max(1,p.rows.length));
+if(p.sim!=null)s=(1-W.sim)*s+W.sim*p.sim;
+return s+Math.random()*0.001;
+}
+function legacyCap(g){
+_lg=g;_reachCache.clear();_winCtx=null;_pos=null;
+const v=visitCap();
+_lg={};_reachCache.clear();_winCtx=null;_pos=null;
+return v;
+}
+function capReasons(){
+const out=[];
+const nd=state.rest.rest!==1||state.rest.maxRun!==1||!state.restCalendar||state.members.some(m=>m.rest);
+if(nd&&legacyCap({rest:true})>state.vcap)out.push('نمط الراحة');
+if(legacyCap({loc:true})>state.vcap)out.push('حدود المواقع');
+if(state.members.some(m=>m.vmode==='exact'||m.vmode==='range')&&legacyCap({mem:true})>state.vcap)out.push('أعداد الأعضاء');
+return out;
+}
 function diagnose(cfg){
-const msgs=[];
-if(cfg.useAll&&cfg.visits<cfg.days.length)msgs.push('الزيارات ('+ar(cfg.visits)+') أقل من أيام العمل ('+ar(cfg.days.length)+') مع «كل الأيام»');
+const pre=[],goalM=[],memM=[],locM=[],capM=[],old=[];
+if(cfg.useAll&&cfg.visits<cfg.days.length)pre.push('الزيارات ('+ar(cfg.visits)+') أقل من أيام العمل ('+ar(cfg.days.length)+') مع «كل الأيام»');
 const maxM=Math.min(state.cap.mainPerDay,cfg.mains.length),maxC=Math.min(state.cap.conPerDay,cfg.cons.length);
 const p1=cfg.members.filter(m=>m.pool===1).length,p2=cfg.members.filter(m=>m.pool===2).length;
-if(p1<2||p2<1)msgs.push('يلزم عضوان سريريان وعضو إداري على الأقل');
+if(p1<2||p2<1)pre.push('يلزم عضوان سريريان وعضو إداري على الأقل');
+if(cfg.goals.length){
+const gm=cfg.goals.filter(g=>g.loc.type==='main').length,gc=cfg.goals.length-gm;
+if(gm>cfg.nMain||gc>cfg.nCon)goalM.push('الأهداف تحتاج '+ar(gm)+' رئيسية و'+ar(gc)+' متعاقدة — ارفع عدد الزيارات أو غيّر النسبة');
+}
+memM.push(...compileMembers(cfg.nMain,cfg.nCon).issues);
+const rs=capReasons();
+if(rs.includes('حدود المواقع'))locM.push('حدود المواقع الأسبوعية تحدّ من عدد الزيارات');
+if(rs.includes('نمط الراحة'))capM.push('نمط الراحة يحدّ من عدد الزيارات');
 const key=cfg.nMain+','+cfg.nCon;
 const t1=reach(cfg.dayCfg.map(d=>d.on),maxM,maxC);
 if(!t1.has(key)){
 let best=[0,0];
 for(const t of t1){const q=t.split(',').map(Number);if(q[0]+q[1]>best[0]+best[1])best=q;}
-msgs.push('الطاقة القصوى: '+ar(best[0])+' رئيسية و'+ar(best[1])+' متعاقدة');
+capM.push('الطاقة القصوى: '+ar(best[0])+' رئيسية و'+ar(best[1])+' متعاقدة');
 }else{
 const t2=reachOff(cfg,maxM,maxC);
 if(!t2.has(key)){
 let b2=[0,0];
 for(const t of t2){const q=t.split(',').map(Number);if(q[0]+q[1]>b2[0]+b2[1])b2=q;}
-msgs.push('مع الإجازات: الأقصى '+ar(b2[0])+' رئيسية و'+ar(b2[1])+' متعاقدة');
+capM.push('مع الإجازات: الأقصى '+ar(b2[0])+' رئيسية و'+ar(b2[1])+' متعاقدة');
 }
 }
 const short=cfg.days.filter(d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length<2||cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length<1);
-if(short.length)msgs.push('يوم '+DAYS[short[0]]+': المتاحون أقل من الحد الأدنى');
+if(short.length)old.push('يوم '+DAYS[short[0]]+': المتاحون أقل من الحد الأدنى');
 if(cfg.locs.some(l=>l.genderRule))for(const d of cfg.days){
 const av=cfg.members.filter(m=>!m.off.includes(d));
 if(av.length&&av.every(m=>m.gender===av[0].gender)){
-msgs.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب');break;
+old.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب');break;
 }
 }
-if(cfg.goals.length){
-const gm=cfg.goals.filter(g=>g.loc.type==='main').length,gc=cfg.goals.length-gm;
-if(gm>cfg.nMain||gc>cfg.nCon)msgs.push('الأهداف تحتاج '+ar(gm)+' رئيسية و'+ar(gc)+' متعاقدة — ارفع عدد الزيارات أو غيّر النسبة');
-else if(!msgs.length)msgs.push('الأهداف المحددة تضيّق الحل — جرّب تخفيف الأيام أو الأعضاء المحددين فيها');
+if(cfg.goals.length&&!goalM.length&&!pre.length&&!memM.length&&!locM.length&&!capM.length&&!old.length)goalM.push('الأهداف المحددة تضيّق الحل — جرّب تخفيف الأيام أو الأعضاء المحددين فيها');
+const all=[...pre,...goalM,...memM,...locM,...capM,...diagnosePairs(cfg),...old];
+if(!all.length)all.push('القيود ضيقة — قلّل الزيارات أو الإجازات');
+return all.slice(0,3);
 }
-if(!msgs.length)msgs.push('القيود ضيقة — قلّل الزيارات أو الإجازات');
-msgs.unshift(...diagnosePairs(cfg));
-return msgs.slice(0,3);
+function saveObject(){
+return{
+v:2,rest:state.rest,restCalendar:state.restCalendar,days:state.days,members:state.members,locations:state.locations,
+visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
+bulk:state.bulk,pairs:state.pairs,goals:state.goals,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view,locRepeat:state.locRepeat,
+priority:state.priority,carryWeek:state.carryWeek,history:state.history
+};
 }
 function saveState(){
+try{localStorage.setItem('visitplan.v2',JSON.stringify(saveObject()));}catch(err){}
+}
+function exportBackup(){
+const blob=new Blob([JSON.stringify(saveObject(),null,1)],{type:'application/json'});
+const url=URL.createObjectURL(blob),a=document.createElement('a');
+a.href=url;a.download='visitplan-backup.json';document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+toast('صُدِّرت النسخة الاحتياطية');
+}
+function importBackup(inp){
+const f=inp.files&&inp.files[0];
+inp.value='';
+if(!f)return;
+const r=new FileReader();
+r.onload=()=>{
+let d;
+try{d=JSON.parse(r.result);}catch(err){toast('الملف غير صالح');return;}
+if(!d||typeof d!=='object'||(d.v!==1&&d.v!==2)||!Array.isArray(d.members)||!Array.isArray(d.locations)||!Array.isArray(d.days)||d.days.length!==7){toast('الملف غير صالح');return;}
+askConfirm('استيراد نسخة احتياطية؟','سيستبدل هذا كل الأعضاء والمواقع والأهداف والإعدادات الحالية.','استيراد',()=>{
 try{
-localStorage.setItem('visitplan.v1',JSON.stringify({
-v:1,days:state.days,members:state.members,locations:state.locations,
-visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
-bulk:state.bulk,pairs:state.pairs,goals:state.goals,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view
-}));
-}catch(err){}
+clearTimeout(_saveT);
+localStorage.setItem(d.v===2?'visitplan.v2':'visitplan.v1',JSON.stringify(d));
+if(d.v===1)localStorage.removeItem('visitplan.v2');
+}catch(err){toast('تعذّر الاستيراد');return;}
+location.reload();
+});
+};
+r.readAsText(f);
+}
+function prevWeekKey(){
+const t=new Date(state.weekStart+'T00:00:00');
+t.setDate(t.getDate()-7);
+return isoD(t);
+}
+function carryPrev(){
+const mp=new Map();
+if(!state.carryWeek)return mp;
+const h=state.history[prevWeekKey()];
+if(!h)return mp;
+const wd=workingDays();
+for(const id of Object.keys(h)){
+const out=[];
+for(const d of h[id]){
+if(state.restCalendar)out.push(d-7);
+else{const k=wd.indexOf(d);if(k>=0)out.push(k-wd.length);}
+}
+if(out.length)mp.set(+id,out);
+}
+return mp;
+}
+function recordHistory(p){
+if(!p)return;
+const by={};
+for(const r of p.rows)for(const id of r.team){if(!by[id])by[id]=[];by[id].push(r.day);}
+state.history[state.weekStart]=by;
+const ks=Object.keys(state.history).sort();
+while(ks.length>10)delete state.history[ks.shift()];
+scheduleSave();
 }
 let _saveT;
 function scheduleSave(){clearTimeout(_saveT);_saveT=setTimeout(saveState,400);}
 function loadState(){
 try{
-const raw=localStorage.getItem('visitplan.v1');
+let raw=localStorage.getItem('visitplan.v2'),migrated=false;
+if(!raw){raw=localStorage.getItem('visitplan.v1');migrated=true;}
 if(!raw)return;
 const d=JSON.parse(raw);
-if(!d||d.v!==1)return;
+if(!d||d.v!==(migrated?1:2))return;
 if(Array.isArray(d.days)&&d.days.length===7)state.days=d.days;
 if(Array.isArray(d.members))state.members=d.members;
 if(Array.isArray(d.locations))state.locations=d.locations;
@@ -1068,16 +1356,32 @@ if(typeof d.ratioIdx==='number')state.ratioIdx=d.ratioIdx;
 if(typeof d.useAllDays==='boolean')state.useAllDays=d.useAllDays;
 if(d.bulk)state.bulk=d.bulk;
 if(d.pairs)state.pairs=d.pairs;
-if(Array.isArray(d.goals))state.goals=d.goals.filter(g=>g&&typeof g.id==='number').map(g=>({id:g.id,on:g.on!==false,loc:g.loc,day:typeof g.day==='number'?clamp(g.day,-1,6):-1,people:Array.isArray(g.people)?g.people:[]}));
-if(d.cap)state.cap=d.cap;
+if(Array.isArray(d.goals))state.goals=d.goals.filter(g=>g&&typeof g.id==='number').map(g=>{
+const days=Array.isArray(g.days)?g.days:(typeof g.day==='number'&&g.day>=0?[g.day]:[]);
+return{id:g.id,on:g.on!==false,loc:g.loc,days:[...new Set(days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b),people:Array.isArray(g.people)?g.people:[],exclude:Array.isArray(g.exclude)?g.exclude:[]};
+});
+if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,1,3),conPerDay:clamp(+d.cap.conPerDay||1,1,3)};
+if(['free','avoid','never'].includes(d.locRepeat))state.locRepeat=d.locRepeat;
+if(['balance','prefs','stable'].includes(d.priority))state.priority=d.priority;
+if(typeof d.carryWeek==='boolean')state.carryWeek=d.carryWeek;
+if(d.history&&typeof d.history==='object'){state.history={};for(const k of Object.keys(d.history))if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&d.history[k]&&typeof d.history[k]==='object')state.history[k]=d.history[k];}
+const nr=r=>r&&typeof r==='object'?{rest:clamp(Math.round(+r.rest)||0,0,3),maxRun:clamp(Math.round(+r.maxRun)||1,1,3)}:null;
+if(d.rest)state.rest=nr(d.rest);
+if(typeof d.restCalendar==='boolean')state.restCalendar=d.restCalendar;
 if(typeof d.autoRegen==='boolean')state.autoRegen=d.autoRegen;
 if(typeof d.minChanges==='boolean')state.minChanges=d.minChanges;
 if(typeof d.weekStart==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.weekStart))state.weekStart=d.weekStart;
 if(d.view==='day'||d.view==='member')state.view=d.view;
-state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];if(m.pref==null)m.pref='';});
+state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];if(m.pref==null)m.pref='';m.types=['main','contracted'].includes(m.types)?m.types:'any';m.prefDays=Array.isArray(m.prefDays)?[...new Set(m.prefDays.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[];m.vmode=['exact','range'].includes(m.vmode)?m.vmode:'auto';m.vmin=clamp(Math.round(+m.vmin)||0,0,7);m.vmax=clamp(Math.round(+m.vmax)||0,0,7);if(m.vmode==='exact')m.vmax=m.vmin;else if(m.vmax<m.vmin)m.vmax=m.vmin;m.rest=nr(m.rest);m.restCustom=!!m.rest&&(!!m.restCustom||!presetKey(m.rest));});
+state.restCustom=!presetKey(state.rest);
+state.locations=state.locations.filter(l=>l&&typeof l.id==='number').map(l=>({...l,type:l.type==='contracted'?'contracted':'main',maxWeek:clamp(l.maxWeek|0,0,5),closed:Array.isArray(l.closed)?[...new Set(l.closed.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[]}));
+if(!Array.isArray(state.pairs.rules))state.pairs.rules=[];
+const alive=new Set(state.members.map(m=>m.id));
+state.pairs.rules=state.pairs.rules.filter(r=>r&&alive.has(r.a)&&alive.has(r.b));
 state.ratioIdx=clamp(state.ratioIdx|0,0,RATIOS.length-1);
 const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id),...state.goals.map(g=>g.id)];
 _uid=Math.max(...ids);
+if(migrated)saveState();
 }catch(err){}
 }
 let genRun=0;
@@ -1086,10 +1390,11 @@ const cfg=buildCfg();
 cfg.relax=mode==='flex';
 const run=++genRun;
 const T=teamCap();
-const pre=!cfg.days.length?'لا توجد أيام عمل مفعّلة':!cfg.locs.length?'أضف موقعًا واحدًا على الأقل':!cfg.members.length?'أضف أعضاء أولًا':(T.c<2||T.a<1)?'يلزم عضوان سريريان وعضو إداري على الأقل':state.vcap<=0?'لا طاقة زيارات بهذه الإعدادات':'';
+const memberIssues=compileMembers(cfg.nMain,cfg.nCon).issues;
+const pre=!cfg.days.length?'لا توجد أيام عمل مفعّلة':!cfg.locs.length?'أضف موقعًا واحدًا على الأقل':!cfg.members.length?'أضف أعضاء أولًا':(T.c<2||T.a<1)?'يلزم عضوان سريريان وعضو إداري على الأقل':state.vcap<=0?'لا طاقة زيارات بهذه الإعدادات':memberIssues.length?memberIssues.slice(0,3):cfg.goalShort?['الأهداف تحتاج زيارات أكثر من الطاقة المتاحة','أضف موقعًا من النوع نفسه أو ارفع حدّه الأسبوعي أو غيّر النسبة']:'';
 if(pre){
 state.running=false;state.plans=[];state.selected=null;state.lastRun=null;state.flexOffer=false;state.stale=false;
-state.fail=[pre];state._quiet=false;
+state.fail=Array.isArray(pre)?pre:[pre];state._quiet=false;
 {const s=$('#stale');if(s)s.classList.remove('show');}
 {const tb=document.querySelector('.tab[data-id="plan"]');if(tb)tb.classList.remove('dirty');}
 updateGenUI();updateLastRun();renderResults();
@@ -1151,7 +1456,7 @@ if(!picked.includes(p)&&picked.every(q=>diffPlans(p,q)>=thr))picked.push(p);
 if(thr<=0)break;
 thr=thr>0.04?thr/2:0;
 }
-state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;
+state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;recordHistory(picked[0]);
 }
 updateGenUI();updateLastRun();renderResults();
 const tn=$('#tnum');if(tn)tn.textContent=state.plans.length?ar(state.plans.length):'';
@@ -1172,7 +1477,7 @@ function detailText(p){
 const lines=[];
 for(const m of state.members){
 const rs=p.rows.filter(r=>r.team.includes(m.id));
-if(rs.length)lines.push(m.name+': '+rs.sort((a,b)=>a.day-b.day).map(r=>DAYS[r.day]+' ('+r.loc.name+')').join('، '));
+if(rs.length)lines.push(m.name+(m.vmode==='exact'?' ['+rs.length+'/'+m.vmin+']':m.vmode==='range'?' ['+rs.length+'/'+m.vmin+'–'+m.vmax+']':'')+': '+rs.sort((a,b)=>a.day-b.day).map(r=>DAYS[r.day]+' ('+r.loc.name+')').join('، '));
 }
 return 'جدول الأعضاء — '+weekLabel()+'\n\n'+lines.join('\n');
 }
@@ -1239,16 +1544,17 @@ function updateLastRun(){
  $('#lastrun').textContent=state.plans.length&&state.lastRun?plural(state.plans.length,'خطة واحدة','خطتان','خطط','خطة'):'';
 }
 function recalcCap(){
-_reachCache.clear();
+_reachCache.clear();_winCtx=null;_pos=null;
 state.vcap=visitCap();
 const maxV=Math.max(1,state.vcap);
 const derived=clamp(Math.max(state.visitsWanted,goalCounts().n),1,maxV);
 if(derived!==state.visits){
 state.visits=derived;
-if(derived<state.visitsWanted)toast('خُفِّض عدد الزيارات إلى '+ar(derived));
+if(derived<state.visitsWanted){const rs=capReasons();toast('خُفِّض عدد الزيارات إلى '+ar(derived)+(rs.length?' بسبب '+rs.join(' و'):''));}
 else if(derived>state.visitsWanted){state.visitsWanted=derived;toast('رُفع عدد الزيارات إلى '+ar(derived)+' لتغطية الأهداف');}
 }
 updateVisitUI();
+if($('#mIntro')&&$('#mIntro').firstChild)morph('#mIntro',memberIntroHTML());
 }
 let _autoT;
 function markStale(){
@@ -1287,10 +1593,10 @@ function setDayPref(d,k,v,t){
 state.days[d][k]=v;segOn(t);
 if(k==='dist'){
 const p=document.querySelector('#daypills [data-day="'+d+'"]');
-if(p)p.classList.toggle('thu',v==='near');
+if(p)p.classList.toggle('dnear',v==='near');
 const c=document.querySelector('[data-dcard="'+d+'"]');
 if(c){
-c.classList.toggle('thu',v==='near');
+c.classList.toggle('dnear',v==='near');
 const old=c.querySelector('.thutag');if(old)old.remove();
 if(v)c.querySelector('.dname').insertAdjacentHTML('afterend','<span class="thutag">'+icon('i-pin')+' '+DISTL[v]+'</span>');
 }
@@ -1318,7 +1624,7 @@ updateVisitUI();markStale();
 function dayCardHTML(i){
 const d=state.days[i];
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur===o.v?'on':''}" data-act="${act}" data-d="${i}" data-v="${o.v}">${o.l}</button>`).join('')}</div>`;
-return `<div class="card daycard${d.dist==='near'?' thu':''}${d.on?'':' off'}" data-dcard="${i}">
+return `<div class="card daycard${d.dist==='near'?' dnear':''}${d.on?'':' off'}" data-dcard="${i}">
 <div class="dc-head"><span class="dname">${DAYS[i]}</span><span class="ddate">${dateOf(i)}</span>${isToday(i)?'<span class="today-tag">اليوم</span>':''}${d.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[d.dist]}</span>`:''}<button type="button" class="swlab" role="switch" aria-checked="${d.on?'true':'false'}" data-act="dsw" data-d="${i}"><span class="sw${d.on?' on':''}"></span> عمل</button></div>
 <div class="dc-body">
 <div class="dcrow"><span class="tiny mut">نوع الموقع</span>${seg('dfav',[{v:'',l:'متوازن'},{v:'main',l:'رئيسية'},{v:'contracted',l:'متعاقد'}],d.fav)}</div>
@@ -1333,7 +1639,12 @@ return `<div class="card introbar rv" id="dIntro">${icon('i-days')}<span>أسب�
 }
 function memberIntroHTML(){
 const p1=state.members.filter(m=>m.pool===1).length;
-return `<div class="card introbar">${icon('i-users')}<span><b>${ar(p1)}</b> سريري · <b>${ar(state.members.length-p1)}</b> إداري</span></div>`;
+const sp=effSplit(),mc=compileMembers(sp.nm,sp.nc);
+const chip=mc.custom?[[1,'سريرية'],[2,'إدارية']].map(([q,l])=>`<span class="tiny mut">مقاعد ${l} ${ar(mc.seats[q])} · محجوز ${ar(mc.lo[q])} · تلقائي ${ar(Math.max(0,mc.seats[q]-mc.lo[q]))}</span>`).join(''):'';
+return `<div class="card introbar" data-key="ib">${icon('i-users')}<span><b>${ar(p1)}</b> سريري · <b>${ar(state.members.length-p1)}</b> إداري</span>${chip}</div>`+(mc.issues.length?`<div class="gwarn" data-key="iw">${icon('i-alert')} ${mc.issues.map(esc).join(' · ')}</div>`:'');
+}
+function vStep(m,k,lab,val){
+return `<span class="stepper">${lab?`<span class="lb">${lab}</span>`:''}<button data-act="mvstep" data-m="${m.id}" data-k="${k}" data-v="-1"${val<=0?' disabled':''}>−</button><b>${ar(val)}</b><button data-act="mvstep" data-m="${m.id}" data-k="${k}" data-v="1"${val>=7?' disabled':''}>+</button></span>`;
 }
 function memberCardHTML(m,i){
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${cur===o.v?'on':''}" data-act="${act}" data-m="${m.id}" data-v="${o.v}">${o.l}</button>`).join('')}</div>`;
@@ -1342,13 +1653,31 @@ return `<div class="card rv" style="--i:${i}" data-mcard="${m.id}">
  ${seg('mpool',[{v:'1',l:'سريري'},{v:'2',l:'إداري'}],String(m.pool))}
 <input class="name" data-name="${m.id}" value="${esc(m.name)}" placeholder="الاسم" aria-label="اسم العضو" enterkeyhint="done">
  ${seg('mgender',[{v:'M',l:'ذكر'},{v:'F',l:'أنثى'}],m.gender)}
-<button class="icon-btn" data-act="mdel" data-m="${m.id}" title="حذف العضو">${icon('i-trash')}</button>
+${m.rest?'<span class="badge bgoal">نمط خاص</span>':''}<button class="icon-btn" data-act="mdel" data-m="${m.id}" title="حذف العضو">${icon('i-trash')}</button>
 </div>
 <div class="moff">
 <span class="tiny mut">الإجازات</span>
  ${DAYS.map((d,di)=>`<button class="pill off${m.off.includes(di)?' on':''}" data-act="moff" data-m="${m.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
 <span class="tiny mut sep">يفضّل</span>
  ${seg('mpref',[{v:'',l:'بدون'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],m.pref)}
+</div>
+<div class="moff">
+<span class="tiny mut">الراحة</span>
+${ddHTML('mrest',m.id,m.rest?(m.restCustom?'c':(presetKey(m.rest)||'c')):'g','','نمط الراحة')}
+${m.rest&&m.restCustom?restStepper('mreststep',m.rest,`data-m="${m.id}"`):''}
+</div>
+<div class="moff">
+<span class="tiny mut">عدد الزيارات</span>
+${seg('mvmode',[{v:'auto',l:'تلقائي'},{v:'exact',l:'ثابت'},{v:'range',l:'نطاق'}],m.vmode||'auto')}
+${m.vmode==='exact'?vStep(m,'vmin','',m.vmin):m.vmode==='range'?vStep(m,'vmin','من',m.vmin)+vStep(m,'vmax','إلى',m.vmax):''}
+</div>
+<div class="moff">
+<span class="tiny mut">المواقع</span>
+${seg('mtypes',[{v:'any',l:'أي موقع'},{v:'main',l:'رئيسية فقط'},{v:'contracted',l:'متعاقدة فقط'}],m.types||'any')}
+</div>
+<div class="moff">
+<span class="tiny mut">أيام مفضلة</span>
+${DAYS.map((d,di)=>`<button class="pill${(m.prefDays||[]).includes(di)?' on':''}" data-act="mpday" data-m="${m.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
 </div>
 </div>`;
 }
@@ -1358,12 +1687,21 @@ return `<div class="card rv" style="--i:${i}" data-lcard="${l.id}">
 <div class="lhead">
 <div class="seg"><button class="${l.type==='main'?'on':''}" data-act="ltype" data-l="${l.id}" data-v="main">رئيسي</button><button class="${l.type==='contracted'?'on':''}" data-act="ltype" data-l="${l.id}" data-v="contracted">متعاقد</button></div>
 <input class="name" data-name="${l.id}" value="${esc(l.name)}" aria-label="اسم الموقع">
+${state.goals.some(g=>g.on&&g.loc===l.id)?'<span class="badge bgoal">◎ هدف</span>':''}
 <button class="icon-btn" data-act="ldel" data-l="${l.id}" title="حذف الموقع">${icon('i-trash')}</button>
 </div>
 <div class="lrow">
 <span class="tiny mut">المسافة</span>
 <div class="pills">${dists.map(d=>`<button class="pill dst${l.dist===d.v?' on':''}" data-act="ldist" data-l="${l.id}" data-v="${d.v}">${d.l}</button>`).join('')}</div>
 <button type="button" class="swlab" role="switch" aria-checked="${l.genderRule?'true':'false'}" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</button>
+</div>
+<div class="lrow">
+<span class="tiny mut">الحد الأسبوعي</span>
+<span class="stepper"><button data-act="lmax" data-l="${l.id}" data-v="-1"${l.maxWeek<=0?' disabled':''}>−</button><b>${l.maxWeek?ar(l.maxWeek):'تلقائي'}</b><button data-act="lmax" data-l="${l.id}" data-v="1"${l.maxWeek>=5?' disabled':''}>+</button></span>
+</div>
+<div class="lrow">
+<span class="tiny mut">أيام الإغلاق</span>
+${DAYS.map((d,di)=>`<button class="pill off${l.closed.includes(di)?' on':''}" data-act="lclosed" data-l="${l.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
 </div>
 </div>`;
 }
@@ -1390,26 +1728,29 @@ const base=type==='main'?'رئيسي ':'متعاقد ';
 const used=new Set(state.locations.map(l=>l.name));
 let n=state.locations.filter(l=>l.type===type).length+1;
 while(used.has(base+ar(n)))n++;
-const l={id:nid(),name:base+ar(n),type,dist:'',genderRule:true};
+const l={id:nid(),name:base+ar(n),type,dist:'',genderRule:true,maxWeek:0,closed:[]};
 state.locations.push(l);
 return l;
 }
 function removeMember(id){
 const idx=state.members.findIndex(m=>m.id===id);if(idx<0)return;
 const gone=state.members[idx],goneRules=state.pairs.rules.filter(r=>r.a===id||r.b===id);
+const goneGoals=state.goals.filter(g=>g.people.includes(id)||g.exclude.includes(id)).map(g=>({g,p:g.people.includes(id),x:g.exclude.includes(id)}));
+for(const e of goneGoals){e.g.people=e.g.people.filter(k=>k!==id);e.g.exclude=e.g.exclude.filter(k=>k!==id);}
 state.members=state.members.filter(m=>m.id!==id);
 state.pairs.rules=state.pairs.rules.filter(r=>r.a!==id&&r.b!==id);
 if(state.hl===id)state.hl=null;
 const card=document.querySelector('[data-mcard="'+id+'"]');
 if(card)leave(card);
 morph('#mIntro',memberIntroHTML());
-recalcCap();
+recalcCap();refreshGoals();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
 patchHeader();markStale();renderResults();
 setUndo('حُذف '+esc(gone.name),()=>{
 state.members.splice(idx,0,gone);state.pairs.rules.push(...goneRules);
-refreshMembers();recalcCap();patchHeader();markStale();
+for(const e of goneGoals){if(e.p)e.g.people.push(id);if(e.x)e.g.exclude.push(id);}
+refreshMembers();refreshGoals();recalcCap();patchHeader();markStale();
 });
 }
 function refreshMembers(){
@@ -1417,7 +1758,7 @@ morph('#mlist',state.members.map((m,i)=>memberCardHTML(m,i)).join(''));
 morph('#mIntro',memberIntroHTML());
 }
 function addMember(){
-const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:''};
+const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:'',rest:null,vmode:'auto',vmin:0,vmax:0,types:'any',prefDays:[]};
 state.members.push(m);
  $('#mlist').insertAdjacentHTML('beforeend',memberCardHTML(m,0));
 morph('#mIntro',memberIntroHTML());
@@ -1433,14 +1774,14 @@ const gone=state.locations[idx];
 state.locations=state.locations.filter(l=>l.id!==id);
 const card=document.querySelector('[data-lcard="'+id+'"]');
 if(card)leave(card);
-patchLocIntro();patchHeader();recalcCap();
+patchLocIntro();patchHeader();recalcCap();refreshGoals();
 state.plans=[];state.selected=null;state.fail=null;
 const tn=$('#tnum');if(tn)tn.textContent='';
 markStale();renderResults();
 setUndo('حُذف '+esc(gone.name),()=>{
 state.locations.splice(idx,0,gone);
 morph('#llist',state.locations.map((l,i)=>locationCardHTML(l,i)).join(''));
-patchLocIntro();patchHeader();recalcCap();markStale();
+patchLocIntro();patchHeader();recalcCap();refreshGoals();markStale();
 });
 }
 function bulkAdd(){
@@ -1463,6 +1804,7 @@ for(const m of ms)out.push({v:m.id,l:esc(m.name),pre:`<i class="dot ${m.gender==
 return out;
 }
 function ddOptions(kind){
+if(kind==='mrest')return[{v:'g',l:'حسب الإعداد العام'},...PRESETS.map(p=>({v:p.k,l:p.l})),{v:'c',l:'مخصص'}];
 if(kind==='gloc'){
 const out=[];
 for(const t of['main','contracted']){
@@ -1476,6 +1818,7 @@ return out;
 return memberOpts();
 }
 function ddLabel(kind,val){
+if(kind==='mrest'){const o=ddOptions('mrest').find(x=>x.v===val);return o?o.l:'';}
 if(kind==='gloc'){const l=locById(val);return l?esc(l.name)+typeBadge(l.type):'';}
 const m=byId(val);return m?`<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}`:'';
 }
@@ -1525,14 +1868,22 @@ const b=dd.btn;if(!b)return;
 const kind=b.dataset.kind,ref=+b.dataset.ref;
 ddClose();
 if(String(v)===b.dataset.val)return;
-v=+v;
+const raw=v;v=+v;
+if(kind==='mrest'){
+const m=byId(ref);if(!m)return;
+if(raw==='g'){m.rest=null;m.restCustom=false;}
+else if(raw==='c'){m.rest=m.rest||{...state.rest};m.restCustom=true;}
+else{const q=PRESETS.find(x=>x.k===raw);if(!q)return;m.rest={rest:q.rest,maxRun:q.maxRun};m.restCustom=false;}
+refreshMembers();recalcCap();markStale();
+return;
+}
 if(kind==='gloc'){
 const g=state.goals.find(x=>x.id===ref);if(!g)return;
 g.loc=v;
 const loc=locById(v);
 if(loc&&loc.type==='contracted'){const ad=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;});if(ad.length>1)g.people=g.people.filter(id=>id!==ad[1]);}
 goalChanged();
-}else{
+}else if(kind==='pa'||kind==='pb'){
 const r=state.pairs.rules.find(x=>x.id===ref);if(!r)return;
 if(kind==='pa')r.a=v;else r.b=v;
 if(r.a===r.b)toast('اختر عضوين مختلفين');
@@ -1581,16 +1932,38 @@ ${ddHTML('pb',r.id,r.b,'اختر عضوًا','العضو الثاني')}
 </div>
 </div>`;
 }
+function restStepper(act,R,extra){
+const one=(k,lab,min,val,dis)=>`<span class="stepper"><span class="lb">${lab}</span><button data-act="${act}" ${extra} data-k="${k}" data-v="-1"${val<=min||dis?' disabled':''}>−</button><b>${ar(val)}</b><button data-act="${act}" ${extra} data-k="${k}" data-v="1"${val>=(k==='rest'?3:3)||dis?' disabled':''}>+</button></span>`;
+return one('rest','أيام راحة',0,R.rest,false)+one('maxRun','أقصى أيام متتالية',1,R.maxRun,R.rest===0);
+}
+function restCardHTML(){
+const R=state.rest,cust=state.restCustom;
+return `<div class="card rv" data-key="srest">
+<div class="mhead"><span class="clab">نمط العمل والراحة</span></div>
+<div class="pills" style="margin-top:10px">${PRESETS.map(q=>`<button class="pill${!cust&&presetKey(R)===q.k?' on':''}" data-act="restpre" data-rest="${q.rest}" data-run="${q.maxRun}">${q.l}</button>`).join('')}<button class="pill${cust?' on':''}" data-act="restcustom">مخصص</button></div>
+${cust?`<div class="mhead" style="margin-top:10px">${restStepper('reststep',R,'')}</div>`:''}
+<div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.restCalendar?'true':'false'}" data-act="restcal"><span class="sw${state.restCalendar?' on':''}"></span> أيام الإجازة الرسمية تُحسب راحة</button></div>
+<p class="tiny mut" style="margin-top:8px">${ruleText(R)}</p>
+</div>`;
+}
+function restChanged(){refreshSettings();recalcCap();markStale();}
 function settingsTabHTML(){
 const on=state.pairs.enabled;
 const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv" data-key="pempty">${icon('i-users')} لا قواعد</div>`;
-return `<div class="card rv" data-key="scap">
+return `<div class="card rv" data-key="stheme">
+<div class="mhead">
+<span class="clab">المظهر</span>
+<div class="seg">${[['system','تلقائي'],['light','فاتح'],['dark','داكن']].map(([v,l])=>`<button class="${state.theme===v?'on':''}" data-act="theme" data-v="${v}">${l}</button>`).join('')}</div>
+</div>
+</div>
+<div class="card rv" data-key="scap">
 <div class="mhead">
 <span class="clab">الحد اليومي</span>
 <span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1"${state.cap.mainPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1"${state.cap.mainPerDay>=3?' disabled':''}>+</button></span>
 <span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1"${state.cap.conPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1"${state.cap.conPerDay>=3?' disabled':''}>+</button></span>
 </div>
 </div>
+${restCardHTML()}
 <div class="card rv" data-key="spair">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> قواعد الاقتران</button><span class="tiny mut">داخل الفريق الواحد</span><span style="flex:1"></span>
@@ -1600,6 +1973,30 @@ return `<div class="card rv" data-key="scap">
 <div class="stack pblock${on?'':' off'}" id="pblock">
 ${list}
 <button class="btn" data-act="padd" data-key="padd">${icon('i-plus')} إضافة قاعدة</button>
+</div>
+<div class="card rv" data-key="srep">
+<div class="mhead">
+<span class="clab">تكرار المواقع خلال الأسبوع</span>
+<div class="seg">${[['free','مسموح'],['avoid','يُتجنَّب'],['never','ممنوع']].map(([v,l])=>`<button class="${state.locRepeat===v?'on':''}" data-act="locrep" data-v="${v}">${l}</button>`).join('')}</div>
+</div>
+<p class="tiny mut" style="margin-top:8px">المواقع ذات الأهداف لا تتكرر خارج أهدافها إلا إذا رفعت حدها الأسبوعي</p>
+</div>
+<div class="card rv" data-key="sprio">
+<div class="mhead">
+<span class="clab">الأولوية عند ترتيب الخطط</span>
+<div class="seg">${[['balance','التوازن'],['prefs','التفضيلات'],['stable','الثبات']].map(([v,l])=>`<button class="${state.priority===v?'on':''}" data-act="prio" data-v="${v}">${l}</button>`).join('')}</div>
+</div>
+</div>
+<div class="card rv" data-key="scarry">
+<div class="mhead"><button type="button" class="swlab" role="switch" aria-checked="${state.carryWeek?'true':'false'}" data-act="carry"><span class="sw${state.carryWeek?' on':''}"></span> مراعاة زيارات نهاية الأسبوع السابق</button></div>
+<p class="tiny mut" style="margin-top:8px">${state.carryWeek?(state.history[prevWeekKey()]?'تُحتسب أيام الأسبوع السابق في قاعدة الراحة':'لا توجد خطة محفوظة للأسبوع السابق'):'يُخطَّط كل أسبوع بمعزل عن السابق'}</p>
+</div>
+<div class="card rv" data-key="sback">
+<div class="mhead">
+<span class="clab">نسخة احتياطية</span>
+<div style="display:flex;gap:8px"><button class="btn" data-act="bkexp">تصدير</button><button class="btn" data-act="bkimp">استيراد</button></div>
+</div>
+<input type="file" id="impFile" accept="application/json,.json" hidden>
 </div>
 <div class="card rv" data-key="sauto">
 <div class="mhead">
@@ -1624,19 +2021,58 @@ refreshSettings();
 markStale();
 setUndo('حُذفت القاعدة',()=>{state.pairs.rules.splice(idx,0,gone);refreshSettings();markStale();});
 }
+let _themeMQ=null;
+function paintTheme(){
+const t=state.theme==='dark'||(state.theme==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+document.documentElement.dataset.theme=t;
+const m=document.querySelector('meta[name="theme-color"]');
+if(m)m.setAttribute('content',t==='dark'?'#182026':'#3f7f8c');
+}
+function syncThemeUI(){
+const b=$('#themeBtn');
+if(b){
+const lb={system:'تلقائي',light:'فاتح',dark:'داكن'}[state.theme];
+b.innerHTML=icon(state.theme==='dark'?'i-moon':state.theme==='light'?'i-sun':'i-auto');
+b.title='المظهر: '+lb;b.setAttribute('aria-label','المظهر: '+lb);
+}
+if(state.tab==='settings')refreshSettings();
+}
+function applyTheme(pref){
+state.theme=pref;
+try{localStorage.setItem('visitplan.theme',pref);}catch(err){}
+paintTheme();
+if(pref==='system'&&!_themeMQ){
+_themeMQ=window.matchMedia('(prefers-color-scheme: dark)');
+_themeMQ.addEventListener('change',()=>{if(state.theme==='system')paintTheme();});
+}
+syncThemeUI();
+}
+function cycleTheme(){applyTheme({system:'light',light:'dark',dark:'system'}[state.theme]);}
+function initTheme(){
+let p='system';
+try{p=localStorage.getItem('visitplan.theme')||'system';}catch(err){}
+applyTheme(['system','light','dark'].includes(p)?p:'system');
+}
 function refreshSettings(){morph('#setWrap',settingsTabHTML());}
 function goalCardHTML(g,i,issues){
 const loc=locById(g.loc);
 const iss=issues.get(g.id)||[];
-const dayPills=`<button class="pill auto${g.day<0?' on':''}" data-act="gday" data-g="${g.id}" data-v="-1">يختار المُخطِّط</button>`+DAYS.map((d,di)=>`<button class="pill${g.day===di?' on':''}${state.days[di].on?'':' dim'}" data-act="gday" data-g="${g.id}" data-v="${di}" title="${dateOf(di)}">${DAY_SHORT[di]}</button>`).join('');
+const one=g.days.length===1?g.days[0]:-1;
+const dayPills=`<button class="pill auto${g.days.length?'':' on'}" data-act="gday" data-g="${g.id}" data-v="-1">يختار المُخطِّط</button>`+DAYS.map((d,di)=>`<button class="pill${g.days.includes(di)?' on':''}${state.days[di].on?'':' dim'}" data-act="gday" data-g="${g.id}" data-v="${di}" title="${dateOf(di)}">${DAY_SHORT[di]}</button>`).join('');
 const sorted=state.members.slice().sort((a,b)=>a.pool-b.pool);
 const ppl=sorted.map(m=>{
-const on=g.people.includes(m.id),off=g.day>=0&&m.off.includes(g.day);
+const on=g.people.includes(m.id),off=one>=0&&m.off.includes(one);
 return `<button class="pill ppl p${m.pool}${on?' on':''}${off&&!on?' dim':''}" data-key="m${m.id}" aria-pressed="${on}" data-act="gppl" data-g="${g.id}" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${off?' — إجازة':''}">${on?icon('i-lock'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</button>`;
+}).join('');
+const xpl=sorted.map(m=>{
+const on=g.exclude.includes(m.id);
+return `<button class="pill ppl excl${on?' on':''}" data-key="x${m.id}" aria-pressed="${on}" data-act="gexcl" data-g="${g.id}" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</button>`;
 }).join('');
 const n1=g.people.filter(id=>{const m=byId(id);return m&&m.pool===1;}).length,n2=g.people.filter(id=>{const m=byId(id);return m&&m.pool===2;}).length;
 const need2=loc&&loc.type==='contracted'?1:2;
-const sum=g.people.length?`${ar(n1)}/٢ سريري · ${ar(n2)}/${ar(need2)} إداري — والباقي يكمله المُخطِّط`:'الفريق كله يختاره المُخطِّط';
+const gn=state.goals.filter(x=>x.on&&x.loc===g.loc).length,mx=loc?(loc.maxWeek>0?Math.max(loc.maxWeek,gn):gn):0;
+const capTxt=loc&&g.on?' · هذا الموقع: '+visitsWord(mx)+' أسبوعيًا ('+(loc.maxWeek>0?'الحد المحدد':'الهدف')+')':'';
+const sum=(g.people.length?`${ar(n1)}/٢ سريري · ${ar(n2)}/${ar(need2)} إداري — والباقي يكمله المُخطِّط`:'الفريق كله يختاره المُخطِّط')+capTxt;
 return `<div class="card gcard rv${g.on?'':' off'}" style="--i:${i}" data-gcard="${g.id}">
 <div class="mhead">
 <span class="gtitle">${icon('i-target')}${goalLabel(g)}</span>
@@ -1647,6 +2083,7 @@ ${ddHTML('gloc',g.id,loc?loc.id:'','اختر موقعًا','موقع الزيا�
 </div>
 <div class="grow" data-key="gd"><span class="tiny mut">اليوم</span><div class="pills">${dayPills}</div></div>
 <div class="grow" data-key="gp"><span class="tiny mut">الأعضاء</span><div class="pills">${ppl||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${sum}</span></div>
+<div class="grow" data-key="gx"><span class="tiny mut">استبعاد</span><div class="pills">${xpl||'<span class="empty-note">لا أعضاء</span>'}</div></div>
 ${g.on&&iss.length?`<div class="gwarn" data-key="gw">${icon('i-alert')} ${iss.map(esc).join(' · ')} — لن يُطبَّق حتى يُصلَح</div>`:''}
 </div>`;
 }
@@ -1658,12 +2095,19 @@ const list=state.goals.length?state.goals.map((g,i)=>goalCardHTML(g,i,C.issues))
 return intro+list+`<button class="btn" data-key="gadd" data-act="gadd"${state.locations.length?'':' disabled'}>${icon('i-plus')} إضافة هدف</button>`;
 }
 function refreshGoals(){morph('#goalsWrap',goalsTabHTML());}
-function goalChanged(){refreshGoals();recalcCap();markStale();}
+function refreshLocations(){morph('#llist',state.locations.map((l,i)=>locationCardHTML(l,i)).join(''));}
+function goalChanged(){refreshGoals();refreshLocations();recalcCap();markStale();}
+function toggleGoalExclude(g,mid){
+const i=g.exclude.indexOf(mid);
+if(i>=0)g.exclude.splice(i,1);
+else{g.exclude.push(mid);g.people=g.people.filter(id=>id!==mid);}
+goalChanged();
+}
 function addGoal(){
 if(!state.locations.length){toast('أضف موقعًا أولًا');return;}
 const used=new Set(state.goals.map(g=>g.loc));
 const loc=state.locations.find(l=>!used.has(l.id))||state.locations[0];
-state.goals.push({id:nid(),on:true,loc:loc.id,day:-1,people:[]});
+state.goals.push({id:nid(),on:true,loc:loc.id,days:[],people:[],exclude:[]});
 goalChanged();
 }
 function removeGoal(id){
@@ -1684,6 +2128,7 @@ if(same.length>=cap){
 if(cap===1){g.people=g.people.filter(id=>id!==same[0]);}
 else{toast('الحد '+ar(cap)+' '+(m.pool===1?'سريري':'إداري')+' في الفريق');return;}
 }
+g.exclude=g.exclude.filter(id=>id!==mid);
 g.people.push(mid);
 goalChanged();
 }
@@ -1704,12 +2149,12 @@ const vrows=rows.map(r=>{
 const team=r.team.map(id=>{
 const m=byId(id);if(!m)return'';
 const miss=r.miss.includes(id),viol=r.viol.includes(id),pbreak=r.pbreak&&r.pbreak.includes(id),rq=r.req&&r.req.includes(id);
-return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}${rq?' req':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${rq?' — محدد بالهدف':''}${miss?' — خارج تفضيله':''}${viol?' — يومان متتاليان':''}${pbreak?' — تعارض اقتران':''}">${rq?icon('i-lock','ic lk'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
+return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol?' viol':''}${pbreak?' pbreak':''}${rq?' req':''}" data-act="hl" data-m="${m.id}" title="${esc(m.name)} — ${poolName(m.pool)}${rq?' — محدد بالهدف':''}${miss?' — خارج تفضيله':''}${viol?' — يخالف نمط الراحة':''}${pbreak?' — تعارض اقتران':''}">${rq?icon('i-lock','ic lk'):''}<i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span>`;
 }).join('');
 const gi=r.goal?state.goals.findIndex(g=>g.id===r.goal):-1;
 return `<div class="vrow${r.goal?' goal':''}" data-key="v${r.loc.id}"><div class="vloc"><b>${esc(r.loc.name)}</b>${r.goal?`<span class="badge bgoal">${icon('i-target')}${gi>=0?'هدف '+ar(gi+1):'هدف'}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteam">${team}</div></div>`;
 }).join('');
-return `<div class="dayblk rv${dp.dist==='near'?' thu':''}${isToday(d)?' today':''}" data-key="d${d}" style="--i:${k++}">
+return `<div class="dayblk rv${dp.dist==='near'?' dnear':''}${isToday(d)?' today':''}" data-key="d${d}" style="--i:${k++}">
 <div class="dayhead"><span class="dname">${DAYS[d]}</span><span class="ddate">${dateOf(d)}</span>${isToday(d)?'<span class="today-tag">اليوم</span>':''}${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">${dp.fav==='main'?'رئيسية':'متعاقد'}</span>`:''}<span class="tiny mut" style="margin-inline-start:auto">${visitsWord(rows.length)}</span></div>
  ${vrows}
 </div>`;
@@ -1720,13 +2165,14 @@ const days=p.days.slice().sort((a,b)=>a-b);
 const head=`<tr><th></th>${days.map(d=>`<th class="${isToday(d)?'today':''}">${DAY_SHORT[d]}<small>${ar(dayDate(d).getDate())}</small></th>`).join('')}<th>المجموع</th></tr>`;
 const rows=state.members.map(m=>{
 let t=0;
+const tg=m.vmode==='exact'?'/'+ar(m.vmin):m.vmode==='range'?'/'+ar(m.vmin)+'–'+ar(m.vmax):'';
 const cells=days.map(d=>{
 const r=p.rows.find(x=>x.day===d&&x.team.includes(m.id));
 if(r){t++;return `<td><span class="cell ${r.loc.type==='main'?'m':'c'}">${r.goal?'◎ ':''}${esc(r.loc.name)}</span></td>`;}
 if(m.off.includes(d))return '<td><span class="cell off">إجازة</span></td>';
 return '<td><span class="cell no">–</span></td>';
 }).join('');
-return `<tr data-mrow="${m.id}" data-key="r${m.id}"><td><span class="chip c${m.pool}" data-act="hl" data-m="${m.id}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span></td>${cells}<td class="tot">${ar(t)}</td></tr>`;
+return `<tr data-mrow="${m.id}" data-key="r${m.id}"><td><span class="chip c${m.pool}" data-act="hl" data-m="${m.id}"><i class="dot ${m.gender==='M'?'m':'f'}"></i>${esc(m.name)}</span></td>${cells}<td class="tot"${tg&&(t<memberMin(m)||t>memberMax(m))?' style="color:var(--terra-ink)"':''}>${ar(t)}${tg}</td></tr>`;
 }).join('');
 return `<div class="card rv" data-key="mgrid" style="--i:1"><div class="mgrid-wrap"><table class="mgrid"><thead>${head}</thead><tbody>${rows}</tbody></table></div></div>`;
 }
@@ -1736,6 +2182,7 @@ const stats=[
 `<span class="stat"><b>${ar(p.rows.length)}</b> زيارة</span>`,
 `<span class="stat">توازن <b>${ar(Math.round(p.fair*100))}٪</b></span>`,
 p.goalTotal?`<span class="stat">أهداف <b>${ar(p.goalHit)}/${ar(p.goalTotal)}</b></span>`:'',
+p.targetTotal?`<span class="stat${p.targetOK<p.targetTotal?' bad':''}">أعداد <b>${ar(p.targetOK)}/${ar(p.targetTotal)}</b></span>`:'',
 p.prefTotal?`<span class="stat${p.prefHit<p.prefTotal?' bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:'',
 p.dayTotal?`<span class="stat">الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:'',
 p.sim!=null?`<span class="stat">تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:'',
@@ -1772,7 +2219,7 @@ return `<div class="card alts rv" data-key="alts" style="--i:9">
 </div>`;
 }
 function failHTML(){
-return `<div class="card failcard rv" data-key="fail"><div class="fhead">${icon('i-alert')} تعذّرت الخطة</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">جرّب الوضع المرن</button><span class="tiny mut">يسمح بأيام متتالية ويُعلّمها</span>`:''}<button class="btn" data-act="gen">أعد المحاولة</button></div></div>`;
+return `<div class="card failcard rv" data-key="fail"><div class="fhead">${icon('i-alert')} تعذّرت الخطة</div><ul class="flist">${state.fail.map(m=>'<li>'+m+'</li>').join('')}</ul><div class="fbtns">${state.flexOffer?`<button class="btn terra" data-act="genflex">جرّب الوضع المرن</button><span class="tiny mut">الوضع المرن يسمح بكسر نمط الراحة وقواعد «ليس مع» ويعلّمها</span>`:''}<button class="btn" data-act="gen">أعد المحاولة</button></div></div>`;
 }
 function resHTML(){
 if(state.plans.length&&state.selected!=null)return `<div id="resMain" class="stack">${resMainInner()}</div><div id="resAlts">${altsHTML()}</div>`;
@@ -1844,6 +2291,7 @@ paintHl();
 function selectPlan(i){
 if(!state.plans[i]||i===state.selected)return;
 state.selected=i;
+recordHistory(state.plans[i]);
 renderResults();
 const a=document.querySelector('#resAlts .acard.sel');
 if(a)a.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
@@ -1871,7 +2319,7 @@ renderResults();scheduleSave();
 function refreshResMain(){renderResults();}
 function buildStaticUI(){
 renderTabs();
- $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' thu':''}" data-act="wday" data-day="${i}" aria-pressed="${state.days[i].on}">${d}<small></small></button>`).join('');
+ $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' dnear':''}" data-act="wday" data-day="${i}" aria-pressed="${state.days[i].on}">${d}<small></small></button>`).join('');
 {const s=$('#alldaysSw');s.setAttribute('aria-checked',String(state.useAllDays));s.querySelector('.sw').classList.toggle('on',state.useAllDays);}
 patchWeek();
  $('#ratioseg').innerHTML=RATIOS.map((r,i)=>`<button class="${state.ratioIdx===i?'on':''}" data-act="ratio" data-i="${i}">${r.l}</button>`).join('');
@@ -1946,8 +2394,6 @@ case'capstep':{
 const nv=clamp(state.cap[a.k]+ +a.v,1,3);
 if(nv!==state.cap[a.k]){
 state.cap[a.k]=nv;
-if(state.cap.pairTotal<state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairTotal=state.cap.mainPerDay+state.cap.conPerDay;
-if(state.cap.pairWeighted<2*state.cap.mainPerDay+state.cap.conPerDay)state.cap.pairWeighted=2*state.cap.mainPerDay+state.cap.conPerDay;
 refreshSettings();
 recalcCap();patchLocIntro();markStale();
 }
@@ -1955,7 +2401,7 @@ break;
 }
 case'minch':{state.minChanges=!state.minChanges;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.minChanges));scheduleSave();break;}
 case'autoregen':{state.autoRegen=!state.autoRegen;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(state.autoRegen));scheduleSave();break;}
-case'resetall':askConfirm('إعادة الضبط؟','سيتم مسح كل الأعضاء والمواقع والأهداف والإعدادات المحفوظة والبدء من جديد.','مسح الكل',()=>{try{localStorage.removeItem('visitplan.v1');}catch(err){}location.reload();});break;
+case'resetall':askConfirm('إعادة الضبط؟','سيتم مسح كل الأعضاء والمواقع والأهداف والإعدادات المحفوظة والبدء من جديد.','مسح الكل',()=>{try{localStorage.removeItem('visitplan.v1');localStorage.removeItem('visitplan.v2');}catch(err){}location.reload();});break;
 case'dd':ddOpen(t);break;
 case'ddpick':ddPick(a.v);break;
 case'dlgok':closeDlg(true);break;
@@ -1974,8 +2420,36 @@ case'pdel':removePairRule(+a.r);break;
 case'gadd':addGoal();break;
 case'gdel':removeGoal(+a.g);break;
 case'gon':{const g=state.goals.find(x=>x.id===+a.g);if(g){g.on=!g.on;goalChanged();}break;}
-case'gday':{const g=state.goals.find(x=>x.id===+a.g);if(g&&g.day!==+a.v){g.day=+a.v;goalChanged();}break;}
+case'gday':{
+const g=state.goals.find(x=>x.id===+a.g);
+if(g){
+const v=+a.v;
+if(v<0){if(!g.days.length)break;g.days=[];}
+else{const k=g.days.indexOf(v);if(k>=0)g.days.splice(k,1);else{g.days.push(v);g.days.sort((x,y)=>x-y);}}
+goalChanged();
+}
+break;
+}
 case'gppl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalPerson(g,+a.m);break;}
+case'gexcl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalExclude(g,+a.m);break;}
+case'lmax':{const l=locById(+a.l);if(l){const nv=clamp(l.maxWeek+ +a.v,0,5);if(nv!==l.maxWeek){l.maxWeek=nv;refreshLocations();patchLocIntro();recalcCap();markStale();}}break;}
+case'locrep':{state.locRepeat=a.v;segOn(t);recalcCap();patchLocIntro();markStale();break;}
+case'theme':applyTheme(a.v);break;
+case'prio':state.priority=a.v;segOn(t);markStale();break;
+case'carry':state.carryWeek=!state.carryWeek;refreshSettings();markStale();break;
+case'bkexp':exportBackup();break;
+case'bkimp':$('#impFile').click();break;
+case'mtypes':{const m=byId(+a.m);if(m){m.types=a.v;segOn(t);refreshGoals();markStale();}break;}
+case'mpday':{const m=byId(+a.m);if(m){const d=+a.day,i=m.prefDays.indexOf(d);if(i>=0)m.prefDays.splice(i,1);else m.prefDays.push(d);t.classList.toggle('on');markStale();}break;}
+case'lclosed':{const l=locById(+a.l);if(l){const d=+a.day,i=l.closed.indexOf(d);if(i>=0)l.closed.splice(i,1);else l.closed.push(d);refreshLocations();refreshGoals();recalcCap();markStale();}break;}
+case'mvmode':{const m=byId(+a.m);if(m&&(m.vmode||'auto')!==a.v){m.vmode=a.v;if(a.v==='exact'){if(!m.vmin)m.vmin=1;m.vmax=m.vmin;}else if(a.v==='range'){if(!m.vmin&&!m.vmax){m.vmin=1;m.vmax=2;}else if(m.vmax<m.vmin)m.vmax=m.vmin;}refreshMembers();recalcCap();markStale();}break;}
+case'mvstep':{const m=byId(+a.m);if(m){const nv=clamp(m[a.k]+ +a.v,0,7);if(nv!==m[a.k]){m[a.k]=nv;if(m.vmode==='exact')m.vmax=m.vmin;else if(a.k==='vmin'&&m.vmax<m.vmin)m.vmax=m.vmin;else if(a.k==='vmax'&&m.vmin>m.vmax)m.vmin=m.vmax;refreshMembers();recalcCap();markStale();}}break;}
+case'restpre':state.rest={rest:+a.rest,maxRun:+a.run};state.restCustom=false;restChanged();break;
+case'restcustom':state.restCustom=true;refreshSettings();break;
+case'reststep':{const nv=clamp(state.rest[a.k]+ +a.v,a.k==='rest'?0:1,3);if(nv!==state.rest[a.k]){state.rest[a.k]=nv;restChanged();}break;}
+case'restcal':state.restCalendar=!state.restCalendar;restChanged();break;
+case'mreststep':{const m=byId(+a.m);if(m&&m.rest){const nv=clamp(m.rest[a.k]+ +a.v,a.k==='rest'?0:1,3);if(nv!==m.rest[a.k]){m.rest[a.k]=nv;refreshMembers();recalcCap();markStale();}}break;}
+case'themecycle':cycleTheme();break;
 }
 });
 window.addEventListener('resize',()=>ddPlace());
@@ -2012,6 +2486,7 @@ if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,select,textarea,.dd-b
 const k=e.key.toLowerCase();
 if(k==='g'||k==='ل'){if(!state.running&&state.vcap>0)startGen('normal');e.preventDefault();}
 else if(k==='c'||k==='ؤ'){if(state.plans.length)copyPlan(false);}
+else if(k==='t'||k==='ف'){cycleTheme();}
 else if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&state.plans.length&&(state.tab==='plan'||state.tab==='results')){
 const n=state.plans.length,dir=e.key==='ArrowLeft'?1:-1;
 selectPlan((state.selected+dir+n)%n);e.preventDefault();
@@ -2019,7 +2494,11 @@ selectPlan((state.selected+dir+n)%n);e.preventDefault();
 });
 document.addEventListener('pointerover',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=+c.dataset.m;paintHl();}});
 document.addEventListener('pointerout',e=>{const c=e.target.closest('.chip[data-m]');if(c){hoverM=null;paintHl();}});
+state.members.forEach(m=>{m.types='any';m.prefDays=[];});
+state.locations.forEach(l=>{l.closed=[];});
 loadState();
+initTheme();
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='impFile')importBackup(e.target);});
 buildStaticUI();
 patchHeader();
 renderResults();
