@@ -513,7 +513,7 @@ const isToday=i=>isoD(dayDate(i))===isoD(new Date());
 const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'goals',l:'الأهداف',ic:'i-target'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
-visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,locRepeat:'avoid',theme:'system',priority:'balance',carryWeek:false,history:{},rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,
+visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,locRepeat:'avoid',theme:'system',priority:'balance',carryWeek:false,history:{},gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,
 cap:{mainPerDay:2,conPerDay:1},
 pairs:{enabled:false,mode:'soft',rules:[]},
 goals:[],
@@ -673,6 +673,10 @@ const last=fixed.filter(g=>g.days[0]===d).pop();
 add(gobj(last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
 }
 }
+for(const m of state.members){
+const gs=list.filter(g=>g.people.includes(m.id));
+if(gs.length>memberMax(m))add(gobj(gs[gs.length-1].id),m.name+': أهدافه أكثر من حد زياراته');
+}
 const valid=list.filter(g=>!issues.has(g.id));
 return{list:valid,issues,active:active.length};
 }
@@ -698,7 +702,8 @@ return 'كل عضو: حتى '+run+' ثم '+rs+' على الأقل';
 function calOn(){return _lg.rest?true:state.restCalendar;}
 function ruleOf(m){if(_lg.rest)return{rest:1,maxRun:1};return m.rest||state.rest;}
 function memberMin(m){return m.vmode==='exact'||m.vmode==='range'?m.vmin:0;}
-function memberMax(m){if(_lg.mem)return Infinity;return m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity;}
+function globalMax(){return state.gmaxOn?state.gmax:Infinity;}
+function memberMax(m){if(_lg.mem)return Infinity;return Math.min(m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity,globalMax());}
 function maxVisitDays(m,wd){
 const av=wd.filter(d=>!m.off.includes(d)),rule=ruleOf(m);
 let best=0;
@@ -714,16 +719,17 @@ const issues=[],wd=workingDays();
 const seats={1:2*(nm+nc),2:2*nm+nc},names={1:'السريريين',2:'الإداريين'};
 const lo={1:0,2:0},hi={1:0,2:0},custom={1:false,2:false};
 for(const m of state.members){
-const mn=memberMin(m),cap=maxVisitDays(m,wd);
-if(mn>cap)issues.push(m.name+': الحد الأدنى أكبر من أيامه المتاحة');
+const mn=memberMin(m),cap=Math.min(maxVisitDays(m,wd),globalMax());
+if(mn>maxVisitDays(m,wd))issues.push(m.name+': الحد الأدنى أكبر من أيامه المتاحة');
+else if(mn>cap)issues.push(m.name+': الحد الأدنى أكبر من الحد العام لزيارات الأعضاء');
 lo[m.pool]+=mn;hi[m.pool]+=Math.min(memberMax(m),cap);
 if(m.vmode==='exact'||m.vmode==='range')custom[m.pool]=true;
 }
 for(const q of[1,2]){
 if(lo[q]>seats[q])issues.push('مجموع الحد الأدنى للأعضاء '+names[q]+' ('+ar(lo[q])+') أكبر من مقاعد الخطة ('+ar(seats[q])+') — ارفع الزيارات أو خفّض الأعداد');
-else if(custom[q]&&hi[q]<seats[q])issues.push('مجموع الحد الأقصى للأعضاء '+names[q]+' ('+ar(hi[q])+') أقل من مقاعد الخطة ('+ar(seats[q])+') — خفّض الزيارات أو ارفع الحدود');
+else if((custom[q]||state.gmaxOn)&&hi[q]<seats[q])issues.push('مجموع الحد الأقصى للأعضاء '+names[q]+' ('+ar(hi[q])+') أقل من مقاعد الخطة ('+ar(seats[q])+') — خفّض الزيارات أو ارفع الحدود');
 }
-return{issues,lo,hi,seats,custom:custom[1]||custom[2]};
+return{issues,lo,hi,seats,custom:custom[1]||custom[2]||state.gmaxOn};
 }
 function dayPos(d){
 if(d<0)return d;
@@ -999,7 +1005,7 @@ function solveTeams(cfg,slots,opts){
 const vs=slots.slice().sort((a,b)=>a.day-b.day);
 const n=vs.length,teams=new Array(n),missRows=new Array(n),violRows=new Array(n);
 const busy=new Set(),md=new Map(),cnt=new Map();
-const minMembers=cfg.members.filter(m=>memberMin(m)>0),custom=cfg.members.some(m=>m.vmode==='exact'||m.vmode==='range');
+const minMembers=cfg.members.filter(m=>memberMin(m)>0),custom=state.gmaxOn||cfg.members.some(m=>m.vmode==='exact'||m.vmode==='range');
 let steps=custom?(cfg.pairs.hard?7000:5200):(cfg.pairs.hard?5200:3600),prefMiss=0,consecViol=0;
 const defi=m=>Math.max(0,memberMin(m)-(cnt.get(m.id)||0));
 const pruned=i=>{
@@ -1227,7 +1233,7 @@ const out=[];
 const nd=state.rest.rest!==1||state.rest.maxRun!==1||!state.restCalendar||state.members.some(m=>m.rest);
 if(nd&&legacyCap({rest:true})>state.vcap)out.push('نمط الراحة');
 if(legacyCap({loc:true})>state.vcap)out.push('حدود المواقع');
-if(state.members.some(m=>m.vmode==='exact'||m.vmode==='range')&&legacyCap({mem:true})>state.vcap)out.push('أعداد الأعضاء');
+if((state.gmaxOn||state.members.some(m=>m.vmode==='exact'||m.vmode==='range'))&&legacyCap({mem:true})>state.vcap)out.push('أعداد الأعضاء');
 return out;
 }
 function diagnose(cfg){
@@ -1276,7 +1282,7 @@ return{
 v:2,rest:state.rest,restCalendar:state.restCalendar,days:state.days,members:state.members,locations:state.locations,
 visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
 bulk:state.bulk,pairs:state.pairs,goals:state.goals,cap:state.cap,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view,locRepeat:state.locRepeat,
-priority:state.priority,carryWeek:state.carryWeek,history:state.history
+priority:state.priority,carryWeek:state.carryWeek,history:state.history,gmaxOn:state.gmaxOn,gmax:state.gmax
 };
 }
 function saveState(){
@@ -1364,6 +1370,8 @@ if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,1,3),conPerDay:clamp(+
 if(['free','avoid','never'].includes(d.locRepeat))state.locRepeat=d.locRepeat;
 if(['balance','prefs','stable'].includes(d.priority))state.priority=d.priority;
 if(typeof d.carryWeek==='boolean')state.carryWeek=d.carryWeek;
+if(typeof d.gmaxOn==='boolean')state.gmaxOn=d.gmaxOn;
+state.gmax=clamp(Math.round(+d.gmax)||2,1,7);
 if(d.history&&typeof d.history==='object'){state.history={};for(const k of Object.keys(d.history))if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&d.history[k]&&typeof d.history[k]==='object')state.history[k]=d.history[k];}
 const nr=r=>r&&typeof r==='object'?{rest:clamp(Math.round(+r.rest)||0,0,3),maxRun:clamp(Math.round(+r.maxRun)||1,1,3)}:null;
 if(d.rest)state.rest=nr(d.rest);
@@ -1981,6 +1989,13 @@ ${list}
 </div>
 <p class="tiny mut" style="margin-top:8px">المواقع ذات الأهداف لا تتكرر خارج أهدافها إلا إذا رفعت حدها الأسبوعي</p>
 </div>
+<div class="card rv" data-key="sgmax">
+<div class="mhead">
+<button type="button" class="swlab" role="switch" aria-checked="${state.gmaxOn?'true':'false'}" data-act="gmaxon"><span class="sw${state.gmaxOn?' on':''}"></span> حد أقصى عام لزيارات كل عضو</button>
+${state.gmaxOn?`<span class="stepper"><button data-act="gmaxstep" data-v="-1"${state.gmax<=1?' disabled':''}>−</button><b>${ar(state.gmax)}</b><button data-act="gmaxstep" data-v="1"${state.gmax>=7?' disabled':''}>+</button></span>`:''}
+</div>
+<p class="tiny mut" style="margin-top:8px">${state.gmaxOn?'لا يزور أي عضو أكثر من '+ar(state.gmax)+' في الخطة الواحدة، ويُخفَّض عدد الزيارات تلقائيًا إذا لم تكفِ المقاعد':'بلا حد عام: يحدّد نمط الراحة وأيام العمل عدد زيارات كل عضو'}</p>
+</div>
 <div class="card rv" data-key="sprio">
 <div class="mhead">
 <span class="clab">الأولوية عند ترتيب الخطط</span>
@@ -2435,6 +2450,8 @@ case'gexcl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalExclude(g,+
 case'lmax':{const l=locById(+a.l);if(l){const nv=clamp(l.maxWeek+ +a.v,0,5);if(nv!==l.maxWeek){l.maxWeek=nv;refreshLocations();patchLocIntro();recalcCap();markStale();}}break;}
 case'locrep':{state.locRepeat=a.v;segOn(t);recalcCap();patchLocIntro();markStale();break;}
 case'theme':applyTheme(a.v);break;
+case'gmaxon':state.gmaxOn=!state.gmaxOn;refreshSettings();recalcCap();refreshGoals();markStale();break;
+case'gmaxstep':{const nv=clamp(state.gmax+ +a.v,1,7);if(nv!==state.gmax){state.gmax=nv;refreshSettings();recalcCap();refreshGoals();markStale();}break;}
 case'prio':state.priority=a.v;segOn(t);markStale();break;
 case'carry':state.carryWeek=!state.carryWeek;refreshSettings();markStale();break;
 case'bkexp':exportBackup();break;
