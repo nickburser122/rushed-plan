@@ -2524,7 +2524,7 @@ case'mpref':{const m=byId(+a.m);if(m){m.pref=a.v;segOn(t);markStale();}break;}
 case'moff':{const m=byId(+a.m);if(m){const i=m.off.indexOf(+a.day);if(i>=0)m.off.splice(i,1);else m.off.push(+a.day);t.classList.toggle('on');markStale();}break;}
 case'mdel':removeMember(+a.m);break;
 case'madd':addMember();break;
-case'ltype':{const l=locById(+a.l);if(l){l.type=a.v;segOn(t);patchLocIntro();recalcCap();markStale();}break;}
+case'ltype':{const l=locById(+a.l);if(l){l.type=a.v;refreshLocations();patchLocIntro();recalcCap();markStale();}break;}
 case'ldist':{const l=locById(+a.l);if(l){l.dist=a.v;pillsOn(t);markStale();}break;}
 case'lgen':{const l=locById(+a.l);if(l){l.genderRule=!l.genderRule;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(l.genderRule));markStale();}break;}
 case'ldel':removeLocation(+a.l);break;
