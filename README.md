@@ -14,8 +14,9 @@ A single-file planner for one week of visits. It builds visit schedules for clin
 ## Goals (الأهداف)
 A goal is a visit that must be in every plan. Each goal has:
 - **Location**: required.
-- **Day**: "يختار المُخطِّط" lets the solver pick the day, or you fix it to one day.
+- **Days**: empty means the solver picks any working day. One or more days limits the solver to those days.
 - **People**: optional. Pin up to 2 clinical and 2 admin members (1 admin at contracted sites). The solver fills any empty seats.
+- **Exclude**: optional. Members who must not be on that visit.
 - An on/off switch, delete with undo.
 
 Rules:
@@ -23,8 +24,32 @@ Rules:
 - The visit count rises automatically to cover the goals, and can't go below the goal count.
 - Goals that can't work are flagged in red and skipped until fixed. This covers a non-working day, a pinned person on leave, too many people, a gender-mix conflict, a hard "ليس مع" conflict, a person double-booked or on back-to-back days across goals, or a day over its cap.
 - In the plan, goal visits show a purple "هدف" badge and pinned people show a lock. The member grid and copied text mark them with ◎. Plan stats show how many goals were met.
-- Goals are saved in `localStorage` under the `goals` key: `{id,on,loc,day(-1=auto),people[]}`.
-- Saves everything in `localStorage` (`visitplan.v1`), including the chosen week and view.
+- Goals are saved as part of the state: `{id,on,loc,days[],people[],exclude[]}`.
+- Saves everything in `localStorage` under `visitplan.v2`, including the chosen week and view. Data saved under `visitplan.v1` is migrated on load.
+- A pinned member never goes over their maximum visit count: the solver keeps room for their later goal visits when it gives them other visits.
+
+## Plan ranking
+Every plan is checked by `evaluatePlan()`, which re-reads the plan rows and does not trust the solver's flags. The result is stored as `p.eval`:
+- `hard`: rest rule, hard "ليس مع" pairs, member visit targets, goals, location caps and closed days, days off and member types, double booking, team shape, mixed-gender rule. All of these must be 0 in normal mode.
+- `soft`: soft "ليس مع" breaks, missed preferences, missed "مع" pairs, missed day preferences.
+- `clean`: no hard violations, no "ليس مع" breaks and no missed preferences.
+
+Plans are sorted in tiers, and a later tier only breaks ties inside the earlier one:
+1. Fewer hard violations.
+2. Clean plans before the rest.
+3. Fewer rule breaks ("ليس مع" breaks plus target misses).
+4. Fewer missed preferences and day preferences, only when the priority is set to preferences.
+5. Higher score: fairness, days, preferences, pairing and similarity to the previous plan.
+
+Plan 1 is always the best plan in the pool. When any pooled plan is clean, plan 1 is clean. The diversity pick fills the other slots with clean plans first, then the rest, and the final list is sorted again. "الأمثل" shows only on a clean plan 1. Otherwise plan 1 shows "الأفضل المتاح" with a warning.
+
+The search keeps running past 560ms until the pool has a clean plan, up to the 1500ms limit (2000ms in flex mode) or 9000 attempts.
+
+History for carry-over is saved when a plan is picked or after a manual generation. Auto-regeneration after a settings change does not overwrite it.
+
+## Debugging
+- `?seed=123` makes the random choices repeatable. Without it, the seed comes from the clock.
+- `?debug=1` logs every pooled plan with its `evaluatePlan()` result and rank key to the console. In normal mode it logs an error for any plan with a hard violation, since that means a solver bug.
 
 ## UI polish
 - Every dropdown (goal location, pair-rule members) is a custom pill dropdown that matches the app style. It has grouped headers (clinical/admin, main/contracted), gender dots, distance badges and a check on the selected option. It opens up or down depending on the space available. Keyboard: `↑/↓`, `Home/End`, `Enter`, `Esc`.

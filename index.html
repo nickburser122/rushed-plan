@@ -139,6 +139,10 @@ main>.view>*+*{margin-top:14px}
 .rh-name{display:flex;align-items:center;gap:8px}
 .pname{font-weight:600;font-size:15px}
 .best{background:var(--lav-soft);color:var(--lav-ink);font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.okb{background:var(--sage-soft);color:var(--sage-ink);font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.abad{background:var(--terra-soft);color:var(--terra-ink);font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.arow{display:flex;flex-wrap:wrap;gap:4px}
+.acard .bad,.acard .bad b{color:var(--terra-ink)}
 .dbtns{display:flex;gap:8px;margin-inline-start:auto;flex-wrap:wrap}
 .strow{display:flex;flex-wrap:wrap;gap:5px}
 .stat{background:var(--card2);border-radius:999px;padding:3px 11px;font-size:12px;color:var(--mut)}
@@ -458,6 +462,13 @@ const RATIOS=[{rm:1,rc:1,l:'١:١'},{rm:2,rc:1,l:'٢:١'},{rm:3,rc:1,l:'٣:١'}]
 const AR='٠١٢٣٤٥٦٧٨٩';
 const ar=n=>String(n).replace(/\d/g,d=>AR[+d]);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const QS=new URLSearchParams(location.search);
+const DEBUG=QS.get('debug')==='1';
+const SEED=QS.has('seed')&&/^\d+$/.test(QS.get('seed'))?(+QS.get('seed')>>>0):(Date.now()>>>0);
+function mulberry32(a){return function(){a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+let rng=mulberry32(SEED);
+function reseed(v){rng=mulberry32(v>>>0);}
+function shuffled(a){const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon=(id,cls='ic')=>`<svg class="${cls}"><use href="#${id}"/></svg>`;
 const $=s=>document.querySelector(s);
@@ -545,7 +556,7 @@ const workingDays=()=>state.days.map((d,i)=>d.on?i:-1).filter(i=>i>=0);
 function visitsWord(n){if(n===0)return'لا زيارات';if(n===1)return'زيارة واحدة';if(n===2)return'زيارتان';if(n<11)return ar(n)+' زيارات';return ar(n)+' زيارة';}
 const plural=(n,one,two,few,many)=>n===1?one:n===2?two:n<11?ar(n)+' '+few:ar(n)+' '+many;
 function kCombos(arr,k){const res=[];(function rec(s,cur){if(cur.length===k){res.push(cur.slice());return;}for(let i=s;i<=arr.length-(k-cur.length);i++){cur.push(arr[i]);rec(i+1,cur);cur.pop();}})(0,[]);return res;}
-function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=Math.random()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
+function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=rng()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
 const teamCap=()=>({c:state.members.filter(m=>m.pool===1).length,a:state.members.filter(m=>m.pool===2).length});
 const dayFits=(nm,nc,T)=>2*(nm+nc)<=T.c&&2*nm+nc<=T.a;
 let _reachCache=new Map(),_winCtx=null,_pos=null,_lg={};
@@ -635,8 +646,7 @@ else add(g,'لا يوم عمل يتاح فيه كل الأعضاء المحدد�
 }
 if(P.on&&P.hard)for(let i=0;i<ppl.length;i++)for(let j=i+1;j<ppl.length;j++)if(P.avoid.get(ppl[i].id)&&P.avoid.get(ppl[i].id).has(ppl[j].id))add(g,'قاعدة «ليس مع» تمنع '+ppl[i].name+' و'+ppl[j].name);
 if(loc.genderRule&&ppl.length===(2+need2)){
-const c=ppl.filter(m=>m.gender==='M').length;
-if(!(loc.type==='main'?(c===1||c===3):(c===1||c===2)))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
+if(!genderOK(ppl.map(m=>m.gender),loc.type))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
 }
 if(!issues.has(g.id))list.push({id:g.id,loc,days:gd,people,excl:g.exclude.filter(id=>alive.has(id))});
 }
@@ -881,7 +891,7 @@ const taken=[];
 function rec(i){
 if(i===gs.length)return true;
 const g=gs[i];
-const opts=cand(g).filter(s=>!s.goal&&goalDayOK(cfg,g,s.day,taken)).sort(()=>Math.random()-0.5);
+const opts=shuffled(cand(g).filter(s=>!s.goal&&goalDayOK(cfg,g,s.day,taken)));
 for(const s of opts){
 s.goal=g.id;s.req=g.people.slice();s.excl=g.excl.slice();
 taken.push({loc:g.loc,day:s.day,people:g.people});
@@ -906,7 +916,7 @@ if(!cfg.relax&&!restOK(ds.concat(d),ruleOf(byId(id))))return false;
 return true;
 }
 function buildSlots(cfg,refSlots){
-if(refSlots&&Math.random()<0.45){
+if(refSlots&&rng()<0.45){
 const ok=slotsValid(cfg,refSlots);
 if(ok)return ok;
 }
@@ -915,25 +925,27 @@ if((cfg.nMain>0&&!maxM)||(cfg.nCon>0&&!maxC))return null;
 if(cfg.useAll&&cfg.days.length>cfg.visits)return null;
 const load=new Map(cfg.days.map(d=>[d,{m:0,c:0}]));
 const T=teamCap();
+const avail=new Map(cfg.days.map(d=>[d,{c:cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length,a:cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length}]));
 const addOK=(d,t)=>{
 const L=load.get(d);
 if(t==='main'?L.m>=maxM:L.c>=maxC)return false;
 const nm=L.m+(t==='main'?1:0),nc=L.c+(t==='contracted'?1:0);
 if(!dayFits(nm,nc,T))return false;
+const A=avail.get(d);
+if(2*(nm+nc)>A.c||2*nm+nc>A.a)return false;
 return windowLoadOK(x=>load.get(x),d,nm,nc,winCtx());
 };
 const rem={main:cfg.nMain,contracted:cfg.nCon};
 const pre=[];
 if(cfg.goals.length){
-const gs=cfg.goals.slice();
-for(let i=gs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[gs[i],gs[j]]=[gs[j],gs[i]];}
+const gs=shuffled(cfg.goals);
 gs.sort((a,b)=>a.days.length-b.days.length||b.people.length-a.people.length);
 for(const g of gs){
 const t=g.loc.type;
 if(rem[t]<=0)return null;
 const cands=cfg.days.filter(d=>goalDayOK(cfg,g,d,pre)&&addOK(d,t));
 if(!cands.length)return null;
-const ws=cands.map(d=>{const dp=cfg.dayCfg[d],L=load.get(d);let w=dp.fav===t?3:(dp.fav?0.6:1.5);if(dp.dist&&g.loc.dist===dp.dist)w*=2.5;w*=1-(L.m+L.c)*0.3;return Math.max(0.05,w)*(0.4+Math.random());});
+const ws=cands.map(d=>{const dp=cfg.dayCfg[d],L=load.get(d);let w=dp.fav===t?3:(dp.fav?0.6:1.5);if(dp.dist&&g.loc.dist===dp.dist)w*=2.5;w*=1-(L.m+L.c)*0.3;return Math.max(0.05,w)*(0.4+rng());});
 const d=pickWeighted(cands,ws);
 if(t==='main')load.get(d).m++;else load.get(d).c++;
 rem[t]--;
@@ -941,8 +953,7 @@ pre.push({loc:g.loc,day:d,goal:g.id,people:g.people,excl:g.excl});
 }
 }
 if(cfg.useAll){
-const order=cfg.days.slice();
-for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+const order=shuffled(cfg.days);
 for(const d of order){
 if(load.get(d).m+load.get(d).c>0)continue;
 const dp=cfg.dayCfg[d],opts=[];
@@ -950,12 +961,12 @@ if(rem.main>0&&addOK(d,'main'))opts.push('main');
 if(rem.contracted>0&&addOK(d,'contracted'))opts.push('contracted');
 if(!opts.length)return null;
 let t=opts[0];
-if(opts.length>1)t=(dp.fav&&opts.includes(dp.fav))?dp.fav:(Math.random()<rem.main/(rem.main+rem.contracted)?'main':'contracted');
+if(opts.length>1)t=(dp.fav&&opts.includes(dp.fav))?dp.fav:(rng()<rem.main/(rem.main+rem.contracted)?'main':'contracted');
 if(t==='main')load.get(d).m++;else load.get(d).c++;
 rem[t]--;
 }
 }
-const types=Math.random()<0.5?['main','contracted']:['contracted','main'];
+const types=rng()<0.5?['main','contracted']:['contracted','main'];
 for(const t of types){
 const n=rem[t];
 for(let k=0;k<n;k++){
@@ -965,7 +976,7 @@ const ws=cands.map(d=>{
 const dp=cfg.dayCfg[d],L=load.get(d);
 let w=dp.fav===t?6:(dp.fav?0.45:2);
 w*=1-(L.m+L.c)*0.3;
-return Math.max(0.05,w)*(0.4+Math.random());
+return Math.max(0.05,w)*(0.4+rng());
 });
 const d=pickWeighted(cands,ws);
 if(t==='main')load.get(d).m++;else load.get(d).c++;
@@ -984,7 +995,7 @@ const cands=pool.filter(l=>!used.has(l.id)&&!l.closed.includes(d)&&(usage.get(l.
 if(!cands.length)return false;
 let best=null,bs=-1e9;
 for(const l of cands){
-let s=3-(usage.get(l.id)||0)*pen+Math.random()*1.6;
+let s=3-(usage.get(l.id)||0)*pen+rng()*1.6;
 if(dp.dist){
 if(l.dist===dp.dist)s+=5;
 else if(l.dist&&l.dist!=='mid')s-=2;
@@ -1008,7 +1019,19 @@ const busy=new Set(),md=new Map(),cnt=new Map();
 const minMembers=cfg.members.filter(m=>memberMin(m)>0),custom=state.gmaxOn||cfg.members.some(m=>m.vmode==='exact'||m.vmode==='range');
 let steps=custom?(cfg.pairs.hard?7000:5200):(cfg.pairs.hard?5200:3600),prefMiss=0,consecViol=0;
 const defi=m=>Math.max(0,memberMin(m)-(cnt.get(m.id)||0));
+const pinnedAfter=(id,i)=>{
+const a=resvDays.get(id);
+if(!a)return 0;
+let k=0;
+for(const q of a)if(q.i>i)k++;
+return k;
+};
 const pruned=i=>{
+for(const [id,a] of resvDays){
+const m=byId(id),mx=memberMax(m);
+if(a.length>mx)continue;
+if((cnt.get(id)||0)+pinnedAfter(id,i)>mx)return true;
+}
 if(!minMembers.length)return false;
 let R1=0,R2=0,D1=0,D2=0;
 for(let j=i+1;j<n;j++){R1+=2;R2+=vs[j].loc.type==='main'?2:1;}
@@ -1019,7 +1042,7 @@ const days=new Set(),asg=md.get(m.id),base=(asg?[...asg]:[]).concat(prevMap.get(
 for(let j=i+1;j<n;j++){
 const d=vs[j].day;
 if(m.off.includes(d)||busy.has(m.id+':'+d)||(vs[j].excl&&vs[j].excl.includes(m.id)))continue;
-if(rule.rest>0&&!restOK(base.concat(d),rule))continue;
+if(!opts.relax&&rule.rest>0&&!restOK(base.concat(d),rule))continue;
 days.add(d);
 }
 if(days.size<df)return true;
@@ -1032,8 +1055,7 @@ vs.forEach((s,i)=>{if(s.req)for(const id of s.req){resv.set(id+':'+s.day,i);if(!
 const reservedElse=(id,d,i)=>{const r=resv.get(id+':'+d);return r!=null&&r!==i;};
 const gOK=(gs,v)=>{
 if(!v.loc.genderRule)return true;
-const c=gs.filter(x=>x==='M').length;
-return v.loc.type==='main'?(c===1||c===3):(c===1||c===2);
+return genderOK(gs,v.loc.type);
 };
 function dfs(i){
 if(i===n)return minMembers.every(m=>(cnt.get(m.id)||0)>=memberMin(m));
@@ -1045,7 +1067,7 @@ if(m.off.includes(v.day)||busy.has(m.id+':'+v.day))continue;
 if(v.excl&&v.excl.includes(m.id))continue;
 if(m.types&&m.types!=='any'&&m.types!==v.loc.type)continue;
 if(reservedElse(m.id,v.day,i))continue;
-if((cnt.get(m.id)||0)>=memberMax(m)&&!(req&&req.has(m.id)))continue;
+if(!(req&&req.has(m.id))&&(cnt.get(m.id)||0)+1+pinnedAfter(m.id,i)>memberMax(m))continue;
 const rule=ruleOf(m),s=md.get(m.id),base=s?[...s]:[];
 for(const q of(resvDays.get(m.id)||[]))if(q.i!==i)base.push(q.d);
 for(const q of(prevMap.get(m.id)||[]))base.push(q);
@@ -1069,7 +1091,7 @@ if(c1.length<2||c2.length<need2)return false;
 if(req){const ok=new Set(c1.concat(c2).map(x=>x.m.id));for(const id of req)if(!ok.has(id))return false;}
 const P=cfg.pairs;
 const availSet=P.on?new Set(c1.concat(c2).map(x=>x.m.id)):null;
-const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb-90*defi(x.m);
+const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.rb-90*defi(x.m)-52*(x.pv===1?1:0)+52*(x.pv===-1?1:0)+(x.m.prefDays&&x.m.prefDays.length?(x.m.prefDays.includes(v.day)?-20:20):0);
 const c1s=c1.length>6?c1.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c1;
 const c2s=c2.length>6?c2.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,8):c2;
 const combos=[];
@@ -1080,7 +1102,7 @@ if(!gOK(team.map(x=>x.m.gender),v))continue;
 let sc=0,miss=0,vio=0;
 for(const x of team){
 if(req&&req.has(x.m.id)){sc+=x.viol*140;if(x.viol)vio++;continue;}
-sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb-90*defi(x.m)+Math.random()*7;
+sc+=(cnt.get(x.m.id)||0)*8+x.rem*3+x.viol*140+x.rb-90*defi(x.m)+rng()*7;
 if(x.pv===1)sc-=52;else if(x.pv===-1){sc+=52;miss++;}
 if(x.m.prefDays&&x.m.prefDays.length)sc+=x.m.prefDays.includes(v.day)?-20:20;
 if(x.viol)vio++;
@@ -1133,8 +1155,8 @@ return false;
 }
 return dfs(0)?{teams,missRows,violRows,prefMiss,consecViol,order:vs}:null;
 }
-function hashSol(slots,sol){
-return slots.map((s,i)=>[s.day,s.loc.id,s.day+':'+s.loc.id+':'+sol.teams[i].slice().sort((x,y)=>x-y).join('.')]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]).join('|');
+function hashSol(sol){
+return sol.order.map((s,i)=>[s.day,s.loc.id,s.day+':'+s.loc.id+':'+sol.teams[i].slice().sort((x,y)=>x-y).join('.')]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]).join('|');
 }
 function triples(p){const s=new Set();for(const r of p.rows)for(const id of r.team)s.add(r.day+':'+r.loc.id+':'+id);return s;}
 function diffPlans(a,b){
@@ -1143,13 +1165,10 @@ for(const t of A)if(B.has(t))inter++;
 const un=A.size+B.size-inter;
 return un?1-inter/un:1;
 }
-function makePlan(cfg,slots,sol,ref){
-const rows=slots.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[],goal:s.goal||null,req:s.req||[]}));
+function makePlan(cfg,sol,ref){
+const rows=sol.order.map((s,i)=>({day:s.day,loc:{...s.loc},team:sol.teams[i],miss:sol.missRows[i]||[],viol:sol.violRows[i]||[],goal:s.goal||null,req:s.req||[]}));
 const counts=new Map();
 for(const r of rows)for(const id of r.team)counts.set(id,(counts.get(id)||0)+1);
-const lcnt=new Map();
-for(const r of rows)lcnt.set(r.loc.id,(lcnt.get(r.loc.id)||0)+1);
-for(const [id,k] of lcnt)if(cfg.lmax.has(id)&&k>cfg.lmax.get(id))console.warn('location cap exceeded',id,k,cfg.lmax.get(id));
 let pairHit=0,pairTotal=0,pairBreak=0;
 if(cfg.pairs.on){
 for(const r of rows){
@@ -1193,7 +1212,72 @@ const tot=cs.reduce((a,b)=>a+b,0),avg=cs.length?tot/cs.length:0;
 let vr=0,ss=0;
 for(const c of cs){vr+=(c-avg)**2;ss+=c*c;}
 const fair=ss&&cs.length?clamp(1-vr/ss,0,1):1;
-return{rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak,goalHit:rows.filter(r=>r.goal).length,goalTotal:cfg.goals.length,targetOK,targetTotal:tm.length};
+const plan={rows,counts,fair,prefHit,prefTotal,dayHit:favHit+distHit,dayTotal:favTotal+distTotal,sim,consecViol:sol.consecViol,prefMiss:sol.prefMiss,days:cfg.days.slice(),pairHit,pairTotal,pairBreak,goalHit:rows.filter(r=>r.goal).length,goalTotal:cfg.goals.length,targetOK,targetTotal:tm.length};
+plan.eval=evaluatePlan(plan,cfg);
+return plan;
+}
+function genderOK(genders,type){
+const c=genders.filter(x=>x==='M').length;
+return type==='main'?(c===1||c===3):(c===1||c===2);
+}
+function evaluatePlan(p,cfg){
+const rows=p.rows,prev=carryPrev(),P=cfg.pairs;
+const hard={rest:0,pairHard:0,targets:0,goals:0,locCap:0,offDay:0,doubleBook:0,teamShape:0,gender:0};
+const soft={pairAvoid:0,prefMiss:0,withMiss:0,dayMiss:0};
+const days=new Map(),counts=new Map(),lcnt=new Map();
+for(const r of rows){
+lcnt.set(r.loc.id,(lcnt.get(r.loc.id)||0)+1);
+if((r.loc.closed||[]).includes(r.day))hard.locCap++;
+const need2=r.loc.type==='main'?2:1,seen=new Set();
+let c1=0,c2=0;
+for(const id of r.team){
+const m=byId(id);
+if(!m||seen.has(id)){hard.teamShape++;continue;}
+seen.add(id);
+if(m.pool===1)c1++;else c2++;
+if(m.off.includes(r.day)||(m.types&&m.types!=='any'&&m.types!==r.loc.type))hard.offDay++;
+const ds=days.get(id)||[];
+if(ds.includes(r.day))hard.doubleBook++;
+ds.push(r.day);days.set(id,ds);
+counts.set(id,(counts.get(id)||0)+1);
+}
+if(c1!==2||c2!==need2)hard.teamShape++;
+if(r.loc.genderRule&&!genderOK(r.team.map(id=>{const m=byId(id);return m?m.gender:null;}),r.loc.type))hard.gender++;
+if(P.on)for(const q of P.list){
+if(q.kind==='avoid'&&r.team.includes(q.a)&&r.team.includes(q.b)){if(P.hard)hard.pairHard++;else soft.pairAvoid++;}
+}
+}
+for(const [id,ds] of days){
+const rule=ruleOf(byId(id));
+if(rule.rest===0)continue;
+const pts=new Map();
+for(const x of prev.get(id)||[])pts.set(x,false);
+for(const d of ds){const x=dayPos(d);if(x!==null&&x!==undefined)pts.set(x,true);}
+const seq=[...pts.entries()].sort((a,b)=>a[0]-b[0]);
+let run=1;
+for(let i=1;i<seq.length;i++){
+const gap=seq[i][0]-seq[i-1][0]-1;
+if(gap===0){run++;if(run>rule.maxRun&&seq[i][1])hard.rest++;}
+else{if(gap<rule.rest&&seq[i][1])hard.rest++;run=1;}
+}
+}
+for(const m of cfg.members){
+const c=counts.get(m.id)||0;
+if(c<memberMin(m)||c>memberMax(m))hard.targets++;
+}
+for(const g of cfg.goals){
+const r=rows.find(x=>x.goal===g.id);
+if(!r||r.loc.id!==g.loc.id||!g.days.includes(r.day)||g.people.some(id=>!r.team.includes(id))||g.excl.some(id=>r.team.includes(id)))hard.goals++;
+}
+for(const [id,k] of lcnt){
+const mx=cfg.lmax.get(id);
+if(mx!=null&&k>mx)hard.locCap+=k-mx;
+}
+soft.prefMiss=p.prefTotal-p.prefHit;
+soft.withMiss=p.pairTotal-p.pairHit;
+soft.dayMiss=p.dayTotal-p.dayHit;
+const hardCount=Object.values(hard).reduce((a,b)=>a+b,0);
+return{hard,soft,hardCount,ruleBreaks:soft.pairAvoid+hard.targets,clean:hardCount===0&&soft.pairAvoid===0&&soft.prefMiss===0};
 }
 function diagnosePairs(cfg){
 const P=cfg.pairs,out=[];
@@ -1220,7 +1304,16 @@ if(p.prefTotal)s+=W.p*(p.prefHit/p.prefTotal);
 if(p.pairTotal)s+=0.28*(p.pairHit/p.pairTotal);
 if(p.pairBreak)s-=0.45*Math.min(1,p.pairBreak/Math.max(1,p.rows.length));
 if(p.sim!=null)s=(1-W.sim)*s+W.sim*p.sim;
-return s+Math.random()*0.001;
+return s+rng()*0.001;
+}
+function rankTuple(p){
+const e=p.eval;
+return[e.hardCount,e.clean?0:1,e.ruleBreaks,state.priority==='prefs'?e.soft.prefMiss+e.soft.dayMiss:0,-p.score];
+}
+function comparePlans(a,b){
+const x=rankTuple(a),y=rankTuple(b);
+for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]<y[i]?-1:1;
+return 0;
 }
 function legacyCap(g){
 _lg=g;_reachCache.clear();_winCtx=null;_pos=null;
@@ -1420,7 +1513,9 @@ if(useRef)for(const r of sel.rows)for(const id of r.team){refMD.add(id+':'+r.day
 const refSlots=useRef?sel.rows.map(r=>({loc:r.loc,day:r.day})):null;
 const pool=new Map();
 let attempts=0;
-const t0=performance.now(),soft=t0+560,hard=t0+(mode==='flex'?2000:1500),target=14;
+const t0=performance.now(),soft=t0+560,hard=t0+(mode==='flex'?2000:1500),target=30;
+let hasClean=false;
+const enough=()=>pool.size>=target&&hasClean&&performance.now()>soft;
 (function chunk(){
 if(run!==genRun)return;
 const c0=performance.now();
@@ -1430,20 +1525,34 @@ const slots=buildSlots(cfg,refSlots);
 if(slots){
 const sol=solveTeams(cfg,slots,{relax:mode==='flex',refMD,refTR});
 if(sol){
-const h=hashSol(slots,sol);
-if(!pool.has(h))pool.set(h,makePlan(cfg,slots,sol,useRef?sel:null));
+const h=hashSol(sol);
+if(!pool.has(h)){
+const pl=makePlan(cfg,sol,useRef?sel:null);
+pool.set(h,pl);
+if(pl.eval.clean)hasClean=true;
 }
 }
-if((pool.size>=target&&performance.now()>soft)||performance.now()>hard||attempts>=9000)break;
+}
+if(enough()||performance.now()>hard||attempts>=9000)break;
 }
 if(run!==genRun)return;
 const gn=$('#gn'),gf=$('#gf');
 if(gn)gn.textContent=ar(attempts);
 if(gf)gf.textContent=ar(pool.size);
 const now=performance.now();
-if((pool.size>=target&&now>soft)||now>hard||attempts>=9000){finishGen(mode,cfg,pool,attempts);return;}
+if(enough()||now>hard||attempts>=9000){finishGen(mode,cfg,pool,attempts);return;}
 setTimeout(chunk,0);
 })();
+}
+function debugPool(mode,all,attempts){
+if(!DEBUG)return;
+window.__lastPool=all;
+console.groupCollapsed('[rushed-plan] seed='+SEED+' mode='+mode+' pool='+all.length+' attempts='+attempts);
+all.forEach((p,i)=>{
+console.log('#'+i,{rank:rankTuple(p).map(v=>+v.toFixed(4)),fair:+p.fair.toFixed(3),eval:p.eval,sim:p.sim});
+if(mode!=='flex'&&p.eval.hardCount)console.error('[rushed-plan] solver bug: hard violations in normal mode',p.eval.hard);
+});
+console.groupEnd();
 }
 function finishGen(mode,cfg,pool,attempts){
 state.running=false;state.lastRun={attempts,found:pool.size};
@@ -1454,17 +1563,25 @@ state.fail=diagnose(cfg);
 if(mode==='flex')state.fail.unshift('لا حل حتى مع الوضع المرن');
 }else{
 all.forEach(p=>p.score=scorePlan(p));
-all.sort((a,b)=>b.score-a.score);
-const want=6,picked=[];let thr=0.34;
+all.sort(comparePlans);
+debugPool(mode,all,attempts);
+const want=6,picked=[all[0]];
+const fill=list=>{
+let thr=0.34;
 while(picked.length<want){
-for(const p of all){
+for(const p of list){
 if(picked.length>=want)break;
 if(!picked.includes(p)&&picked.every(q=>diffPlans(p,q)>=thr))picked.push(p);
 }
 if(thr<=0)break;
 thr=thr>0.04?thr/2:0;
 }
-state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;recordHistory(picked[0]);
+};
+fill(all.filter(p=>p.eval.clean));
+fill(all.filter(p=>!p.eval.clean));
+picked.sort(comparePlans);
+state.plans=picked;state.selected=0;state.flexOffer=false;state.fail=null;
+if(!state._quiet)recordHistory(picked[0]);
 }
 updateGenUI();updateLastRun();renderResults();
 const tn=$('#tnum');if(tn)tn.textContent=state.plans.length?ar(state.plans.length):'';
@@ -2147,6 +2264,18 @@ g.exclude=g.exclude.filter(id=>id!==mid);
 g.people.push(mid);
 goalChanged();
 }
+function badItems(p){
+const E=p.eval,h=E.hard;
+return[
+{k:'targets',l:'أعداد',n:h.targets},
+{k:'pair',l:'تعارض',n:h.pairHard+E.soft.pairAvoid},
+{k:'rest',l:'مخالفات',n:h.rest},
+{k:'other',l:'قواعد أخرى',n:E.hardCount-h.rest-h.pairHard-h.targets}
+].filter(x=>x.n>0);
+}
+const bestBadge=(p,i)=>i!==0?'':p.eval.clean?'<span class="best">الأمثل</span>':'<span class="best">الأفضل المتاح</span>';
+const okBadge=p=>p.eval.clean?'<span class="okb">تستوفي كل القواعد</span>':'';
+const noCleanNote=()=>state.plans.length&&!state.plans[0].eval.clean?`<div class="warnbox">${icon('i-alert')} لا توجد خطة تستوفي كل القواعد — أقل المخالفات أولًا</div>`:'';
 function miniStrip(p){
 const wd=p.days.slice().sort((a,b)=>a-b);
 return `<div class="wstrip">${wd.map(d=>{
@@ -2197,18 +2326,18 @@ const stats=[
 `<span class="stat"><b>${ar(p.rows.length)}</b> زيارة</span>`,
 `<span class="stat">توازن <b>${ar(Math.round(p.fair*100))}٪</b></span>`,
 p.goalTotal?`<span class="stat">أهداف <b>${ar(p.goalHit)}/${ar(p.goalTotal)}</b></span>`:'',
-p.targetTotal?`<span class="stat${p.targetOK<p.targetTotal?' bad':''}">أعداد <b>${ar(p.targetOK)}/${ar(p.targetTotal)}</b></span>`:'',
-p.prefTotal?`<span class="stat${p.prefHit<p.prefTotal?' bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:'',
+p.targetTotal?`<span class="stat${p.eval.hard.targets>0?' bad':''}">أعداد <b>${ar(p.targetOK)}/${ar(p.targetTotal)}</b></span>`:'',
+p.prefTotal?`<span class="stat${p.eval.soft.prefMiss>0?' bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:'',
 p.dayTotal?`<span class="stat">الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:'',
 p.sim!=null?`<span class="stat">تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:'',
 p.pairTotal?`<span class="stat">اقتران <b>${ar(p.pairHit)}/${ar(p.pairTotal)}</b></span>`:'',
-p.pairBreak?`<span class="stat bad">تعارض <b>${ar(p.pairBreak)}</b></span>`:'',
-p.consecViol?`<span class="stat bad">مخالفات <b>${ar(p.consecViol)}</b></span>`:''
+...badItems(p).filter(x=>!(x.k==='targets'&&p.targetTotal)).map(x=>`<span class="stat bad">${x.l} <b>${ar(x.n)}</b></span>`)
 ].filter(Boolean).join('');
-const warn=(p.consecViol||p.pairBreak)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${p.consecViol?ar(p.consecViol)+' تتابع':''}${p.consecViol&&p.pairBreak?' · ':''}${p.pairBreak?ar(p.pairBreak)+' تعارض اقتران':''} — معلّمة بالأحمر</div>`:'';
+const E=p.eval,pn=E.hard.pairHard+E.soft.pairAvoid;
+const warn=noCleanNote()+((E.hard.rest||pn)?`<div class="warnbox">${icon('i-alert')} وضع مرن: ${E.hard.rest?ar(E.hard.rest)+' تتابع':''}${E.hard.rest&&pn?' · ':''}${pn?ar(pn)+' تعارض اقتران':''} — معلّمة بالأحمر</div>`:'');
 return `<div class="card reshead rv" data-key="rhead" style="--i:0">
 <div class="rh-top">
-<div class="rh-name"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
+<div class="rh-name"><span class="pname">خطة ${ar(i+1)}</span>${bestBadge(p,i)}${okBadge(p)}</div>
 <div class="strow">${stats}</div>
 <div class="dbtns"><button class="btn sm primary" data-act="copy">${icon('i-copy')} نسخ</button><button class="btn sm" data-act="copydet">نسخ بالأعضاء</button><button class="btn sm" data-act="share">مشاركة</button><button class="btn sm" data-act="print">طباعة</button></div>
 </div>
@@ -2226,7 +2355,8 @@ const cards=state.plans.map((p,i)=>`
 <button class="acard${i===state.selected?' sel':''}" data-key="a${i}" aria-pressed="${i===state.selected}" data-act="plan-sel" data-i="${i}">
 <span class="aname">خطة ${ar(i+1)}</span>
  ${miniStrip(p)}
-<span class="tiny mut">توازن ${ar(Math.round(p.fair*100))}٪${p.prefTotal?` · تفضيلات ${ar(p.prefHit)}/${ar(p.prefTotal)}`:''}</span>
+<span class="tiny mut">توازن ${ar(Math.round(p.fair*100))}٪${p.prefTotal?` · <span class="${p.eval.soft.prefMiss>0?'bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:''}</span>
+${p.eval.clean||badItems(p).length?`<span class="arow">${okBadge(p)}${badItems(p).map(x=>`<span class="abad">${x.l} ${ar(x.n)}</span>`).join('')}</span>`:''}
 </button>`).join('');
 return `<div class="card alts rv" data-key="alts" style="--i:9">
 <div class="alts-head"><span class="kicker" style="margin:0">بدائل</span><button class="linky" data-act="goresults">مقارنة ←</button></div>
@@ -2244,18 +2374,17 @@ return `<div class="card idle rv" data-key="idle">${icon('i-cal')} اضغط «ت
 }
 function pcardHTML(p,i){
 return `<button class="pcard rv${i===state.selected?' sel':''}" data-key="p${i}" aria-pressed="${i===state.selected}" style="--i:${i}" data-act="rplan" data-i="${i}">
-<div class="ptop"><span class="pname">خطة ${ar(i+1)}</span>${i===0?'<span class="best">الأمثل</span>':''}</div>
+<div class="ptop"><span class="pname">خطة ${ar(i+1)}</span>${bestBadge(p,i)}${okBadge(p)}</div>
  ${miniStrip(p)}
 <div class="pstats">
 <span><b>${ar(p.rows.length)}</b> زيارة</span>
 <span>توازن <b>${ar(Math.round(p.fair*100))}٪</b></span>
  ${p.goalTotal?`<span>أهداف <b>${ar(p.goalHit)}/${ar(p.goalTotal)}</b></span>`:''}
- ${p.prefTotal?`<span class="${p.prefHit<p.prefTotal?'bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:''}
+ ${p.prefTotal?`<span class="${p.eval.soft.prefMiss>0?'bad':''}">تفضيلات <b>${ar(p.prefHit)}/${ar(p.prefTotal)}</b></span>`:''}
  ${p.dayTotal?`<span>الأيام <b>${ar(p.dayHit)}/${ar(p.dayTotal)}</b></span>`:''}
  ${p.sim!=null?`<span>تشابه <b>${ar(Math.round(p.sim*100))}٪</b></span>`:''}
  ${p.pairTotal?`<span>اقتران <b>${ar(p.pairHit)}/${ar(p.pairTotal)}</b></span>`:''}
- ${p.pairBreak?`<span class="bad">تعارض <b>${ar(p.pairBreak)}</b></span>`:''}
- ${p.consecViol?`<span class="bad"><b>${ar(p.consecViol)}</b> مخالفة</span>`:''}
+ ${badItems(p).map(x=>`<span class="bad">${x.l} <b>${ar(x.n)}</b></span>`).join('')}
 </div>
 </button>`;
 }
@@ -2272,7 +2401,7 @@ return `<div class="card rdetail rv" data-key="rdet">
 <div class="dayhead" style="margin-bottom:12px"><span class="dname">أحمال خطة ${ar((state.selected??0)+1)}</span><span class="lg"><i class="pdot d1"></i>سريري</span><span class="lg"><i class="pdot d2"></i>إداري</span><span class="tiny mut" style="margin-inline-start:auto">اضغط اسمًا لتمييزه</span></div>
 <div class="mloads">${loads}</div>
  ${locs?`<div class="locuse">${icon('i-pin')}<span>${locs}</span></div>`:''}
- ${p.consecViol?`<div class="warnbox">${icon('i-alert')} ${ar(p.consecViol)} مخالفة تتابع (وضع مرن)</div>`:''}
+ ${p.eval.hard.rest?`<div class="warnbox">${icon('i-alert')} ${ar(p.eval.hard.rest)} مخالفة تتابع (وضع مرن)</div>`:''}
 </div>`;
 }
 function resultsTabHTML(){
