@@ -1217,8 +1217,9 @@ plan.eval=evaluatePlan(plan,cfg);
 return plan;
 }
 function genderOK(genders,type){
+if(type!=='main')return true;
 const c=genders.filter(x=>x==='M').length;
-return type==='main'?(c===1||c===3):(c===1||c===2);
+return c===1||c===3;
 }
 function evaluatePlan(p,cfg){
 const rows=p.rows,prev=carryPrev(),P=cfg.pairs;
@@ -1359,10 +1360,10 @@ capM.push('مع الإجازات: الأقصى '+ar(b2[0])+' رئيسية و'+ar
 }
 const short=cfg.days.filter(d=>cfg.members.filter(m=>m.pool===1&&!m.off.includes(d)).length<2||cfg.members.filter(m=>m.pool===2&&!m.off.includes(d)).length<1);
 if(short.length)old.push('يوم '+DAYS[short[0]]+': المتاحون أقل من الحد الأدنى');
-if(cfg.locs.some(l=>l.genderRule))for(const d of cfg.days){
+if(cfg.nMain>0&&cfg.mains.some(l=>l.genderRule))for(const d of cfg.days){
 const av=cfg.members.filter(m=>!m.off.includes(d));
 if(av.length&&av.every(m=>m.gender===av[0].gender)){
-old.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب');break;
+old.push('يوم '+DAYS[d]+': المتاحون من نوع واحد والخلط مطلوب في المواقع الرئيسية');break;
 }
 }
 if(cfg.goals.length&&!goalM.length&&!pre.length&&!memM.length&&!locM.length&&!capM.length&&!old.length)goalM.push('الأهداف المحددة تضيّق الحل — جرّب تخفيف الأيام أو الأعضاء المحددين فيها');
@@ -1818,7 +1819,7 @@ ${state.goals.some(g=>g.on&&g.loc===l.id)?'<span class="badge bgoal">◎ هدف<
 <div class="lrow">
 <span class="tiny mut">المسافة</span>
 <div class="pills">${dists.map(d=>`<button class="pill dst${l.dist===d.v?' on':''}" data-act="ldist" data-l="${l.id}" data-v="${d.v}">${d.l}</button>`).join('')}</div>
-<button type="button" class="swlab" role="switch" aria-checked="${l.genderRule?'true':'false'}" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</button>
+${l.type==='main'?`<button type="button" class="swlab" role="switch" aria-checked="${l.genderRule?'true':'false'}" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</button>`:''}
 </div>
 <div class="lrow">
 <span class="tiny mut">الحد الأسبوعي</span>
