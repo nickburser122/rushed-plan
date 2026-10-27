@@ -3,13 +3,47 @@
 A single-file planner for one week of visits. It builds visit schedules for clinical and admin teams.
 
 ## What it does
-- Builds several valid plans for the week. It respects team makeup (2 clinical + 2 admin at main sites, 2 + 1 at contracted sites), days off, the no-consecutive-days rule, mixed-gender rules, near/far preferences and pairing rules.
+- Builds several valid plans for the week. It respects team makeup (2 clinical + 2 admin at main sites, 2 + 1 at contracted sites by default, overridable per location), days off, the rest rule, mixed-gender rules, near/far preferences, pairing rules, place-conflict rules and the repeat policy.
 - Shows real dates for the week, with previous/next week buttons. Clicking the label jumps back to the current week. Today is highlighted.
 - Has two views: by day, or a grid by member showing where each person is each day, their days off and their total.
 - Lets you copy the plan as dated text, copy it per member, share it (native share sheet or WhatsApp) and print a clean layout.
 - Lets you undo deleting a member or location from the toast.
 - Keyboard shortcuts: `G` generates, `←/→` switch plans, `C` copies, `Esc` clears the highlight, `Enter` confirms a name.
 - On mobile, the tab bar sits at the bottom of the screen.
+
+## Architecture
+One pipeline, each stage reading only the stage before it:
+1. `compileModel()` snapshots the state into a model `M`: working days, locations with their seat shape, repeat mode and eligible members, compiled goals, pairs and conflicts, window capacity caps, and the candidate main/contracted splits.
+2. `makeBoard(M)` is the single slot board. `fits()` is the only place that decides whether a visit may go on a day (closed days, per-location cap, repeat policy, per-day limits, available and eligible people, window capacity under the rest rule). Both the slot builder and the replay of a previous plan use it.
+3. `solveTeams(M, slots)` assigns people with a depth-first search over seat shapes. Pool visits fill the location's clinical/admin seats. Custom visits fill a size from named candidates.
+4. `evaluatePlan(p, M)` re-reads the rows and counts hard and soft violations per rule family. Ranking uses only this result.
+5. `advise(M)` and `runDiagnosis()` explain problems. Every suggestion is a plain fix object `{op,...}` in the `FIX` registry, so one function (`applyFix`) applies it from any card, panel or failure message.
+
+Relaxation context: `withRelax(families, fn, {skip, exempt})` re-runs the same model with rule families removed, individual rules skipped, or members exempted from the rest rule. It powers both the capacity explanation and the failure diagnosis. Flex mode is different: it keeps the rules but lets the solver break `rest`, `pairs` and `conflicts` with a penalty, and marks the breaks.
+
+## Locations
+- **Seats**: each location has clinical and admin seat counts. Defaults come from its type (main 2+2, contracted 2+1). Change them on the location card; "الافتراضي" resets.
+- **Eligible members**: tap a member once to restrict the location to the chosen members, tap again to exclude them.
+- **Repeat**: use the global policy or override per location. `ممنوع` allows one visit a week. `منفصل` allows repeats on different days, each its own visit. `مدموج` allows repeats on the same day only and shows them as one visit with several teams. Setting «المكرَّر بأعضاء مختلفين» (on by default) keeps repeat visits to different people.
+- **Mixed gender** works on any location. Teams of 4 need 1 or 3 men, other sizes need at least one of each.
+
+## Days
+- Global "up to" limit per day (default 3) plus the existing main/contracted per-day limits, and an optional limit per day card.
+- "توزيع متساوٍ" (on by default) fills the least-loaded day first, so a day only gets a second visit when the visit count needs it.
+
+## Conflict rules (تعارض المواقع)
+Settings → each rule has a set of places A and a set of places B. Anyone who visits a place in A is kept off every place in B in the same plan. Scope: everyone, clinical, admin, or named members. Strict rules are hard, flexible rules only count against the plan.
+
+## Special visits
+In Goals, switch a goal to "فريق مخصص". Set a team size and the candidate members (empty means everyone). Pinned members are always on the team and the rest is filled from the candidates, whatever their group. The pool seat shape and the mixed-gender rule do not apply.
+
+## Advisor
+- The panel on the plan tab lists problems with one-tap fixes.
+- Member cards warn when days off plus the rest rule cost that person visits (for example available only on two consecutive days) and offer "استثناء من قاعدة الراحة".
+- When visits are cut to fit capacity, the panel names the limiting rule and offers the matching fix.
+- When no plan exists, the failure card probes which rule family blocks the plan, tries each rule or member separately, and offers the smallest fix.
+
+Saved data stays under `visitplan.v2`. Old saves migrate on load: the old repeat setting maps to the new repeat policy, and contracted locations keep their old unrestricted gender behaviour.
 
 ## Goals (الأهداف)
 A goal is a visit that must be in every plan. Each goal has:
