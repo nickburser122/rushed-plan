@@ -24,7 +24,7 @@ Relaxation context: `withRelax(families, fn, {skip, exempt})` re-runs the same m
 ## Locations
 - **Seats**: each location has clinical and admin seat counts. Defaults come from its type (main 2+2, contracted 2+1). Change them on the location card; "الافتراضي" resets.
 - **Eligible members**: tap a member once to restrict the location to the chosen members, tap again to exclude them.
-- **Repeat**: use the global policy or override per location. `ممنوع` allows one visit a week. `منفصل` allows repeats on different days, each its own visit. `مدموج` allows repeats on the same day only and shows them as one visit with several teams. Setting «المكرَّر بأعضاء مختلفين» (on by default) keeps repeat visits to different people.
+- **Repeat**: use the global policy or override per location. `ممنوع` allows one visit a week. `منفصل` allows repeats on different days, each its own visit. `مدموج` allows repeats on the same day only and shows them as one visit with several teams. Setting «المكرَّر بأعضاء مختلفين» (off by default, as in the old behaviour) keeps repeat visits to different people.
 - **Mixed gender** works on any location. Teams of 4 need 1 or 3 men, other sizes need at least one of each.
 
 ## Days

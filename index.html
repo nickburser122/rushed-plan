@@ -539,8 +539,8 @@ const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic
 const state={
 tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
 visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,theme:'system',priority:'balance',carryWeek:false,history:{},gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,failFixes:[],diagBusy:false,advice:[],advAll:false,
-cap:{mainPerDay:2,conPerDay:1,dayMax:3,even:true},
-dup:{mode:'separate',people:'different',spread:'avoid'},
+cap:{mainPerDay:2,conPerDay:1,dayMax:0,even:true},
+dup:{mode:'separate',people:'any',spread:'avoid'},
 conflicts:[],
 pairs:{enabled:false,mode:'soft',rules:[]},
 goals:[],
@@ -585,7 +585,8 @@ const shapeSize=s=>s[1]+s[2];
 const seatsDiffer=(l,s)=>{const b=typeShape(l.type);return s[1]!==b[1]||s[2]!==b[2];};
 const dupModeOf=l=>l&&DUP_MODES.includes(l.dup)?l.dup:state.dup.mode;
 const teamCap=()=>({c:state.members.filter(m=>m.pool===1).length,a:state.members.filter(m=>m.pool===2).length});
-const dayMaxOf=d=>{const v=state.days[d].max,b=v>0?v:state.cap.dayMax;return RX.has('daycap')?b+1:b;};
+const globalDayMax=()=>state.cap.dayMax>0?state.cap.dayMax:state.cap.mainPerDay+state.cap.conPerDay;
+const dayMaxOf=d=>{const v=state.days[d].max,b=v>0?v:globalDayMax();return RX.has('daycap')?b+1:b;};
 function eligibleFor(m,l){
 if(m.types&&m.types!=='any'&&m.types!==l.type)return false;
 if(l.ban&&l.ban.includes(m.id))return false;
@@ -822,7 +823,7 @@ function calOn(){return RX.has('rest')?true:state.restCalendar;}
 function ruleOf(m){if(RX.has('rest')||RXEX.has(m.id))return{rest:0,maxRun:1};return m.rest||state.rest;}
 function memberMin(m){return RX.has('members')?0:(m.vmode==='exact'||m.vmode==='range'?m.vmin:0);}
 function globalMax(){return state.gmaxOn&&!RX.has('members')?state.gmax:Infinity;}
-function memberMax(m){if(RX.has('members'))return Infinity;return Math.min(m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity,globalMax());}
+function memberMax(m){if(RX.has('members'))return Infinity;return Math.min(m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity,globalMax(),state.dup.people==='all'?1:Infinity);}
 function maxVisitDays(m,wd){
 const av=wd.filter(d=>!m.off.includes(d)),rule=ruleOf(m);
 let best=0;
@@ -861,13 +862,15 @@ const splits=splitCandidates(state.visits,goals);
 const lmax=new Map(locs.map(l=>[l.id,locMax(l,goals)]));
 const avail=new Map(days.map(d=>[d,{c:state.members.filter(m=>m.pool===1&&!m.off.includes(d)).length,a:state.members.filter(m=>m.pool===2&&!m.off.includes(d)).length}]));
 const eligCache=new Map();
+const budget={1:0,2:0};
+for(const m of state.members)budget[m.pool]+=Math.min(maxVisitDays(m,days),memberMax(m));
 const M={
 days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),
 members:state.members,visits:state.visits,useAll:state.useAllDays,even:state.cap.even,
 pairs:compilePairs(),conflicts:compileConflicts(),goals,lmax,splits:splits.list,goalShort:splits.goalShort,
 cap:{main:state.cap.mainPerDay,con:state.cap.conPerDay},dayMax:dayMaxOf,
 dup:dupModeOf,dupPeople:state.dup.people,spreadPen:state.dup.spread==='avoid'?4:1.2,
-avail,win:winCtx(),relax:new Set(opts.relax||[])
+avail,budget,win:winCtx(),relax:new Set(opts.relax||[])
 };
 M.locOf=id=>locs.find(l=>l.id===id);
 M.elig=(l,d)=>{
@@ -946,6 +949,7 @@ function makeBoard(M){
 const load=new Map(M.days.map(d=>[d,{c:0,a:0,trips:0,main:0,con:0}]));
 const dayLocs=new Map(M.days.map(d=>[d,new Map()]));
 const usage=new Map(),slots=[];
+let tc=0,ta=0;
 const mult=(same)=>M.dupPeople==='different'?same+1:1;
 return{
 load,dayLocs,usage,slots,
@@ -962,6 +966,7 @@ if(l.type==='main'?L.main>=M.cap.main:L.con>=M.cap.con)return false;
 }
 const A=M.avail.get(d),E=M.elig(l,d),k=mult(same);
 if(L.c+sh[1]>A.c||L.a+sh[2]>A.a)return false;
+if(tc+sh[1]>M.budget[1]||ta+sh[2]>M.budget[2])return false;
 if(customSize?E[1]+E[2]<customSize*k:(E[1]<sh[1]*k||E[2]<sh[2]*k))return false;
 return windowLoadOK(x=>load.get(x),d,L.c+sh[1],L.a+sh[2],M.win);
 },
@@ -969,7 +974,7 @@ add(l,d,sh,extra){
 const L=load.get(d),dl=dayLocs.get(d),same=dl.get(l.id)||0;
 if(!same){L.trips++;if(l.type==='main')L.main++;else L.con++;}
 dl.set(l.id,same+1);
-L.c+=sh[1];L.a+=sh[2];
+L.c+=sh[1];L.a+=sh[2];tc+=sh[1];ta+=sh[2];
 usage.set(l.id,(usage.get(l.id)||0)+1);
 const s={loc:l,day:d,shape:{1:sh[1],2:sh[2]},custom:null,...extra};
 slots.push(s);
@@ -1056,7 +1061,8 @@ pre.push({loc:g.loc,day:d,people:g.people});
 }
 return pre;
 }
-function buildSlots(M,ref){
+const strictChance=n=>n<150?0.8:n<500?0.4:0.12;
+function buildSlots(M,ref,attempt){
 if(ref&&rng()<0.45){
 const ok=replaySlots(M,ref);
 if(ok)return ok;
@@ -1066,7 +1072,7 @@ if(!sp)return null;
 if(M.useAll&&M.days.length>M.visits)return null;
 const B=makeBoard(M),rem={main:sp.nm,contracted:sp.nc};
 if(placeGoals(M,B,rem)===null)return null;
-const strict=M.even||M.useAll;
+const strict=(M.even||M.useAll)&&rng()<strictChance(attempt||0);
 const tokens=shuffled([...Array(Math.max(0,rem.main)).fill('main'),...Array(Math.max(0,rem.contracted)).fill('contracted')]);
 for(const t of tokens){
 const cands=[],pool=t==='main'?M.mains:M.cons;
@@ -1252,7 +1258,7 @@ if(req){const ok=new Set(c1.concat(c2,cc).map(x=>x.m.id));for(const id of req)if
 const P=M.pairs;
 const availSet=P.on?new Set(c1.concat(c2,cc).map(x=>x.m.id)):null;
 const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.cf*120+x.rb-90*defi(x.m)-52*(x.pv===1?1:0)+52*(x.pv===-1?1:0)+(x.m.prefDays&&x.m.prefDays.length?(x.m.prefDays.includes(v.day)?-20:20):0);
-const trunc=(arr,k)=>arr.length>k+2?arr.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,k+3):arr;
+const trunc=(arr,k)=>arr.length>Math.max(6,k+3)?arr.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,Math.max(8,k+4)):arr;
 const combos=[];
 const teamSets=[];
 if(cu){for(const t of kCombos(trunc(cc,cu.size),cu.size))teamSets.push(t);}
@@ -1523,7 +1529,7 @@ gmaxOff:{label:()=>'إلغاء الحد العام لزيارات الأعضاء
 restPreset:{label:f=>'نمط الراحة العام: '+PRESETS.find(p=>p.k===f.k).l,run:f=>{const p=PRESETS.find(x=>x.k===f.k);state.rest={rest:p.rest,maxRun:p.maxRun};state.restCustom=false;}},
 goalOff:{label:f=>'تعطيل '+goalNameById(f.id),run:f=>{const g=state.goals.find(x=>x.id===f.id);if(g)g.on=false;}},
 dupMode:{label:f=>f.id?'تكرار '+locName(f.id)+': '+DUPL[f.mode]:'سياسة التكرار العامة: '+DUPL[f.mode],run:f=>{if(f.id){const l=locById(f.id);if(l)l.dup=f.mode;}else state.dup.mode=f.mode;}},
-dupPeople:{label:()=>'السماح بتكرار الموقع بنفس الأعضاء',run:()=>{state.dup.people='any';}},
+dupPeople:{label:()=>'السماح لنفس العضو بأكثر من موقع',run:()=>{state.dup.people='any';}},
 visits:{label:f=>'ضبط الزيارات على '+ar(f.n),run:f=>{state.visitsWanted=f.n;}},
 conflictSoft:{label:f=>'جعل قاعدة التعارض مرنة',run:f=>{const r=state.conflicts.find(x=>x.id===f.id);if(r)r.hard=false;}},
 conflictOff:{label:f=>'إيقاف قاعدة التعارض',run:f=>{const r=state.conflicts.find(x=>x.id===f.id);if(r)r.on=false;}},
@@ -1636,7 +1642,7 @@ const V=state.visitsWanted,reasons=[],fixes=[];
 const test=(fams,more)=>withRelax(fams,()=>practicalCap(compileModel()),more)>=V;
 if(test(['dup'])&&dupModeOf({})==='banned'){reasons.push('منع تكرار المواقع');fixes.push({op:'dupMode',mode:'separate'});}
 if(test(['loc'])&&state.locations.some(l=>l.maxWeek>0)){reasons.push('حدود المواقع');for(const l of state.locations.filter(x=>x.maxWeek>0).slice(0,2))fixes.push({op:'locCapClear',id:l.id});}
-if(test(['members'])&&(state.gmaxOn||state.members.some(m=>m.vmode==='exact'||m.vmode==='range'))){reasons.push('أعداد الأعضاء');if(state.gmaxOn)fixes.push({op:'gmaxOff'});}
+if(test(['members'])&&(state.gmaxOn||state.dup.people==='all'||state.members.some(m=>m.vmode==='exact'||m.vmode==='range'))){reasons.push('أعداد الأعضاء');if(state.gmaxOn)fixes.push({op:'gmaxOff'});if(state.dup.people==='all')fixes.push({op:'dupPeople'});}
 if(test(['rest'])){
 reasons.push('نمط الراحة');
 const wd=workingDays();
@@ -1646,7 +1652,7 @@ for(const m of cands){
 if(withRelax([],()=>practicalCap(compileModel()),{exempt:[m.id]})>=V){fixes.push({op:'memberExempt',id:m.id});if(++found>=2)break;}
 }
 }
-if(test(['daycap'])){reasons.push('الحد اليومي');fixes.push({op:'dayMax',n:state.cap.dayMax+1});}
+if(test(['daycap'])){reasons.push('الحد اليومي');fixes.push({op:'dayMax',n:globalDayMax()+1});}
 fixes.push({op:'visits',n:state.visits});
 return{reasons,fixes:fixes.filter(f=>!(f.op==='visits'&&f.n===state.visitsWanted))};
 }
@@ -1668,8 +1674,9 @@ return withRelax(fams,()=>{
 const M=compileModel();
 if(!M.splits.length)return false;
 const t0=performance.now();
+let n=0;
 while(performance.now()-t0<ms){
-const slots=buildSlots(M,null);
+const slots=buildSlots(M,null,n++);
 if(slots&&solveTeams(M,slots,{soft:new Set()}))return true;
 }
 return false;
@@ -1713,7 +1720,7 @@ for(const m of state.members.filter(x=>x.vmode==='exact'||x.vmode==='range').sli
 return[{text:'أعداد الزيارات المحددة للأعضاء تمنع الخطة',fixes:fx}];
 });
 if(state.locations.some(l=>l.genderRule))steps.push(()=>probeFeasible(['gender'],ms)?[{text:'قاعدة الخلط النوعي تمنع الخطة',fixes:state.locations.filter(l=>l.genderRule).slice(0,2).map(l=>({op:'locGenderOff',id:l.id}))}]:[]);
-steps.push(()=>probeFeasible(['daycap'],ms)?[{text:'الحد اليومي للزيارات يمنع الخطة',fixes:[{op:'dayMax',n:state.cap.dayMax+1}]}]:[]);
+steps.push(()=>probeFeasible(['daycap'],ms)?[{text:'الحد اليومي للزيارات يمنع الخطة',fixes:[{op:'dayMax',n:globalDayMax()+1}]}]:[]);
 if(state.goals.some(g=>g.on))steps.push(()=>{
 const out=[];
 for(const g of state.goals.filter(x=>x.on)){
@@ -1828,9 +1835,9 @@ if(Array.isArray(d.goals))state.goals=d.goals.filter(g=>g&&typeof g.id==='number
 const days=Array.isArray(g.days)?g.days:(typeof g.day==='number'&&g.day>=0?[g.day]:[]);
 return{id:g.id,on:g.on!==false,mode:g.mode==='custom'?'custom':'pool',size:clamp(Math.round(+g.size)||2,1,8),allowed:Array.isArray(g.allowed)?g.allowed:[],loc:g.loc,days:[...new Set(days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b),people:Array.isArray(g.people)?g.people:[],exclude:Array.isArray(g.exclude)?g.exclude:[]};
 });
-if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,1,3),conPerDay:clamp(+d.cap.conPerDay||1,1,3),dayMax:clamp(Math.round(+d.cap.dayMax)||3,1,6),even:d.cap.even!==false};
-if(d.dup&&typeof d.dup==='object')state.dup={mode:DUP_MODES.includes(d.dup.mode)?d.dup.mode:'separate',people:d.dup.people==='any'?'any':'different',spread:d.dup.spread==='free'?'free':'avoid'};
-else if(['free','avoid','never'].includes(d.locRepeat))state.dup={mode:d.locRepeat==='never'?'banned':'separate',people:'different',spread:d.locRepeat==='free'?'free':'avoid'};
+if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,1,3),conPerDay:clamp(+d.cap.conPerDay||1,1,3),dayMax:clamp(Math.round(+d.cap.dayMax)||0,0,6),even:d.cap.even!==false};
+if(d.dup&&typeof d.dup==='object')state.dup={mode:DUP_MODES.includes(d.dup.mode)?d.dup.mode:'separate',people:['different','all'].includes(d.dup.people)?d.dup.people:'any',spread:d.dup.spread==='free'?'free':'avoid'};
+else if(['free','avoid','never'].includes(d.locRepeat))state.dup={mode:d.locRepeat==='never'?'banned':'separate',people:'any',spread:d.locRepeat==='free'?'free':'avoid'};
 const legacyGender=!d.dup;
 state.conflicts=Array.isArray(d.conflicts)?d.conflicts.filter(r=>r&&typeof r.id==='number'&&Array.isArray(r.a)&&Array.isArray(r.b)).map(r=>({id:r.id,on:r.on!==false,a:r.a,b:r.b,scope:['all','pool','members'].includes(r.scope)?r.scope:'all',pool:r.pool===2?2:1,ids:Array.isArray(r.ids)?r.ids:[],hard:r.hard!==false})):[];
 if(['balance','prefs','stable'].includes(d.priority))state.priority=d.priority;
@@ -1905,7 +1912,7 @@ if(run!==genRun)return;
 const c0=performance.now();
 while(performance.now()-c0<22){
 attempts++;
-const slots=buildSlots(M,refSlots);
+const slots=buildSlots(M,refSlots,attempts);
 if(slots){
 const sol=solveTeams(M,slots,{soft,refMD,refTR});
 if(sol){
@@ -2161,7 +2168,7 @@ return `<div class="card daycard${d.dist==='near'?' dnear':''}${d.on?'':' off'}"
 <div class="dc-body">
 <div class="dcrow"><span class="tiny mut">نوع الموقع</span>${seg('dfav',[{v:'',l:'متوازن'},{v:'main',l:'رئيسية'},{v:'contracted',l:'متعاقد'}],d.fav)}</div>
 <div class="dcrow"><span class="tiny mut">المسافة</span>${seg('ddist',[{v:'',l:'متوازن'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],d.dist)}</div>
-<div class="dcrow"><span class="tiny mut">حد الزيارات</span><span class="stepper"><button data-act="dmax" data-d="${i}" data-v="-1"${(d.max|0)<=0?' disabled':''}>−</button><b>${d.max>0?'حتى '+ar(d.max):'العام ('+ar(state.cap.dayMax)+')'}</b><button data-act="dmax" data-d="${i}" data-v="1"${d.max>=6?' disabled':''}>+</button></span></div>
+<div class="dcrow"><span class="tiny mut">حد الزيارات</span><span class="stepper"><button data-act="dmax" data-d="${i}" data-v="-1"${(d.max|0)<=0?' disabled':''}>−</button><b>${d.max>0?'حتى '+ar(d.max):'العام ('+ar(globalDayMax())+')'}</b><button data-act="dmax" data-d="${i}" data-v="1"${d.max>=6?' disabled':''}>+</button></span></div>
 </div>
 </div>`;
 }
@@ -2518,7 +2525,7 @@ return `<div class="card rv" data-key="stheme">
 <span class="clab">الحد اليومي</span>
 <span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1"${state.cap.mainPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1"${state.cap.mainPerDay>=3?' disabled':''}>+</button></span>
 <span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1"${state.cap.conPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1"${state.cap.conPerDay>=3?' disabled':''}>+</button></span>
-<span class="stepper"><span class="lb">حتى (إجمالي)</span><button data-act="capstep" data-k="dayMax" data-v="-1"${state.cap.dayMax<=1?' disabled':''}>−</button><b>${ar(state.cap.dayMax)}</b><button data-act="capstep" data-k="dayMax" data-v="1"${state.cap.dayMax>=6?' disabled':''}>+</button></span>
+<span class="stepper"><span class="lb">حتى (إجمالي)</span><button data-act="capstep" data-k="dayMax" data-v="-1"${state.cap.dayMax<=0?' disabled':''}>−</button><b>${state.cap.dayMax>0?ar(state.cap.dayMax):'تلقائي'}</b><button data-act="capstep" data-k="dayMax" data-v="1"${state.cap.dayMax>=6?' disabled':''}>+</button></span>
 </div>
 <div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.cap.even?'true':'false'}" data-act="capeven"><span class="sw${state.cap.even?' on':''}"></span> توزيع متساوٍ</button></div>
 <p class="tiny mut" style="margin-top:8px">${state.cap.even?'تُوزَّع الزيارات بالتساوي، ولا يأخذ يوم زيارتين إلا عند الحاجة':'يوزّع المُخطِّط الزيارات بحرية حتى الحد اليومي'} — الحدود هنا أقصى ما يُسمح به، ويمكن تخصيص حد لكل يوم من تبويب الأيام</p>
@@ -2545,7 +2552,9 @@ ${state.conflicts.length?state.conflicts.map((r,i)=>conflictCardHTML(r,i)).join(
 <div class="seg">${[['banned','ممنوع'],['separate','منفصل'],['merged','مدموج']].map(([v,l])=>`<button class="${state.dup.mode===v?'on':''}" data-act="dupmode" data-v="${v}">${l}</button>`).join('')}</div>
 </div>
 <p class="tiny mut" style="margin-top:8px">${{banned:'كل موقع يُزار مرة واحدة فقط في الأسبوع',separate:'يجوز تكرار الموقع في أيام مختلفة، وكل زيارة مستقلة',merged:'يجوز تكرار الموقع في اليوم نفسه، وتظهر الزيارات المتكررة كزيارة واحدة بأكثر من فريق'}[state.dup.mode]}</p>
-<div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.dup.people==='different'?'true':'false'}" data-act="duppeople"><span class="sw${state.dup.people==='different'?' on':''}"></span> المكرَّر بأعضاء مختلفين</button><button type="button" class="swlab" role="switch" aria-checked="${state.dup.spread==='avoid'?'true':'false'}" data-act="dupspread"><span class="sw${state.dup.spread==='avoid'?' on':''}"></span> يُفضَّل عدم التكرار</button></div>
+<div class="mhead" style="margin-top:10px"><span class="clab">الأعضاء</span><div class="seg">${[['any','أي أعضاء'],['different','مختلفون عند التكرار'],['all','مختلفون في كل موقع']].map(([v,l])=>`<button class="${state.dup.people===v?'on':''}" data-act="duppeople" data-v="${v}">${l}</button>`).join('')}</div></div>
+<p class="tiny mut" style="margin-top:8px">${{any:'يجوز لنفس العضو زيارة الموقع نفسه أو مواقع مختلفة',different:'إذا تكرر موقع فالفريق الثاني بأعضاء مختلفين',all:'كل عضو يزور موقعًا واحدًا فقط في الخطة — يقلّ عدد الزيارات الممكنة بعدد الأعضاء'}[state.dup.people]}</p>
+<div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.dup.spread==='avoid'?'true':'false'}" data-act="dupspread"><span class="sw${state.dup.spread==='avoid'?' on':''}"></span> يُفضَّل عدم التكرار</button></div>
 <p class="tiny mut" style="margin-top:8px">المواقع ذات الأهداف لا تتكرر خارج أهدافها إلا إذا رفعت حدها الأسبوعي، ولكل موقع خيار تكرار خاص يتجاوز هذا الإعداد</p>
 </div>
 <div class="card rv" data-key="sgmax">
@@ -3032,7 +3041,7 @@ const bb=$('#baddBtn');if(bb)bb.disabled=state.bulk.main===0&&state.bulk.cont===
 break;
 }
 case'capstep':{
-const nv=clamp(state.cap[a.k]+ +a.v,1,a.k==='dayMax'?6:3);
+const nv=clamp(state.cap[a.k]+ +a.v,a.k==='dayMax'?0:1,a.k==='dayMax'?6:3);
 if(nv!==state.cap[a.k]){
 state.cap[a.k]=nv;
 refreshSettings();
@@ -3086,7 +3095,7 @@ case'cfloc':{const r=state.conflicts.find(x=>x.id===+a.r);if(r){const arr=r[a.si
 case'cfscope':{const r=state.conflicts.find(x=>x.id===+a.r);if(r){if(a.v==='pool1'||a.v==='pool2'){r.scope='pool';r.pool=a.v==='pool1'?1:2;}else r.scope=a.v;conflictChanged();}break;}
 case'cfmem':{const r=state.conflicts.find(x=>x.id===+a.r);if(r){r.ids=r.ids||[];const id=+a.m,k=r.ids.indexOf(id);if(k>=0)r.ids.splice(k,1);else r.ids.push(id);conflictChanged();}break;}
 case'dupmode':{state.dup.mode=a.v;refreshSettings();refreshLocations();recalcCap();patchLocIntro();markStale();break;}
-case'duppeople':state.dup.people=state.dup.people==='different'?'any':'different';refreshSettings();markStale();break;
+case'duppeople':state.dup.people=a.v;refreshSettings();recalcCap();patchLocIntro();markStale();break;
 case'dupspread':state.dup.spread=state.dup.spread==='avoid'?'free':'avoid';refreshSettings();markStale();break;
 case'advall':state.advAll=!state.advAll;morph('#advWrap',advisorHTML());break;
 case'fix':{try{applyFix(JSON.parse(a.fix));}catch(err){}break;}
