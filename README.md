@@ -12,18 +12,27 @@ A single-file planner for one week of visits. It builds visit schedules for clin
 - On mobile, the tab bar sits at the bottom of the screen.
 
 ## Architecture
-One pipeline, each stage reading only the stage before it:
-1. `compileModel()` snapshots the state into a model `M`: working days, locations with their seat shape, repeat mode and eligible members, compiled goals, pairs and conflicts, window capacity caps, and the candidate main/contracted splits.
-2. `makeBoard(M)` is the single slot board. `fits()` is the only place that decides whether a visit may go on a day (closed days, per-location cap, repeat policy, per-day limits, available and eligible people, window capacity under the rest rule). Both the slot builder and the replay of a previous plan use it.
-3. `solveTeams(M, slots)` assigns people with a depth-first search over seat shapes. Pool visits fill the location's clinical/admin seats. Custom visits fill a size from named candidates.
-4. `evaluatePlan(p, M)` re-reads the rows and counts hard and soft violations per rule family. Ranking uses only this result.
-5. `advise(M)` and `runDiagnosis()` explain problems. Every suggestion is a plain fix object `{op,...}` in the `FIX` registry, so one function (`applyFix`) applies it from any card, panel or failure message.
+`index.html` is the UI. All planning logic lives in `engine.js`, a classic script with no dependencies. It runs in the page, in a Web Worker (`new Worker('engine.js')`), and under Node for tests. If a Worker cannot start (for example a `file://` page in Chrome) the same engine runs in the page instead.
 
-Relaxation context: `withRelax(families, fn, {skip, exempt})` re-runs the same model with rule families removed, individual rules skipped, or members exempted from the rest rule. It powers both the capacity explanation and the failure diagnosis. Flex mode is different: it keeps the rules but lets the solver break `rest`, `pairs` and `conflicts` with a penalty, and marks the breaks.
+Pipeline, each stage reading only the stage before it:
+1. `compileModel()` snapshots the state into a model `M`: working days, locations with their seat shape, repeat mode and eligible members, compiled goals, pairs and conflicts, window capacity caps, and the candidate main/contracted splits.
+2. `flowBound(M, V)` builds a max-flow network per pool (slots, member-days, member capacity) plus day and location caps. It gives a sound upper bound `ub` and the per-pool seat budget `{need, have}`.
+3. `solveExact(M, V)` is a complete day-by-day search (all trip sets, all teams, symmetry breaking between interchangeable members, sound bounds). It returns `feasible`, `infeasible` (proven) or `timeout`.
+4. `capacityInfo()` / `capacity()` search downward from `ub` using a quick randomized search and then `solveExact`. The result is `exact` when every larger value was proven infeasible, otherwise `≥K`. Results are cached by a hash of the input.
+5. `makeBoard(M)` and `solveTeams(M, slots)` are the randomized plan generator used to produce many diverse plans quickly. `solveTeams` widens its candidate lists (top-8, top-16, all) instead of failing on a truncated pass.
+6. `evaluatePlan(p, M)` (`checkPlan()`) re-reads the rows and counts hard and soft violations per rule family. Ranking and every test use only this checker.
+7. `solve(input, opts)` ties it together: randomized search, then the exact solver if no plan was found, then local search (`improvePlan`) on the best plans. It returns `{status, requested, achieved, plans, unplaced, ub, capacity}`.
+8. `explain()` replaces the old capacity limiter code. For every rule family it relaxes the family and recomputes the exact capacity, and every fix it lists is applied to a cloned engine and verified to reach the requested visits.
+
+Statuses: `optimal` and `feasible` (plans found), `infeasible_proven` (the requested visits cannot be done, the best achievable plan is returned with `unplaced` reasons), `search_exhausted` (time ran out without a proof; the «بحث موسّع» button retries with 8 s).
+
+Every suggestion is a plain fix object `{op,...}` in the `FIX` registry, so one function (`applyFix`) applies it from any card, banner or failure message, and each application is undoable from the toast.
+
+Relaxation context: `withRelax(families, fn, {skip, exempt})` re-runs the same model with rule families removed (`dup`, `loc`, `members`, `dupPeople`, `rest`, `daycap`, `gender`, `pairs`, `conflicts`, `elig`, `types`, `closed`, `offdays`, `goals`), individual rules skipped, or members exempted from the rest rule. Flex mode is different: it keeps the rules but lets the solver break `rest`, `pairs` and `conflicts` softly and flags them.
 
 ## Locations
 - **Seats**: each location has clinical and admin seat counts. Defaults come from its type (main 2+2, contracted 2+1). Change them on the location card; "الافتراضي" resets.
-- **Eligible members**: tap a member once to restrict the location to the chosen members, tap again to exclude them.
+- **Eligible members**: «الجميع / محدد فقط» switch. In «محدد فقط» a «مسموح فقط» row appears; the «استبعاد» row is always visible. Every tap changes exactly one thing, and adding a member to one row removes them from the other. Both lists work together («only A, B, C» plus «exclude D»). Members whose type setting rules out the location are disabled. «الفعليون» shows how many clinical and admin members can really visit, with a warning if that is below the seats. Switching back to «الجميع» clears the restriction and can be undone. Recalculation and regeneration wait about 600 ms after the last tap. The data model is unchanged (`only[]`, `ban[]`).
 - **Repeat**: use the global policy or override per location. `ممنوع` allows one visit a week. `منفصل` allows repeats on different days, each its own visit. `مدموج` allows repeats on the same day only and shows them as one visit with several teams. Setting «المكرَّر بأعضاء مختلفين» (off by default, as in the old behaviour) keeps repeat visits to different people.
 - **Mixed gender** works on any location. Teams of 4 need 1 or 3 men, other sizes need at least one of each.
 
@@ -40,8 +49,8 @@ In Goals, switch a goal to "فريق مخصص". Set a team size and the candidat
 ## Advisor
 - The panel on the plan tab lists problems with one-tap fixes.
 - Member cards warn when days off plus the rest rule cost that person visits (for example available only on two consecutive days) and offer "استثناء من قاعدة الراحة".
-- When visits are cut to fit capacity, the panel names the limiting rule and offers the matching fix.
-- When no plan exists, the failure card probes which rule family blocks the plan, tries each rule or member separately, and offers the smallest fix.
+- The visits stepper can go above what is achievable. A banner under it says what is possible and why (for example «الإداريون: ٦ مقاعد مطلوبة و٥ متاحة لأن «زيارة واحدة فقط لكل عضو في الأسبوع» مفعّلة»), with verified one-tap fixes. Generating anyway produces the best plan and «لم تُجدول» cards for what could not be placed.
+- When no plan exists, the failure card asks `explain()` which rule family blocks the plan and offers the verified fixes.
 
 Saved data stays under `visitplan.v2`. Old saves migrate on load: the old repeat setting maps to the new repeat policy, and contracted locations keep their old unrestricted gender behaviour.
 
@@ -80,6 +89,14 @@ Plan 1 is always the best plan in the pool. When any pooled plan is clean, plan 
 The search keeps running past 560ms until the pool has a clean plan, up to the 1500ms limit (2000ms in flex mode) or 9000 attempts.
 
 History for carry-over is saved when a plan is picked or after a manual generation. Auto-regeneration after a settings change does not overwrite it.
+
+## Tests
+`npm test` (which runs `node --test`; on Node 22 the directory form `node --test tests/` does not work) needs no dependencies.
+- `engine.test.mjs`: the real-data scenario (`tests/fixtures/user-backup-2026-10-24.json`) and scaling scenarios.
+- `property.test.mjs`: 500 seeded random instances checked against a brute-force oracle (`oracle.mjs`): exactness, completeness, soundness, bound validity, monotonicity, explanation correctness, determinism, output invariants. `PROP_N=…` changes the count.
+- `golden.test.mjs`: the extracted engine reproduces the legacy inline engine (kept in `tests/fixtures/legacy-engine.js`) plan for plan.
+- `perf.test.mjs`, `migrate.test.mjs`.
+- `tests/ui/check.py` is a Playwright script (Python) for the browser flows: stepper banner, fixes, unplaced cards, eligibility taps, desktop and 390 px. Serve the folder (for example `python3 -m http.server 8765`) and run `python3 tests/ui/check.py`.
 
 ## Debugging
 - `?seed=123` makes the random choices repeatable. Without it, the seed comes from the clock.
