@@ -1017,7 +1017,7 @@ membersAuto:{label:f=>'إلغاء عدد الزيارات المحدد لـ'+nm(
 gmaxOff:{label:()=>'إلغاء الحد العام لزيارات الأعضاء',run:()=>{state.gmaxOn=false;}},
 restPreset:{label:f=>'نمط الراحة العام: '+PRESETS.find(p=>p.k===f.k).l,run:f=>{const p=PRESETS.find(x=>x.k===f.k);state.rest={rest:p.rest,maxRun:p.maxRun};state.restCustom=false;}},
 goalOff:{label:f=>'تعطيل '+goalNameById(f.id),run:f=>{const g=state.goals.find(x=>x.id===f.id);if(g)g.on=false;}},
-dupMode:{label:f=>f.id?'تكرار '+locName(f.id)+': '+DUPL[f.mode]:'سياسة التكرار العامة: '+DUPL[f.mode],run:f=>{if(f.id){const l=locById(f.id);if(l)l.dup=f.mode;}else state.dup.mode=f.mode;}},
+dupMode:{label:f=>f.id?'تكرار '+locName(f.id)+': '+DUPL[f.mode]:(f.mode==='banned'?'منع تكرار المواقع':'السماح بتكرار المواقع ('+DUPL[f.mode]+')'),run:f=>{if(f.id){const l=locById(f.id);if(l)l.dup=f.mode;}else state.dup.mode=f.mode;}},
 dupPeople:{label:()=>'السماح لنفس العضو بأكثر من زيارة',run:()=>{state.dup.people='any';}},
 visits:{label:f=>'ضبط الزيارات على '+ar(f.n),run:f=>{state.visitsWanted=f.n;}},
 conflictSoft:{label:f=>'جعل قاعدة التعارض مرنة',run:f=>{const r=state.conflicts.find(x=>x.id===f.id);if(r)r.hard=false;}},
@@ -1117,10 +1117,6 @@ const offs=state.members.filter(m=>m.off.includes(d));
 add(state.useAllDays?'error':'info','day'+d,'يوم '+DAYS[d]+': لا يمكن تكوين أي زيارة (المتاحون لا يغطون مقاعد أي موقع)',offs.slice(0,2).map(m=>({op:'memberOffClear',id:m.id,day:d})));
 }
 }
-}
-if(M){
-const fbq=flowBound(M,state.visitsWanted);
-if(state.visitsWanted>fbq.ub)add('warn','cap','طلبت '+ar(state.visitsWanted)+' زيارات والحد الأعلى المحسوب '+ar(fbq.ub)+' — السبب والحلول تظهر تحت عدّاد الزيارات',[]);
 }
 const dp=diagnosePairs(M||compileModel());
 for(const s of dp)add('warn','pairs'+s,s,[{op:'pairSoft'}]);

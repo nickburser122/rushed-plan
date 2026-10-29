@@ -706,6 +706,7 @@ wk.postMessage({id,op,saved,opts:opts||{}});
 });
 }
 function cancel(){
+if(!pend.size)return;
 if(w){try{w.terminate();}catch(err){}w=null;}
 pend.clear();
 }
