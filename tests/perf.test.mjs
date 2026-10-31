@@ -27,3 +27,19 @@ const t=performance.now();
 Engine.solve(s,{seed:1,visitsWanted:8,timeBudgetMs:8000});
 assert.ok(performance.now()-t<9000);
 });
+
+test('perf: wide seats (up to 8 per pool) stay inside the capacity and solve budgets',()=>{
+const s=genInstance(5,{members:24,locations:5,days:5,offP:0.2,conflictP:0,custom:false});
+s.locations.forEach((l,i)=>{l.seats={1:6+(i%3),2:5+(i%4)};l.genderRule=false;l.only=[];l.ban=[];l.closed=[];});
+s.cap={mainPerDay:3,conPerDay:2,dayMax:0,even:true};
+s.dup={mode:'separate',people:'any',spread:'avoid'};
+s.gmaxOn=false;
+const E=Engine.createFromSaved(s,{seed:1});
+const t=performance.now();
+const c=E.capacityInfo({noCache:true,timeBudgetMs:1400});
+assert.ok(performance.now()-t<4000,'capacity '+(performance.now()-t));
+const t1=performance.now();
+const r=Engine.solve(s,{seed:1,visitsWanted:Math.max(1,c.capacity),timeBudgetMs:3000});
+assert.ok(performance.now()-t1<7000,'solve '+(performance.now()-t1));
+assert.ok(['optimal','feasible','search_exhausted'].includes(r.status));
+});

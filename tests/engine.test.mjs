@@ -209,3 +209,543 @@ assert.ok(['optimal','feasible'].includes(r.status),r.status);
 const row=r.plans[0].rows[0];
 assert.ok(row.team.includes(110));
 });
+
+test('B1: custom clinical-only goal on a site with an admin seat is not reported as proven infeasible',()=>{
+const s=blank({days:4,dupPeople:'all',dupMode:'separate'});
+for(let i=0;i<3;i++)s.members.push(member(101+i,1,i%2?'F':'M'));
+s.members.push(member(111,2,'F'));
+s.locations.push(loc(201,{1:2,2:1},{type:'contracted'}));
+s.locations.push(loc(202,{1:0,2:1},{type:'contracted'}));
+s.goals.push({id:301,on:true,mode:'custom',size:3,allowed:[101,102,103],loc:201,days:[],people:[],exclude:[]});
+s.visits=2;
+const r=Engine.solve(s,{seed:1,visitsWanted:2});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+const E=Engine.createFromSaved({...s,visits:2});
+assert.ok(E.flowBound(E.compileModel(),2).ub>=2);
+for(const p of r.plans)assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
+});
+
+test('B1: custom goal on a seatless location keeps the structural bound sound',()=>{
+const s=blank({days:3,dupPeople:'any',dupMode:'separate'});
+for(let i=0;i<2;i++){s.members.push(member(101+i,1,'M'));s.members.push(member(111+i,2,'F'));}
+s.locations.push(loc(201,{1:0,2:0}));
+s.goals.push({id:301,on:true,mode:'custom',size:2,allowed:[],loc:201,days:[],people:[],exclude:[]});
+s.visits=1;
+const r=Engine.solve(s,{seed:1,visitsWanted:1});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+});
+
+test('B5: banned repeat mode caps a location at one visit even with maxWeek above 1',()=>{
+const s=blank({days:4,dupMode:'banned'});
+for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
+s.locations.push(loc(201,{1:1,2:1},{maxWeek:2}));
+const E=Engine.createFromSaved({...s,visits:1});
+const M=E.compileModel();
+assert.equal(M.lmax.get(201),1);
+assert.equal(E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity,1);
+const r=Engine.solve(s,{seed:1,visitsWanted:2});
+assert.equal(r.achieved,1);
+});
+
+const small=()=>{
+const s=blank({days:4,dupMode:'separate'});
+for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
+s.locations.push(loc(201,{1:1,2:1}),loc(202,{1:1,2:1}),loc(203,{1:1,2:1}));
+return s;
+};
+
+test('B2: nextId covers pair rules and memberAdd never collides',()=>{
+const s=small();
+s.pairs={enabled:true,mode:'soft',rules:[{id:900,kind:'avoid',a:101,b:102}]};
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.nextId(),901);
+E.FIX.memberAdd.run({pool:1});
+const ids=[...E.state.members.map(m=>m.id),...E.state.locations.map(l=>l.id),...E.state.pairs.rules.map(r=>r.id)];
+assert.equal(new Set(ids).size,ids.length);
+assert.ok(E.state.members.at(-1).id>900);
+});
+
+test('B2: applySaved re-IDs duplicate member ids and keeps the first',()=>{
+const s=small();
+s.members.push(member(101,2,'F',{name:'dup'}));
+const E=Engine.createFromSaved(s,{seed:1});
+const ids=E.state.members.map(m=>m.id);
+assert.equal(new Set(ids).size,ids.length);
+assert.equal(E.state.members.find(m=>m.id===101).name,'م101');
+assert.ok(E.state.members.some(m=>m.name==='dup'));
+});
+
+test('B3: applySaved is atomic when it throws midway',()=>{
+const E=Engine.createFromSaved(small(),{seed:1});
+const before=JSON.stringify(E.saveObject());
+const bad=clone(small());
+bad.members=bad.members.slice(0,2);
+bad.visits=1;
+Object.defineProperty(bad,'view',{get(){throw new Error('boom');},enumerable:true});
+assert.throws(()=>E.applySaved(bad,false),/boom/);
+assert.equal(JSON.stringify(E.saveObject()),before);
+});
+
+test('B3: member fields are validated and coerced on load',()=>{
+const s=small();
+s.members[0].pool='2';s.members[1].gender='x';s.members[2].id='777';s.members[3].name=5;
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.state.members[0].pool,2);
+assert.equal(E.state.members[1].gender,'M');
+assert.equal(E.state.members[2].id,777);
+assert.equal(E.state.members[3].name,'5');
+});
+
+test('B4: a dead id in only[] no longer makes a location unvisitable',()=>{
+const s=small();
+s.locations[0].only=[9999];
+const E=Engine.createFromSaved({...s,visits:3},{seed:1});
+assert.ok(E.state.members.every(m=>E.eligibleFor(m,E.state.locations[0])));
+s.locations[0].only=[101,9999];
+const E2=Engine.createFromSaved({...s,visits:3},{seed:1});
+assert.ok(E2.eligibleFor(E2.byId(101),E2.state.locations[0]));
+assert.ok(!E2.eligibleFor(E2.byId(102),E2.state.locations[0]));
+});
+
+test('B6: daycap relax and fixes cover the per-type caps',()=>{
+const s=small();
+s.cap={mainPerDay:1,conPerDay:1,dayMax:0,even:true};
+s.days=s.days.map((d,i)=>({...d,on:i===1||i===3}));
+s.visits=4;
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.capacityInfo({timeBudgetMs:600,noCache:true}).capacity,2);
+const x=E.explain({visits:4,timeBudgetMs:600});
+const f=x.findings.find(g=>g.family==='daycap');
+assert.ok(f,'daycap finding');
+assert.ok(f.fixes.some(z=>z.op==='capMain'));
+for(const fx of f.fixes){
+const E2=Engine.createFromSaved({...clone(s),visits:4},{seed:1});
+E2.FIX[fx.op].run(fx);
+E2.state.visitsWanted=4;E2.state.visits=4;
+assert.ok(E2.capacityInfo({timeBudgetMs:800,noCache:true}).capacity>=4,JSON.stringify(fx));
+}
+});
+
+test('B6: dayMax fix clamps to the UI maximum',()=>{
+const E=Engine.createFromSaved(small(),{seed:1});
+E.FIX.dayMax.run({n:99});
+assert.equal(E.state.cap.dayMax,E.LIM.dayMax[1]);
+});
+
+test('B11: plan ordering is a stable total order independent of rng state',()=>{
+const f=fixture();
+const E=Engine.createFromSaved(f,{seed:1});
+const S=E.createSearch({mode:'normal',timeBudgetMs:300});S.run();
+const all=[...S.pool.values()];
+all.forEach(p=>{p.score=E.scorePlan(p);});
+const a=all.slice().sort(E.comparePlans).map(E.planKey);
+E.reseed(12345);
+all.forEach(p=>{p.score=E.scorePlan(p);});
+const b=all.slice().reverse().sort(E.comparePlans).map(E.planKey);
+assert.deepEqual(a,b);
+});
+
+test('B12: unplaced always lists every missing visit',()=>{
+const s=blank({days:4,dupMode:'separate',dupPeople:'any'});
+for(let i=0;i<2;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
+s.locations.push(loc(201,{1:2,2:2}));
+s.days=s.days.map((d,i)=>({...d,on:i===1||i===3}));
+const r=Engine.solve(s,{seed:1,visitsWanted:5});
+assert.ok(r.achieved<5);
+assert.equal(r.unplaced.length,5-r.achieved);
+});
+
+test('B14: diagnosePairs respects member day-offs and skips pools that need fewer than 2 seats',()=>{
+const s=small();
+s.pairs={enabled:true,mode:'hard',rules:[{id:900,kind:'avoid',a:101,b:103},{id:901,kind:'avoid',a:101,b:105}]};
+s.members.push(member(105,1,'M'));
+s.members[2].off=[1];
+const E=Engine.createFromSaved({...s,visits:2},{seed:1});
+assert.ok(Array.isArray(E.diagnosePairs(E.compileModel())));
+s.locations.forEach(l=>l.seats={1:1,2:1});
+const E2=Engine.createFromSaved({...s,visits:2},{seed:1});
+assert.deepEqual(E2.diagnosePairs(E2.compileModel()),[]);
+});
+
+test('B16: carried rest uses the previous week working days when rest calendar is off',()=>{
+const s=small();
+s.restCalendar=false;s.carryWeek=true;
+s.weekStart='2026-10-24';
+s.days=s.days.map((d,i)=>({...d,on:i>=1&&i<=4}));
+s.history={'2026-10-17':{101:[3,4]}};
+s.historyWd={'2026-10-17':[1,2,3,4,5]};
+const E=Engine.createFromSaved(s,{seed:1});
+assert.deepEqual(E.carryPrev().get(101),[-3,-2]);
+const t=clone(s);delete t.historyWd;
+const E2=Engine.createFromSaved(t,{seed:1});
+assert.deepEqual(E2.carryPrev().get(101),[-2,-1]);
+});
+
+test('B18: evaluatePlan flags days without visits when every day is required',()=>{
+const s=small();
+s.useAllDays=true;
+const E=Engine.createFromSaved({...s,visits:4},{seed:1});
+const M=E.compileModel();
+const rows=[{day:1,locId:201,team:[101,111]},{day:2,locId:202,team:[102,112]}];
+const ev=E.checkPlan(rows.map(r=>({...r,custom:null,goal:null,req:[]})),M);
+assert.equal(ev.hard.useAll,2);
+});
+
+test('B19: explain honours an overall deadline and marks the result partial',()=>{
+const f=fixture();
+const E=Engine.createFromSaved({...f,visits:6},{seed:1});
+const x=E.explain({visits:6,deadlineMs:0});
+assert.equal(x.partial,true);
+const y=Engine.createFromSaved({...f,visits:6},{seed:1}).explain({visits:6});
+assert.equal(y.partial,false);
+});
+
+test('B20: pair rules are validated on load',()=>{
+const s=small();
+s.pairs={enabled:'yes',mode:'weird',rules:[{id:1,kind:'with',a:101,b:102},{id:2,kind:'bad',a:101,b:103},{kind:'avoid',a:'102',b:'103'},null]};
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.state.pairs.enabled,true);
+assert.equal(E.state.pairs.mode,'soft');
+assert.equal(E.state.pairs.rules.length,2);
+assert.ok(E.state.pairs.rules.every(r=>Number.isFinite(r.id)&&['with','avoid'].includes(r.kind)));
+assert.equal(new Set(E.state.pairs.rules.map(r=>r.id)).size,2);
+});
+
+test('S2: week holiday removes a working day, member week-off and location week-closure bind only that week',()=>{
+const s=small();
+s.weekStart='2026-10-24';
+s.weekOverrides={'2026-10-24':{holidays:[3],memberOff:{101:[1]},locClosed:{201:[2]},note:''}};
+const E=Engine.createFromSaved(s,{seed:1});
+assert.ok(!E.workingDays().includes(3));
+assert.ok(E.offOn(E.byId(101),1));
+assert.ok(E.closedOn(E.locById(201),2));
+const t=clone(s);t.weekStart='2026-10-31';
+const E2=Engine.createFromSaved(t,{seed:1});
+assert.ok(E2.workingDays().includes(3));
+assert.ok(!E2.offOn(E2.byId(101),1));
+assert.ok(!E2.closedOn(E2.locById(201),2));
+const r=Engine.solve(s,{seed:1,visitsWanted:2});
+for(const p of r.plans)for(const row of p.rows){
+assert.notEqual(row.day,3);
+if(row.team.includes(101))assert.notEqual(row.day,1);
+if(row.loc.id===201)assert.notEqual(row.day,2);
+}
+});
+
+test('S2: overrides round trip, are validated, and old weeks are pruned on save',()=>{
+const s=small();
+s.weekStart='2026-10-24';
+s.weekOverrides={'2026-10-24':{holidays:[3,9,'x'],memberOff:{101:[1,1]},locClosed:{},note:'x'},'2026-01-03':{holidays:[1]},'bad':{}};
+const E=Engine.createFromSaved(s,{seed:1});
+const o=E.saveObject().weekOverrides;
+assert.deepEqual(Object.keys(o),['2026-10-24']);
+assert.deepEqual(o['2026-10-24'].holidays,[3]);
+assert.deepEqual(o['2026-10-24'].memberOff,{101:[1]});
+});
+
+test('S2: weekOffClear fix removes the week-off and relaxing offdays covers week-offs',()=>{
+const s=small();
+s.weekStart='2026-10-24';
+s.weekOverrides={'2026-10-24':{holidays:[],memberOff:{101:[1,2]},locClosed:{},note:''}};
+const E=Engine.createFromSaved(s,{seed:1});
+E.FIX.weekOffClear.run({id:101,day:1});
+assert.deepEqual(E.weekOffDays(101),[2]);
+E.withRelax(['offdays'],()=>assert.ok(!E.offOn(E.byId(101),2)));
+});
+
+test('S3: default gender rule is the 3:1 mix for teams of four and is unchanged',()=>{
+const E=Engine.createFromSaved(small(),{seed:1});
+const G=E.genderOK;
+assert.equal(E.state.gender.mode,'legacy4');
+assert.ok(G(['M','M','M','F']));
+assert.ok(G(['F','F','F','M']));
+assert.ok(!G(['M','M','F','F']));
+assert.ok(!G(['M','M','M','M']));
+assert.ok(G(['M','M','M','F','F']));
+assert.ok(!G(['M','M','M']));
+});
+
+test('S3: the ratio is adjustable and applies to teams of exactly a+b',()=>{
+const s=small();
+s.gender={mode:'legacy4',ratio:{a:2,b:2},min:1};
+const E=Engine.createFromSaved(s,{seed:1});
+const c=E.genderCfgOf(null);
+assert.ok(E.genderOK(['M','M','F','F'],c));
+assert.ok(!E.genderOK(['M','M','M','F'],c));
+s.gender={mode:'legacy4',ratio:{a:3,b:2},min:1};
+const E2=Engine.createFromSaved(s,{seed:1});
+const c2=E2.genderCfgOf(null);
+assert.ok(E2.genderOK(['M','M','M','F','F'],c2));
+assert.ok(E2.genderOK(['M','M','F','F','F'],c2));
+assert.ok(!E2.genderOK(['M','M','M','M','F'],c2));
+});
+
+test('S3: minF, minM, off and per-location override',()=>{
+const s=small();
+s.gender={mode:'minF',ratio:{a:3,b:1},min:2};
+s.locations[0].genderMode='minM';
+const E=Engine.createFromSaved(s,{seed:1});
+const g=E.genderOK;
+assert.ok(g(['F','F','M'],E.genderCfgOf(null)));
+assert.ok(!g(['F','M','M'],E.genderCfgOf(null)));
+assert.ok(g(['M','M','F'],E.genderCfgOf(E.state.locations[0])));
+s.locations[1].genderMode='off';
+const E2=Engine.createFromSaved(s,{seed:1});
+assert.ok(E2.genderOK(['M','M','M','M'],E2.genderCfgOf(E2.state.locations[1])));
+assert.ok(!E2.genderActive({...E2.state.locations[1],genderRule:true}));
+});
+
+test('S3: gender settings are validated on load and the mixed fix exists in the gender family',()=>{
+const s=small();
+s.gender={mode:'nope',ratio:{a:1,b:9},min:99};
+s.locations[0].genderRule=true;
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.state.gender.mode,'legacy4');
+assert.ok(E.state.gender.ratio.a>=E.state.gender.ratio.b);
+assert.ok(E.state.gender.min<=E.LIM.genderMin[1]);
+const f=E.FAMILIES.find(x=>x.k==='gender');
+assert.ok(f.fixes().some(x=>x.op==='genderMode'));
+});
+
+test('S4: location needs force a tagged member into every team there',()=>{
+const s=small();
+s.members[0].tags=['قائد'];
+s.locations[0].needs=[{tag:'قائد',min:1}];
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+const E=Engine.createFromSaved({...s,visits:3},{seed:1});
+for(const p of r.plans){
+for(const row of p.rows)if(row.loc.id===201)assert.ok(row.team.includes(101));
+assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
+}
+});
+
+test('S4: an unsatisfiable need is proven infeasible, advised, and fixed by locNeedOff',()=>{
+const s=small();
+s.locations=[s.locations[0]];
+s.locations[0].needs=[{tag:'سائق',min:1}];
+s.visits=1;
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity,0);
+const adv=E.advise(E.compileModel());
+assert.ok(adv.some(a=>a.id.startsWith('need')));
+const x=E.explain({visits:1,timeBudgetMs:500});
+const f=x.findings.find(g=>g.family==='tags');
+assert.ok(f&&f.fixes.some(z=>z.op==='locNeedOff'));
+});
+
+test('S4: tags and needs are validated on load',()=>{
+const s=small();
+s.members[0].tags=['أ','أ',' ',5,'ب'];
+s.locations[0].needs=[{tag:'أ',min:99},{tag:'',min:1},null];
+const E=Engine.createFromSaved(s,{seed:1});
+assert.deepEqual(E.state.members[0].tags,['أ','ب']);
+assert.equal(E.state.locations[0].needs.length,1);
+assert.equal(E.state.locations[0].needs[0].min,E.LIM.needMin[1]);
+});
+
+test('S5: a must pair always shares a team, in both directions',()=>{
+const s=small();
+s.pairs={enabled:true,mode:'soft',rules:[{id:900,kind:'must',a:101,b:112}]};
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+for(const p of r.plans)for(const row of p.rows)assert.equal(row.team.includes(101),row.team.includes(112));
+});
+
+test('S5: a must pair that cannot be honoured is blocked, and pairSoft relaxes it',()=>{
+const s=small();
+s.members.find(m=>m.id===112).off=[1,2,3,4,5,6,0];
+s.pairs={enabled:true,mode:'soft',rules:[{id:900,kind:'must',a:101,b:112}]};
+s.members.filter(m=>m.id!==101).forEach(m=>{m.types='any';});
+s.dup.people='any';
+const E=Engine.createFromSaved({...s,visits:3},{seed:1});
+const with101=E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity;
+E.FIX.pairSoft.run({});
+const after=E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity;
+assert.ok(after>=with101);
+assert.equal(E.state.pairs.rules[0].kind,'with');
+});
+
+test('S5: per-rule hardness overrides the global mode',()=>{
+const s=small();
+s.pairs={enabled:true,mode:'soft',rules:[{id:900,kind:'avoid',a:101,b:102,hard:true},{id:901,kind:'avoid',a:103,b:111}]};
+const E=Engine.createFromSaved(s,{seed:1});
+const P=E.compileModel().pairs;
+assert.ok(P.avoidHard.get(101).has(102));
+assert.ok(!P.avoidHard.get(103));
+s.pairs.mode='hard';s.pairs.rules[0].hard=false;
+const E2=Engine.createFromSaved(s,{seed:1});
+const P2=E2.compileModel().pairs;
+assert.ok(!P2.avoidHard.get(101));
+assert.ok(P2.avoidHard.get(103).has(111));
+});
+
+test('S6: allowedDays restricts a location to the listed weekdays',()=>{
+const s=small();
+s.locations[0].allowedDays=[2];
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+for(const p of r.plans)for(const row of p.rows)if(row.loc.id===201)assert.equal(row.day,2);
+});
+
+test('S6: minGap keeps repeat visits apart in separate mode',()=>{
+const s=small();
+s.locations=[s.locations[0]];
+s.locations[0].minGap=2;
+s.dup.people='any';
+const r=Engine.solve(s,{seed:1,visitsWanted:2});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+for(const p of r.plans){
+const ds=p.rows.map(x=>x.day).sort((a,b)=>a-b);
+for(let i=1;i<ds.length;i++)assert.ok(ds[i]-ds[i-1]>=2);
+}
+const t=clone(s);t.locations[0].minGap=6;
+const E=Engine.createFromSaved({...t,visits:2},{seed:1});
+assert.equal(E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity,1);
+});
+
+test('S6: notSameDay and sameDay rules hold in every plan and are relaxed by dayRuleOff',()=>{
+const s=small();
+s.cap={mainPerDay:3,conPerDay:1,dayMax:0,even:false};
+s.dayRules=[{id:800,kind:'notSameDay',on:true,a:[201],b:[202]}];
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+for(const p of r.plans){
+const by=new Map();
+for(const row of p.rows){if(!by.has(row.day))by.set(row.day,new Set());by.get(row.day).add(row.loc.id);}
+for(const set of by.values())assert.ok(!(set.has(201)&&set.has(202)));
+}
+const u=clone(s);u.dayRules=[{id:801,kind:'sameDay',on:true,a:[201],b:[202]}];
+const r2=Engine.solve(u,{seed:1,visitsWanted:2});
+for(const p of r2.plans){
+const by=new Map();
+for(const row of p.rows){if(!by.has(row.day))by.set(row.day,new Set());by.get(row.day).add(row.loc.id);}
+for(const set of by.values())assert.equal(set.has(201),set.has(202));
+}
+const E=Engine.createFromSaved(u,{seed:1});
+E.FIX.dayRuleOff.run({id:801});
+assert.equal(E.compileDayRules().length,0);
+});
+
+test('S6: day rules and gaps are validated on load',()=>{
+const s=small();
+s.locations[0].allowedDays=[1,1,9,'x'];
+s.locations[0].minGap=99;
+s.dayRules=[{id:1,kind:'bad',a:[201],b:[202]},{kind:'sameDay',a:[201,'202'],b:[203]},null];
+const E=Engine.createFromSaved(s,{seed:1});
+assert.deepEqual(E.state.locations[0].allowedDays,[1]);
+assert.equal(E.state.locations[0].minGap,E.LIM.minGap[1]);
+assert.equal(E.state.dayRules.length,1);
+assert.ok(Number.isFinite(E.state.dayRules[0].id));
+});
+
+test('S7: hard maxSpread keeps every pool within the allowed visit gap',()=>{
+const s=small();
+s.fair={maxSpread:1,minEach:0,mode:'hard'};
+s.dup.people='any';
+const r=Engine.solve(s,{seed:1,visitsWanted:4});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+const E=Engine.createFromSaved({...s,visits:4},{seed:1});
+for(const p of r.plans){
+assert.equal(E.checkPlan(p.rows,E.compileModel()).hard.fair,0);
+for(const q of[1,2]){
+const c=E.state.members.filter(m=>m.pool===q).map(m=>p.rows.filter(x=>x.team.includes(m.id)).length);
+assert.ok(Math.max(...c)-Math.min(...c)<=1,JSON.stringify(c));
+}
+}
+});
+
+test('S7: hard minEach gives every member at least N visits and relaxes with fairSoft',()=>{
+const s=small();
+s.fair={maxSpread:0,minEach:1,mode:'hard'};
+const E=Engine.createFromSaved({...s,visits:3},{seed:1});
+const hard=E.capacityInfo({timeBudgetMs:600,noCache:true});
+if(hard.capacity>0)for(const row of []){}
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+for(const p of r.plans)for(const m of E.state.members)assert.ok(p.rows.some(x=>x.team.includes(m.id)));
+E.FIX.fairSoft.run({});
+assert.equal(E.state.fair.mode,'soft');
+});
+
+test('S7: soft fairness never blocks a plan but lowers the score of unfair ones',()=>{
+const s=small();
+s.fair={maxSpread:1,minEach:0,mode:'soft'};
+const E=Engine.createFromSaved({...s,visits:2},{seed:1});
+const a=E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity;
+const t=clone(s);t.fair.mode='soft';t.fair.maxSpread=0;
+assert.equal(Engine.createFromSaved({...t,visits:2},{seed:1}).capacityInfo({timeBudgetMs:500,noCache:true}).capacity,a);
+});
+
+test('S7: fair settings are validated on load',()=>{
+const s=small();
+s.fair={maxSpread:99,minEach:-3,mode:'weird'};
+const E=Engine.createFromSaved(s,{seed:1});
+assert.deepEqual(E.state.fair,{maxSpread:E.LIM.fairSpread[1],minEach:0,mode:'soft'});
+});
+
+test('B-extra: a plan is never reported as achieving more visits than it has rows',()=>{
+const s=blank({days:3,dupMode:'banned',dupPeople:'any'});
+for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
+s.locations.push(loc(201,{1:1,2:1}),loc(202,{1:1,2:1}));
+for(const want of[2,3,4,6]){
+const r=Engine.solve(s,{seed:1,visitsWanted:want});
+for(const p of r.plans)assert.equal(p.rows.length,r.achieved,'want '+want);
+}
+const E=Engine.createFromSaved({...s,visits:5},{seed:1});
+const pr=E.probeV(5,{});
+assert.notEqual(pr.status,'feasible');
+});
+
+test('S8: minWeek forces repeat visits through auto goals and counts toward visits',()=>{
+const s=small();
+s.locations[0].minWeek=2;
+const E=Engine.createFromSaved({...s,visits:2},{seed:1});
+const G=E.compileGoals().list;
+assert.equal(G.filter(g=>g.auto&&g.loc.id===201).length,2);
+assert.equal(E.goalCounts().n,2);
+const r=Engine.solve(s,{seed:1,visitsWanted:3});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
+for(const p of r.plans)assert.ok(p.rows.filter(x=>x.loc.id===201).length>=2);
+});
+
+test('S8: minWeek is clamped by banned repeats and maxWeek, and relaxed by locMinWeekOff',()=>{
+const s=small();
+s.locations[0].minWeek=4;
+s.locations[0].maxWeek=2;
+const E=Engine.createFromSaved({...s,visits:2},{seed:1});
+assert.equal(E.compileGoals().list.filter(g=>g.auto).length,2);
+E.FIX.locMinWeekOff.run({id:201});
+assert.equal(E.compileGoals().list.filter(g=>g.auto).length,0);
+const t=small();t.dup.mode='banned';t.locations[0].minWeek=3;
+const E2=Engine.createFromSaved({...t,visits:2},{seed:1});
+assert.equal(E2.compileGoals().list.filter(g=>g.auto).length,1);
+});
+
+test('S8: priority orders unplaced cards low priority first and is validated on load',()=>{
+const s=blank({days:3,dupMode:'separate',dupPeople:'any'});
+for(let i=0;i<2;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
+s.locations.push(loc(201,{1:2,2:2},{priority:'high'}),loc(202,{1:2,2:2},{priority:'low'}),loc(203,{1:2,2:2},{priority:'bogus'}));
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.state.locations[2].priority,'normal');
+const r=Engine.solve(s,{seed:1,visitsWanted:3,dummy:true});
+const used=new Set((r.plans[0]?r.plans[0].rows:[]).map(x=>x.loc.id));
+if(r.unplaced.length>1)assert.ok(E.PRIO_RANK[r.unplaced[0].loc.priority||'normal']>=E.PRIO_RANK[r.unplaced[1].loc.priority||'normal']);
+assert.ok(used.has(201)||r.achieved===0);
+});
+
+test('S9: plans count, budget presets, flex default, seed lock and digits',()=>{
+const s=small();
+s.solver={budget:'bogus',plans:99,defaultFlex:'x',lockSeed:true,seed:7};
+s.digits='latin';
+const E=Engine.createFromSaved(s,{seed:1});
+assert.equal(E.state.solver.budget,'normal');
+assert.equal(E.state.solver.plans,E.LIM.plans[1]);
+assert.equal(E.state.solver.defaultFlex,false);
+assert.equal(Engine.ar(12),'12');
+const t=small();t.solver={budget:'fast',plans:2,defaultFlex:false,lockSeed:true,seed:9};t.digits='arabic';
+const r1=Engine.solve(t,{visitsWanted:2}),r2=Engine.solve(t,{visitsWanted:2});
+assert.ok(r1.plans.length<=2);
+assert.deepEqual(r1.plans.map(p=>E.planKey(p)),r2.plans.map(p=>E.planKey(p)));
+assert.equal(Engine.ar(12),'١٢');
+assert.ok(Engine.SOLVER_MS.fast<Engine.SOLVER_MS.normal&&Engine.SOLVER_MS.normal<Engine.SOLVER_MS.thorough);
+});

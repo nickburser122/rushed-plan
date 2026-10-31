@@ -67,6 +67,14 @@ nav.tabs::-webkit-scrollbar{display:none}
 @keyframes viewin{from{opacity:0;transform:translateY(8px)}}
 main>.view>*+*{margin-top:14px}
 .stack>*+*{margin-top:14px}
+.secgrp{display:flex;flex-direction:column;gap:12px}
+.sechead{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:12px 16px;background:var(--card2);border:1px solid var(--line);border-radius:16px;font:inherit;color:var(--ink);cursor:pointer}
+.sechead:hover{border-color:var(--line-h)}
+.sechead .secsum{margin-inline-start:auto}
+.chev{width:8px;height:8px;border-inline-end:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:rotate(45deg);transition:transform .15s;margin-inline:2px}
+.chev.on{transform:rotate(-135deg)}
+.moddot{width:8px;height:8px;border-radius:50%;background:var(--terra);display:inline-block}
+.secbody{display:flex;flex-direction:column;gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--sh);padding:16px 18px}
 .kicker{font-size:11.5px;font-weight:600;color:var(--mut);letter-spacing:.3px;margin-bottom:9px}
 .tiny{font-size:11.5px}.mut{color:var(--mut)}
@@ -93,7 +101,7 @@ main>.view>*+*{margin-top:14px}
 .pill.dst.on{background:var(--lav-soft);border-color:var(--lav-line);color:var(--lav-ink)}
 .pill.dyp{padding:5.5px 15px;font-size:13px}
 .pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.seg{display:inline-flex;background:var(--card2);border-radius:999px;padding:3px;gap:2px;flex:none}
+.seg{display:inline-flex;flex-wrap:wrap;max-width:100%;background:var(--card2);border-radius:18px;padding:3px;gap:2px;flex:none}
 .seg button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:500;color:var(--mut);padding:4px 12px;border-radius:999px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
 .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--sh)}
 .pdot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
@@ -265,6 +273,8 @@ main>.view>*+*{margin-top:14px}
 .lrow .swlab{margin-inline-start:auto}
 input.name{border:none;background:transparent;font:inherit;font-weight:600;color:var(--ink);border-bottom:1.5px dashed var(--line);padding:2px 3px;min-width:96px;flex:1;max-width:180px}
 input.name:focus{outline:none;border-color:var(--teal)}
+input.tagin{border:1px dashed var(--line);background:transparent;font:inherit;font-size:12.5px;color:var(--ink);padding:4px 11px;border-radius:999px;min-width:84px;max-width:150px}
+input.tagin:focus{outline:none;border-color:var(--teal)}
 .bulkbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .rem{opacity:0!important;transform:scale(.96);transition:.22s ease}
 .rb-in{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -303,6 +313,7 @@ body.ready .rv{animation-duration:.32s;animation-delay:0s}
 .dayblk.today{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft),var(--sh)}
 .pill.dyp small{display:block;font-size:10px;opacity:.75;font-weight:400;line-height:1.1}
 .pill.dyp{line-height:1.25}
+.pill.dyp.hol{text-decoration:line-through}
 .toast-undo{border:none;background:var(--toast-hi);color:var(--toast-ink);font:inherit;font-size:12.5px;font-weight:600;padding:3px 12px;border-radius:999px;cursor:pointer;margin-inline-start:4px}
 .toast-undo:hover{background:var(--toast-hi2)}
 .toast.show{pointer-events:auto}
@@ -443,6 +454,7 @@ button,.pill,.fixbtn{touch-action:manipulation}
 <button type="button" class="icon-btn plain" id="themeBtn" data-act="themecycle"></button>
 </div>
 </header>
+<div class="gwarn" id="loadBanner" role="alert" hidden></div>
 <nav class="tabs" id="tabs" role="tablist"></nav>
 <main>
 <section class="view on" id="v-plan">
@@ -541,7 +553,7 @@ const isToday=i=>isoD(dayDate(i))===isoD(new Date());
 const TABS=[{id:'plan',l:'الخطة',ic:'i-cal'},{id:'days',l:'الأيام',ic:'i-days'},{id:'members',l:'الأعضاء',ic:'i-users'},{id:'locations',l:'المواقع',ic:'i-pin'},{id:'goals',l:'الأهداف',ic:'i-target'},{id:'settings',l:'الإعدادات',ic:'i-cog'},{id:'results',l:'النتائج',ic:'i-res'}];
 const state={
 tab:'plan',view:'day',weekStart:thisSaturday(),undo:null,eligMode:{},_quiet:false,running:false,stale:false,plans:[],selected:null,fail:null,flexOffer:false,lastRun:null,
-visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,theme:'system',priority:'balance',carryWeek:false,history:{},gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,failFixes:[],diagBusy:false,advice:[],advAll:false,
+visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,hl:null,theme:'system',priority:'balance',carryWeek:false,history:{},historyWd:{},weekOverrides:{},gender:{mode:'legacy4',ratio:{a:3,b:1},min:1},dayRules:[],fair:{maxSpread:0,minEach:0,mode:'soft'},solver:{budget:'normal',plans:6,defaultFlex:false,lockSeed:false,seed:1},digits:'arabic',gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,failFixes:[],diagBusy:false,advice:[],advAll:false,
 cap:{mainPerDay:2,conPerDay:1,dayMax:0,even:true},
 dup:{mode:'separate',people:'any',spread:'avoid'},
 conflicts:[],
@@ -579,13 +591,16 @@ const snap=JSON.stringify(saveObject());
 d.run(f);
 afterFix(fixLabel(f),snap);
 }
+function syncUid(){_uid=Math.max(_uid,E.nextId()-1);}
 function restoreSnap(snap){
 E.applySaved(JSON.parse(snap),false);
 state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];});
+syncUid();
 recalcCap();refreshAll();markStale();
 }
 function afterFix(label,snap){
 state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];});
+syncUid();
 recalcCap();
 refreshAll();
 markStale();
@@ -597,20 +612,75 @@ function runDiagnosis(){
 const run=++_diagRun;
 state.failFixes=[];state.diagBusy=true;
 renderResults();
-Eng.ana.call('explain',{visits:state.visitsWanted,timeBudgetMs:900}).then(x=>{
+Eng.diag.cancel();
+Eng.diag.call('explain',{visits:state.visitsWanted,timeBudgetMs:900,deadlineMs:6000}).then(x=>{
 if(run!==_diagRun)return;
 state.failFixes=x.findings.slice(0,4).map(f=>({text:f.text,fixes:f.fixes}));
 state.diagBusy=false;
 renderResults();
-}).catch(()=>{
-if(run!==_diagRun)return;
+}).catch(err=>{
+if(run!==_diagRun||(err&&err.cancelled))return;
 state.diagBusy=false;
 renderResults();
 });
 }
 
+let _blockSave=false;
 function saveState(){
+if(_blockSave)return;
 try{localStorage.setItem('visitplan.v2',JSON.stringify(saveObject()));}catch(err){}
+}
+const SET_KEYS=['days','cap','dup','gender','fair','solver','digits','rest','restCalendar','restCustom','gmaxOn','gmax','priority','ratioIdx','useAllDays','autoRegen','minChanges','carryWeek'];
+function loadUiPrefs(){
+try{const u=JSON.parse(localStorage.getItem('visitplan.ui')||'{}');if(u&&typeof u.setOpen==='object')state.setOpen=u.setOpen;}catch(err){}
+}
+function saveUiPrefs(){
+try{localStorage.setItem('visitplan.ui',JSON.stringify({setOpen:state.setOpen||{}}));}catch(err){}
+}
+function settingsSubset(src){
+const o={v:2,kind:'settings'};
+for(const k of SET_KEYS)o[k]=JSON.parse(JSON.stringify(src[k]));
+return o;
+}
+function exportSettings(){
+const blob=new Blob([JSON.stringify(settingsSubset(saveObject()),null,1)],{type:'application/json'});
+const url=URL.createObjectURL(blob),a=document.createElement('a');
+a.href=url;a.download='visitplan-settings.json';document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+toast('صُدِّرت الإعدادات');
+}
+function applySettingsOnly(sub,msg){
+const snap=JSON.stringify(saveObject());
+try{
+E.applySaved({...saveObject(),...sub},false);
+}catch(err){toast('تعذّر تطبيق الإعدادات');return;}
+state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];});
+syncUid();E.applyDigits();
+recalcCap();refreshAll();patchHeader();renderResults();markStale();
+setUndo(msg,()=>restoreSnap(snap));
+}
+function importSettings(inp){
+const f=inp.files&&inp.files[0];
+inp.value='';
+if(!f)return;
+const r=new FileReader();
+r.onload=()=>{
+let d;
+try{d=JSON.parse(r.result);}catch(err){toast('الملف غير صالح');return;}
+if(!d||typeof d!=='object'||d.kind!=='settings'||!Array.isArray(d.days)||d.days.length!==7){toast('الملف غير صالح');return;}
+askConfirm('استيراد إعدادات؟','ستُستبدل الإعدادات الحالية فقط، وتبقى الأعضاء والمواقع كما هي.','استيراد',()=>{
+const sub={};
+for(const k of SET_KEYS)if(k in d)sub[k]=d[k];
+applySettingsOnly(sub,'استُوردت الإعدادات');
+});
+};
+r.readAsText(f);
+}
+function resetSettings(){
+askConfirm('إعادة الإعدادات؟','ستعود الإعدادات إلى الافتراضي، وتبقى الأعضاء والمواقع والأهداف كما هي.','إعادة',()=>{
+const base=settingsSubset(Engine.baseState());
+applySettingsOnly(base,'أُعيدت الإعدادات');
+});
 }
 function exportBackup(){
 const blob=new Blob([JSON.stringify(saveObject(),null,1)],{type:'application/json'});
@@ -644,24 +714,45 @@ if(!p)return;
 const by={};
 for(const r of p.rows)for(const id of r.team){if(!by[id])by[id]=[];by[id].push(r.day);}
 state.history[state.weekStart]=by;
+state.historyWd[state.weekStart]=workingDays();
 const ks=Object.keys(state.history).sort();
-while(ks.length>10)delete state.history[ks.shift()];
+while(ks.length>10){const k=ks.shift();delete state.history[k];delete state.historyWd[k];}
 scheduleSave();
 }
 let _saveT;
 function scheduleSave(){clearTimeout(_saveT);_saveT=setTimeout(saveState,400);}
 function loadState(){
+let raw=null;
 try{
-let raw=localStorage.getItem('visitplan.v2'),migrated=false;
+raw=localStorage.getItem('visitplan.v2');
+let migrated=false;
 if(!raw){raw=localStorage.getItem('visitplan.v1');migrated=true;}
 if(!raw)return;
 const d=JSON.parse(raw);
-if(!d||d.v!==(migrated?1:2))return;
+if(!d||d.v!==(migrated?1:2))throw new Error('version');
 E.applySaved(d,migrated);
-const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.pairs.rules.map(r=>r.id),...state.goals.map(g=>g.id),...state.conflicts.map(r=>r.id)];
-_uid=Math.max(...ids);
+syncUid();
 if(migrated)saveState();
-}catch(err){}
+}catch(err){
+state.loadRaw=raw;
+let kept=false;
+if(raw!=null){try{localStorage.setItem('visitplan.v2.corrupt-'+Date.now(),raw);kept=true;}catch(e2){}}
+_blockSave=raw!=null&&!kept;
+state.loadFailed=raw!=null;
+}
+}
+function renderLoadBanner(){
+const el=$('#loadBanner');
+if(!el)return;
+if(!state.loadFailed){el.hidden=true;el.innerHTML='';return;}
+el.hidden=false;
+el.innerHTML=`${icon('i-alert')}<span>تعذّر قراءة البيانات المحفوظة — ${_blockSave?'لم يُحفظ شيء جديد حتى تقرر':'حُفظت نسخة منها'}</span><button class="btn" data-act="rawexp">تصدير النص الخام</button><button class="btn" data-act="rawdismiss">${_blockSave?'بدء من جديد':'إخفاء'}</button>`;
+}
+function exportRaw(){
+const blob=new Blob([state.loadRaw||''],{type:'text/plain'});
+const url=URL.createObjectURL(blob),a=document.createElement('a');
+a.href=url;a.download='visitplan-raw-data.txt';document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 const Eng=(()=>{
 function make(){
@@ -708,16 +799,20 @@ wk.postMessage({id,op,saved,opts:opts||{}});
 function cancel(){
 if(!pend.size)return;
 if(w){try{w.terminate();}catch(err){}w=null;}
+const all=[...pend.values()];
 pend.clear();
+all.forEach(p=>p.rej({cancelled:true}));
 }
 return{call,cancel};
 }
-return{gen:make(),ana:make()};
+return{gen:make(),ana:make(),diag:make()};
 })();
 let genRun=0;
 function startGen(mode){
+if(mode==='normal'&&state.solver.defaultFlex)mode='flex';
 const run=++genRun;
 _diagRun++;
+Eng.diag.cancel();
 const M=compileModel();
 const pre=!M.days.length?'لا توجد أيام عمل مفعّلة':!M.locs.length?'أضف موقعًا واحدًا على الأقل':!M.members.length?'أضف أعضاء أولًا':'';
 if(pre){
@@ -738,7 +833,7 @@ const useRef=state.minChanges&&!!sel;
 const ext=!!state._ext;
 state._ext=false;
 Eng.gen.cancel();
-Eng.gen.call('solve',{mode,ref:useRef?sel:null,timeBudgetMs:ext?8000:1500,visitsWanted:state.visitsWanted},p=>{
+Eng.gen.call('solve',{mode,ref:useRef?sel:null,timeBudgetMs:ext?8000:Engine.SOLVER_MS[state.solver.budget]||1500,visitsWanted:state.visitsWanted},p=>{
 if(run!==genRun)return;
 const gn=$('#gn'),gf=$('#gf');
 if(gn)gn.textContent=ar(p.attempts);
@@ -746,8 +841,8 @@ if(gf)gf.textContent=ar(p.found);
 }).then(res=>{
 if(run!==genRun)return;
 finishGen(mode,res);
-}).catch(()=>{
-if(run!==genRun)return;
+}).catch(err=>{
+if(run!==genRun||(err&&err.cancelled))return;
 state.running=false;state.plans=[];state.selected=null;state.fail=['حدث خطأ أثناء التوليد'];
 updateGenUI();renderResults();
 });
@@ -865,7 +960,7 @@ morph('#stL',icon('i-pin')+' '+plural(state.locations.length,'موقع واحد'
 morph('#stV',icon('i-cal')+' '+visitsWord(state.visits));
 }
 function updateVisitUI(){
- $('#vnum').textContent=ar(state.visits);
+ $('#vnum').textContent=ar(state.visitsWanted);
  $('#vmax').textContent=state.vcap>0?'من '+ar(state.vcap):'لا طاقة';
  $('#vnum').parentElement.querySelectorAll('button').forEach(b=>b.disabled=+b.dataset.v>0?state.visitsWanted>=state.vcap:state.visitsWanted<=1);
 const sp=effSplit();
@@ -929,13 +1024,9 @@ function recalcCap(){
 resetCaches();
 state.vcap=structCap();
 const maxV=Math.max(1,state.vcap);
-const derived=clamp(Math.max(state.visitsWanted,goalCounts().n),1,maxV);
-if(derived!==state.visits){
-state.visits=derived;
-if(derived<state.visitsWanted){state.visitsWanted=derived;toast('خُفِّض عدد الزيارات إلى '+ar(derived));}
-else if(derived>state.visitsWanted){state.visitsWanted=derived;toast('رُفع عدد الزيارات إلى '+ar(derived)+' لتغطية الأهداف');}
-}
-state.visits=state.visitsWanted;
+const need=goalCounts().n;
+if(need>state.visitsWanted){state.visitsWanted=need;toast('رُفع عدد الزيارات إلى '+ar(need)+' لتغطية الأهداف');}
+state.visits=clamp(state.visitsWanted,1,maxV);
 updateVisitUI();
 scheduleCapacity();
 if($('#mIntro')&&$('#mIntro').firstChild)morph('#mIntro',memberIntroHTML());
@@ -952,9 +1043,14 @@ morph('#advWrap',advisorHTML());
 }
 let _advT;
 function scheduleAdvisor(){clearTimeout(_advT);_advT=setTimeout(refreshAdvisor,300);}
-let _autoT;
+let _autoT,_syncT;
+function scheduleSync(){
+clearTimeout(_syncT);
+_syncT=setTimeout(()=>{recalcCap();if(state.goals.length||state.tab==='goals')refreshGoals();},120);
+}
 function markStale(){
 state.stale=true;
+scheduleSync();
 scheduleAdvisor();
 if(state.running){genRun++;Eng.gen.cancel();state.running=false;updateGenUI();renderResults();}
 if(state.plans.length||state.fail){
@@ -970,7 +1066,7 @@ function pillsOn(t){t.parentElement.querySelectorAll('.pill').forEach(p=>p.class
 function syncDayUI(i){
 const on=state.days[i].on;
 const p=document.querySelector('#daypills [data-day="'+i+'"]');
-if(p){p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));}
+if(p){const eo=E.dayOn(i);p.classList.toggle('on',eo);p.setAttribute('aria-pressed',String(eo));}
 const c=document.querySelector('[data-dcard="'+i+'"]');
 if(c){
 c.classList.toggle('off',!on);
@@ -1006,7 +1102,7 @@ toast('«كل الأيام» تتطلب زيارة لكل يوم');
 return;
 }
 if(dv<0&&state.visits-1<goalCounts().n){toast('الأهداف تتطلب '+visitsWord(goalCounts().n)+' على الأقل');return;}
-const nv=clamp(state.visitsWanted+dv,1,Math.max(1,state.vcap));
+const nv=dv>0?clamp(state.visitsWanted+dv,1,Math.max(1,state.vcap)):Math.max(1,state.visitsWanted+dv);
 if(nv===state.visitsWanted)return;
 state.visitsWanted=nv;
 recalcCap();
@@ -1026,13 +1122,16 @@ return `<div class="card daycard${d.dist==='near'?' dnear':''}${d.on?'':' off'}"
 <div class="dc-body">
 <div class="dcrow"><span class="tiny mut">نوع الموقع</span>${seg('dfav',[{v:'',l:'متوازن'},{v:'main',l:'رئيسية'},{v:'contracted',l:'متعاقد'}],d.fav)}</div>
 <div class="dcrow"><span class="tiny mut">المسافة</span>${seg('ddist',[{v:'',l:'متوازن'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],d.dist)}</div>
-<div class="dcrow"><span class="tiny mut">حد الزيارات</span><span class="stepper"><button data-act="dmax" data-d="${i}" data-v="-1"${(d.max|0)<=0?' disabled':''}>−</button><b>${d.max>0?'حتى '+ar(d.max):'العام ('+ar(globalDayMax())+')'}</b><button data-act="dmax" data-d="${i}" data-v="1"${d.max>=6?' disabled':''}>+</button></span></div>
+<div class="dcrow"><span class="tiny mut">حد الزيارات</span><span class="stepper"><button data-act="dmax" data-d="${i}" data-v="-1"${(d.max|0)<=0?' disabled':''}>−</button><b>${d.max>0?'حتى '+ar(d.max):'العام ('+ar(globalDayMax())+')'}</b><button data-act="dmax" data-d="${i}" data-v="1"${d.max>=E.LIM.dayCfgMax[1]?' disabled':''}>+</button></span></div>
 </div>
 </div>`;
 }
 function refreshDays(){morph('#daysWrap',daysTabHTML());}
 function daysTabHTML(){
+const wo=E.weekOv()||{holidays:[]};
 return `<div class="card introbar rv" id="dIntro">${icon('i-days')}<span>أسبوع <b>${weekLabel()}</b> · ${plural(workingDays().length,'يوم عمل واحد','يوما عمل','أيام عمل','يوم عمل')}</span></div>
+<div class="card rv" data-key="wkcard"><div class="mhead"><span class="clab">هذا الأسبوع فقط</span><span class="tiny mut">عطلة رسمية تُلغي يوم العمل لهذا الأسبوع</span></div>
+<div class="moff" style="margin-top:8px"><span class="tiny mut">عطلة</span>${DAYS.map((d,di)=>`<button class="pill off${(wo.holidays||[]).includes(di)?' on':''}" data-act="wkhol" data-day="${di}"${state.days[di].on?'':' disabled'}>${DAY_SHORT[di]}</button>`).join('')}</div></div>
 <div class="daygrid">${DAYS.map((d,i)=>dayCardHTML(i)).join('')}</div>`;
 }
 function memberIntroHTML(){
@@ -1069,6 +1168,15 @@ ${m.rest?'<span class="badge bgoal">نمط خاص</span>':''}<button class="icon
  ${seg('mpref',[{v:'',l:'بدون'},{v:'near',l:'قريب'},{v:'far',l:'بعيد'}],m.pref)}
 </div>
 <div class="moff">
+<span class="tiny mut">المهارات</span>
+${(m.tags||[]).map(t=>`<button class="pill on" data-act="mtagdel" data-m="${m.id}" data-t="${esc(t)}" title="حذف">${esc(t)} ×</button>`).join('')}
+<input class="tagin" data-tag-m="${m.id}" placeholder="مهارة جديدة" maxlength="20" enterkeyhint="done" aria-label="إضافة مهارة">
+</div>
+<div class="moff">
+<span class="tiny mut">إجازة هذا الأسبوع</span>
+${DAYS.map((d,di)=>`<button class="pill off${E.weekOffDays(m.id).includes(di)?' on':''}" data-act="wkmoff" data-m="${m.id}" data-day="${di}"${E.dayOn(di)?'':' disabled'}>${DAY_SHORT[di]}</button>`).join('')}
+</div>
+<div class="moff">
 <span class="tiny mut">الراحة</span>
 ${ddHTML('mrest',m.id,m.rest?(m.restCustom?'c':(presetKey(m.rest)||'c')):'g','','نمط الراحة')}
 ${m.rest&&m.restCustom?restStepper('mreststep',m.rest,`data-m="${m.id}"`):''}
@@ -1103,13 +1211,14 @@ ${state.goals.some(g=>g.on&&g.loc===l.id)?'<span class="badge bgoal">◎ هدف<
 <div class="pills">${dists.map(d=>`<button class="pill dst${l.dist===d.v?' on':''}" data-act="ldist" data-l="${l.id}" data-v="${d.v}">${d.l}</button>`).join('')}</div>
 <button type="button" class="swlab" role="switch" aria-checked="${l.genderRule?'true':'false'}" data-act="lgen" data-l="${l.id}"><span class="sw${l.genderRule?' on':''}"></span> خلط نوعي</button>
 </div>
+${l.genderRule?`<div class="lrow"><span class="tiny mut">قاعدة الخلط</span><div class="seg">${[['','العام'],...GENDER_MODE_LABELS].map(([v,t])=>`<button class="${(l.genderMode||'')===v?'on':''}" data-act="lgmode" data-l="${l.id}" data-v="${v}">${t}</button>`).join('')}</div></div>`:''}
 <div class="lrow">
 <span class="tiny mut">الحد الأسبوعي</span>
-<span class="stepper"><button data-act="lmax" data-l="${l.id}" data-v="-1"${l.maxWeek<=0?' disabled':''}>−</button><b>${l.maxWeek?ar(l.maxWeek):'تلقائي'}</b><button data-act="lmax" data-l="${l.id}" data-v="1"${l.maxWeek>=5?' disabled':''}>+</button></span>
+${dupModeOf(l)==='banned'?'<span class="tiny mut">التكرار ممنوع لهذا الموقع</span>':`<span class="stepper"><button data-act="lmax" data-l="${l.id}" data-v="-1"${l.maxWeek<=0?' disabled':''}>−</button><b>${l.maxWeek?ar(l.maxWeek):'تلقائي'}</b><button data-act="lmax" data-l="${l.id}" data-v="1"${l.maxWeek>=E.LIM.maxWeek[1]?' disabled':''}>+</button></span>`}
 </div>
 <div class="lrow">
 <span class="tiny mut">المقاعد</span>
-${[1,2].map(q=>`<span class="stepper"><span class="lb">${q===1?'سريري':'إداري'}</span><button data-act="lseat" data-l="${l.id}" data-k="${q}" data-v="-1"${shapeOf(l)[q]<=0?' disabled':''}>−</button><b>${ar(shapeOf(l)[q])}</b><button data-act="lseat" data-l="${l.id}" data-k="${q}" data-v="1"${shapeOf(l)[q]>=5?' disabled':''}>+</button></span>`).join('')}
+${[1,2].map(q=>`<span class="stepper"><span class="lb">${q===1?'سريري':'إداري'}</span><button data-act="lseat" data-l="${l.id}" data-k="${q}" data-v="-1"${shapeOf(l)[q]<=0?' disabled':''}>−</button><b>${ar(shapeOf(l)[q])}</b><button data-act="lseat" data-l="${l.id}" data-k="${q}" data-v="1"${shapeOf(l)[q]>=E.LIM.seats[1]?' disabled':''}>+</button></span>`).join('')}
 ${l.seats?`<button class="linky" data-act="lseatreset" data-l="${l.id}">الافتراضي</button>`:`<span class="tiny mut">افتراضي</span>`}
 </div>
 <div class="lrow">
@@ -1118,8 +1227,30 @@ ${l.seats?`<button class="linky" data-act="lseatreset" data-l="${l.id}">الاف
 </div>
 ${eligHTML(l)}
 <div class="lrow">
+<span class="tiny mut">الأولوية</span>
+<div class="seg">${[['high','عالية'],['normal','عادية'],['low','منخفضة']].map(([v,t])=>`<button class="${(l.priority||'normal')===v?'on':''}" data-act="lprio" data-l="${l.id}" data-v="${v}">${t}</button>`).join('')}</div>
+<span class="tiny mut sep">أقل عدد زيارات أسبوعيًا</span>
+<span class="stepper"><button data-act="lminw" data-l="${l.id}" data-v="-1"${(l.minWeek|0)<=E.LIM.minWeek[0]?' disabled':''}>−</button><b>${(l.minWeek|0)>0?ar(l.minWeek):'بلا'}</b><button data-act="lminw" data-l="${l.id}" data-v="1"${(l.minWeek|0)>=E.LIM.minWeek[1]?' disabled':''}>+</button></span>
+</div>
+<div class="lrow">
+<span class="tiny mut">يتطلب</span>
+${(l.needs||[]).map(n=>`<span class="stepper"><span class="lb">${esc(n.tag)}</span><button data-act="lneedmin" data-l="${l.id}" data-t="${esc(n.tag)}" data-v="-1"${n.min<=E.LIM.needMin[0]?' disabled':''}>−</button><b>${ar(n.min)}</b><button data-act="lneedmin" data-l="${l.id}" data-t="${esc(n.tag)}" data-v="1"${n.min>=E.LIM.needMin[1]?' disabled':''}>+</button><button data-act="lneeddel" data-l="${l.id}" data-t="${esc(n.tag)}" title="حذف">×</button></span>`).join('')}
+<input class="tagin" data-tag-l="${l.id}" placeholder="مهارة مطلوبة" maxlength="20" enterkeyhint="done" aria-label="إضافة متطلب">
+</div>
+<div class="lrow">
+<span class="tiny mut">الأيام المسموحة</span>
+${DAYS.map((d,di)=>`<button class="pill${(l.allowedDays||[]).includes(di)?' on':''}" data-act="lallow" data-l="${l.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
+<span class="tiny mut">${(l.allowedDays||[]).length?'':'(الكل)'}</span>
+<span class="tiny mut sep">أقل فاصل</span>
+<span class="stepper"><button data-act="lgap" data-l="${l.id}" data-v="-1"${(l.minGap|0)<=E.LIM.minGap[0]?' disabled':''}>−</button><b>${(l.minGap|0)>1?ar(l.minGap):'بلا'}</b><button data-act="lgap" data-l="${l.id}" data-v="1"${(l.minGap|0)>=E.LIM.minGap[1]?' disabled':''}>+</button></span>
+</div>
+<div class="lrow">
 <span class="tiny mut">أيام الإغلاق</span>
 ${DAYS.map((d,di)=>`<button class="pill off${l.closed.includes(di)?' on':''}" data-act="lclosed" data-l="${l.id}" data-day="${di}">${DAY_SHORT[di]}</button>`).join('')}
+</div>
+<div class="lrow">
+<span class="tiny mut">إغلاق هذا الأسبوع</span>
+${DAYS.map((d,di)=>`<button class="pill off${E.weekClosedDays(l.id).includes(di)?' on':''}" data-act="wkclosed" data-l="${l.id}" data-day="${di}"${E.dayOn(di)?'':' disabled'}>${DAY_SHORT[di]}</button>`).join('')}
 </div>
 </div>`;
 }
@@ -1176,11 +1307,46 @@ const l={id:nid(),name:base+ar(n),type,dist:'',genderRule:type==='main',maxWeek:
 state.locations.push(l);
 return l;
 }
+function trimGoalToShape(g,loc){
+if(!loc||goalIsCustom(g))return;
+const sh=shapeOf(loc);
+for(const q of[1,2]){
+const same=g.people.filter(id=>{const m=byId(id);return m&&m.pool===q;});
+if(same.length>sh[q]){const drop=same.slice(sh[q]);g.people=g.people.filter(id=>!drop.includes(id));}
+}
+}
+function addTagFrom(inp){
+const t=inp.value.trim().slice(0,20);
+if(!t)return;
+if(inp.dataset.tagM){
+const m=byId(+inp.dataset.tagM);
+if(!m)return;
+m.tags=m.tags||[];
+if(m.tags.includes(t)||m.tags.length>=12){inp.value='';return;}
+m.tags.push(t);
+refreshMembers();refreshLocations();recalcCap();markStale();
+}else if(inp.dataset.tagL){
+const l=locById(+inp.dataset.tagL);
+if(!l)return;
+l.needs=l.needs||[];
+if(l.needs.some(n=>n.tag===t)||l.needs.length>=6){inp.value='';return;}
+l.needs.push({tag:t,min:1});
+refreshLocations();recalcCap();markStale();
+}
+}
 function removeMember(id){
 const idx=state.members.findIndex(m=>m.id===id);if(idx<0)return;
 const gone=state.members[idx],goneRules=state.pairs.rules.filter(r=>r.a===id||r.b===id);
 const goneGoals=state.goals.filter(g=>g.people.includes(id)||g.exclude.includes(id)).map(g=>({g,p:g.people.includes(id),x:g.exclude.includes(id)}));
 for(const e of goneGoals){e.g.people=e.g.people.filter(k=>k!==id);e.g.exclude=e.g.exclude.filter(k=>k!==id);}
+const locSnap=state.locations.filter(l=>(l.only||[]).includes(id)||(l.ban||[]).includes(id)).map(l=>({l,only:(l.only||[]).slice(),ban:(l.ban||[]).slice()}));
+for(const e of locSnap){e.l.only=e.only.filter(k=>k!==id);e.l.ban=e.ban.filter(k=>k!==id);}
+const cfSnap=state.conflicts.filter(r=>(r.ids||[]).includes(id)).map(r=>({r,ids:r.ids.slice()}));
+for(const e of cfSnap)e.r.ids=e.ids.filter(k=>k!==id);
+const alSnap=state.goals.filter(g=>(g.allowed||[]).includes(id)).map(g=>({g,allowed:g.allowed.slice()}));
+for(const e of alSnap)e.g.allowed=e.allowed.filter(k=>k!==id);
+const histSnap=Object.keys(state.history).filter(k=>state.history[k]&&state.history[k][id]!==undefined).map(k=>({k,v:state.history[k][id]}));
+for(const e of histSnap)delete state.history[e.k][id];
 state.members=state.members.filter(m=>m.id!==id);
 state.pairs.rules=state.pairs.rules.filter(r=>r.a!==id&&r.b!==id);
 if(state.hl===id)state.hl=null;
@@ -1194,6 +1360,10 @@ patchHeader();markStale();renderResults();
 setUndo('حُذف '+esc(gone.name),()=>{
 state.members.splice(idx,0,gone);state.pairs.rules.push(...goneRules);
 for(const e of goneGoals){if(e.p)e.g.people.push(id);if(e.x)e.g.exclude.push(id);}
+for(const e of locSnap){e.l.only=e.only;e.l.ban=e.ban;}
+for(const e of cfSnap)e.r.ids=e.ids;
+for(const e of alSnap)e.g.allowed=e.allowed;
+for(const e of histSnap)if(state.history[e.k])state.history[e.k][id]=e.v;
 refreshMembers();refreshGoals();recalcCap();patchHeader();markStale();
 });
 }
@@ -1202,7 +1372,7 @@ morph('#mlist',state.members.map((m,i)=>memberCardHTML(m,i)).join(''));
 morph('#mIntro',memberIntroHTML());
 }
 function addMember(){
-const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:'',rest:null,vmode:'auto',vmin:0,vmax:0,types:'any',prefDays:[]};
+const m={id:nid(),name:'',pool:1,gender:'M',off:[],pref:'',rest:null,vmode:'auto',vmin:0,vmax:0,types:'any',prefDays:[],tags:[]};
 state.members.push(m);
  $('#mlist').insertAdjacentHTML('beforeend',memberCardHTML(m,0));
 morph('#mIntro',memberIntroHTML());
@@ -1324,8 +1494,7 @@ return;
 if(kind==='gloc'){
 const g=state.goals.find(x=>x.id===ref);if(!g)return;
 g.loc=v;
-const loc=locById(v);
-if(loc&&!goalIsCustom(g)){const sh=shapeOf(loc);for(const q of[1,2]){const same=g.people.filter(id=>{const m=byId(id);return m&&m.pool===q;});if(same.length>sh[q]){const drop=same.slice(sh[q]);g.people=g.people.filter(id=>!drop.includes(id));}}}
+trimGoalToShape(g,locById(v));
 goalChanged();
 }else if(kind==='pa'||kind==='pb'){
 const r=state.pairs.rules.find(x=>x.id===ref);if(!r)return;
@@ -1370,7 +1539,8 @@ function pairRuleHTML(r,i){
 return `<div class="card rv" style="--i:${i}" data-prule="${r.id}">
 <div class="mhead">
 ${ddHTML('pa',r.id,r.a,'اختر عضوًا','العضو الأول')}
-<div class="seg"><button class="${r.kind==='with'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="with">يفضّل مع</button><button class="${r.kind==='avoid'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="avoid">ليس مع</button></div>
+<div class="seg"><button class="${r.kind==='with'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="with">يفضّل مع</button><button class="${r.kind==='avoid'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="avoid">ليس مع</button><button class="${r.kind==='must'?'on':''}" data-act="pkind" data-r="${r.id}" data-v="must">دائمًا مع</button></div>
+${r.kind==='avoid'?`<div class="seg">${[['','العام'],['1','صارم'],['0','مرن']].map(([v,t])=>`<button class="${(r.hard===true?'1':r.hard===false?'0':'')===v?'on':''}" data-act="phard" data-r="${r.id}" data-v="${v}">${t}</button>`).join('')}</div>`:''}
 ${ddHTML('pb',r.id,r.b,'اختر عضوًا','العضو الثاني')}
 <button class="icon-btn" data-act="pdel" data-r="${r.id}" title="حذف القاعدة">${icon('i-trash')}</button>
 </div>
@@ -1390,28 +1560,99 @@ ${cust?`<div class="mhead" style="margin-top:10px">${restStepper('reststep',R,''
 <p class="tiny mut" style="margin-top:8px">${ruleText(R)}</p>
 </div>`;
 }
+const GENDER_MODE_LABELS=[['legacy4','نسبة'],['mixed','مختلط'],['minF','نساء على الأقل'],['minM','رجال على الأقل'],['off','بلا قاعدة']];
+function genderHintHTML(){
+const g=state.gender;
+return {legacy4:'الفريق المكوّن من '+ar(g.ratio.a+g.ratio.b)+' يلزمه '+ar(g.ratio.a)+' من جنس و'+ar(g.ratio.b)+' من الآخر (بأي اتجاه)، وغيره من الأحجام يلزمه الجنسان معًا',mixed:'كل فريق يضم الجنسين',minF:'في كل فريق '+ar(g.min)+' من النساء على الأقل',minM:'في كل فريق '+ar(g.min)+' من الرجال على الأقل',off:'لا قاعدة خلط نوعي'}[g.mode];
+}
+function solverCardHTML(){
+const v=state.solver,P=E.LIM.plans;
+const sw=(act,on,lab)=>`<button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="${act}"><span class="sw${on?' on':''}"></span> ${lab}</button>`;
+return `<div class="card rv" data-key="ssolver">
+<div class="mhead"><span class="clab">المُخطِّط والمخرجات</span><div class="seg">${[['fast','سريع'],['normal','عادي'],['thorough','دقيق']].map(([k,t])=>`<button class="${v.budget===k?'on':''}" data-act="sbudget" data-v="${k}">${t}</button>`).join('')}</div></div>
+<div class="mhead" style="margin-top:10px"><span class="stepper"><span class="lb">عدد الخطط</span><button data-act="splans" data-v="-1"${v.plans<=P[0]?' disabled':''}>−</button><b>${ar(v.plans)}</b><button data-act="splans" data-v="1"${v.plans>=P[1]?' disabled':''}>+</button></span>
+${sw('sflex',v.defaultFlex,'ابدأ بالتوليد المرن')}
+${sw('slock',v.lockSeed,'تثبيت البذرة')}
+${v.lockSeed?`<span class="tiny mut">${ar(v.seed)}</span><button class="btn" data-act="sseed">بذرة جديدة</button>`:''}</div>
+<div class="mhead" style="margin-top:10px"><span class="tiny mut">الأرقام</span><div class="seg">${[['arabic','٠١٢'],['latin','012']].map(([k,t])=>`<button class="${state.digits===k?'on':''}" data-act="sdigits" data-v="${k}">${t}</button>`).join('')}</div></div>
+</div>`;
+}
+function fairCardHTML(){
+const f=state.fair,S=E.LIM.fairSpread,Mn=E.LIM.fairMin;
+const step=(act,lab,val,min,max,zero)=>`<span class="stepper"><span class="lb">${lab}</span><button data-act="${act}" data-v="-1"${val<=min?' disabled':''}>−</button><b>${val?ar(val):zero}</b><button data-act="${act}" data-v="1"${val>=max?' disabled':''}>+</button></span>`;
+return `<div class="card rv" data-key="sfair">
+<div class="mhead"><span class="clab">العدالة بين الأعضاء</span><div class="seg"><button class="${f.mode==='soft'?'on':''}" data-act="fairmode" data-v="soft">مرن</button><button class="${f.mode==='hard'?'on':''}" data-act="fairmode" data-v="hard">صارم</button></div></div>
+<div class="mhead" style="margin-top:10px">${step('fairspread','أقصى فارق',f.maxSpread,S[0],S[1],'متوقف')}${step('fairmin','لكل عضو على الأقل',f.minEach,Mn[0],Mn[1],'متوقف')}</div>
+<p class="tiny mut" style="margin-top:8px">${f.maxSpread||f.minEach?(f.mode==='hard'?'شرط ملزم':'تفضيل يُراعى عند ترتيب الخطط')+': '+(f.maxSpread?'الفارق بين الأكثر والأقل زيارة في المجموعة لا يتجاوز '+ar(f.maxSpread):'')+(f.maxSpread&&f.minEach?'، ':'')+(f.minEach?'لكل عضو '+ar(f.minEach)+' زيارة على الأقل':''):'لا قيود على توزيع الزيارات بين الأعضاء'}</p>
+</div>`;
+}
+function genderCardHTML(){
+const g=state.gender,R=E.LIM.ratio,Mn=E.LIM.genderMin;
+const step=(act,k,lab,val,min,max)=>`<span class="stepper"><span class="lb">${lab}</span><button data-act="${act}" data-k="${k}" data-v="-1"${val<=min?' disabled':''}>−</button><b>${ar(val)}</b><button data-act="${act}" data-k="${k}" data-v="1"${val>=max?' disabled':''}>+</button></span>`;
+return `<div class="card rv" data-key="sgender">
+<div class="mhead"><span class="clab">الخلط النوعي</span><div class="seg">${GENDER_MODE_LABELS.map(([v,l])=>`<button class="${g.mode===v?'on':''}" data-act="gendmode" data-v="${v}">${l}</button>`).join('')}</div></div>
+${g.mode==='legacy4'?`<div class="mhead" style="margin-top:10px">${step('gratio','a','رجال/نساء',g.ratio.a,R[0],R[1])}${step('gratio','b','مقابل',g.ratio.b,R[0],Math.min(R[1],g.ratio.a))}<span class="tiny mut">${ar(g.ratio.a)}:${ar(g.ratio.b)}${g.ratio.a===3&&g.ratio.b===1?' (الافتراضي)':''}</span></div>`:''}
+${g.mode==='minF'||g.mode==='minM'?`<div class="mhead" style="margin-top:10px">${step('gmin','min','الحد الأدنى',g.min,Mn[0],Mn[1])}</div>`:''}
+<p class="tiny mut" style="margin-top:8px">${genderHintHTML()} — يُفعَّل لكل موقع من بطاقته</p>
+</div>`;
+}
 function restChanged(){refreshSettings();recalcCap();markStale();}
+function activeRuleChips(){
+const out=[],g=state.gender,f=state.fair;
+if(g.mode!=='legacy4'||g.ratio.a!==3||g.ratio.b!==1)out.push('خلط: '+({off:'بلا قاعدة',mixed:'مختلط',legacy4:ar(g.ratio.a)+':'+ar(g.ratio.b),minF:'نساء ≥'+ar(g.min),minM:'رجال ≥'+ar(g.min)})[g.mode]);
+if(f.maxSpread||f.minEach)out.push('عدالة '+(f.mode==='hard'?'صارمة':'مرنة'));
+if(state.pairs.enabled&&state.pairs.rules.length)out.push(plural(state.pairs.rules.length,'قاعدة اقتران','قاعدتا اقتران','قواعد اقتران','قاعدة اقتران'));
+if(state.conflicts.some(r=>r.on))out.push(plural(state.conflicts.filter(r=>r.on).length,'تعارض مواقع','تعارضا مواقع','تعارضات مواقع','تعارض مواقع'));
+if((state.dayRules||[]).some(r=>r.on))out.push(plural(state.dayRules.filter(r=>r.on).length,'قاعدة أيام','قاعدتا أيام','قواعد أيام','قاعدة أيام'));
+if(state.locations.some(l=>l.needs&&l.needs.length))out.push('متطلبات مهارات');
+if(state.locations.some(l=>l.minWeek>0))out.push('حد أدنى أسبوعي');
+if(state.locations.some(l=>(l.allowedDays||[]).length||l.minGap>1))out.push('أيام/فواصل مواقع');
+if(E.weekOv())out.push('استثناءات هذا الأسبوع');
+if(state.gmaxOn)out.push('حد عام ≤'+ar(state.gmax));
+return out;
+}
+const SET_SEC_DEFAULT={limits:true,rest:false,team:false,repeat:false,pairing:false,planner:false,data:false};
+const SEC_KEYS={limits:['cap'],rest:['rest','restCalendar','restCustom','fair','gmaxOn','gmax'],team:['gender'],repeat:['dup','dayRules'],pairing:['pairs','conflicts'],planner:['solver','digits','priority','carryWeek','autoRegen']};
+function secChanged(k){
+const keys=SEC_KEYS[k];
+if(!keys)return false;
+const base=Engine.baseState();
+return keys.some(x=>JSON.stringify(state[x])!==JSON.stringify(base[x]));
+}
+function secReset(k){
+const keys=SEC_KEYS[k];
+if(!keys)return;
+const base=Engine.baseState(),sub={};
+for(const x of keys)sub[x]=JSON.parse(JSON.stringify(base[x]));
+askConfirm('استعادة الافتراضي؟','ستعود إعدادات هذا القسم إلى الافتراضي.','استعادة',()=>applySettingsOnly(sub,'استُعيد الافتراضي'));
+}
+function secOpen(k){return state.setOpen&&k in state.setOpen?!!state.setOpen[k]:SET_SEC_DEFAULT[k];}
+function secHTML(k,title,sum,body){
+const open=secOpen(k),ch=secChanged(k);
+return `<section class="secgrp" data-key="sec-${k}"><button type="button" class="sechead" data-act="secopen" data-sec="${k}" aria-expanded="${open}"><span class="chev${open?' on':''}"></span><b>${title}</b>${ch?'<span class="moddot" title="معدّل" aria-label="معدّل"></span>':''}<span class="tiny mut secsum">${sum}</span></button>${open?`<div class="stack secbody">${ch?`<div class="mhead"><span class="tiny mut">معدّل عن الافتراضي</span><button class="btn" data-act="secreset" data-sec="${k}">استعادة الافتراضي</button></div>`:''}${body}</div>`:''}</section>`;
+}
 function settingsTabHTML(){
 const on=state.pairs.enabled;
 const list=state.pairs.rules.length?state.pairs.rules.map((r,i)=>pairRuleHTML(r,i)).join(''):`<div class="card idle rv" data-key="pempty">${icon('i-users')} لا قواعد</div>`;
-return `<div class="card rv" data-key="stheme">
+const C={};
+C.theme=`<div class="card rv" data-key="stheme">
 <div class="mhead">
 <span class="clab">المظهر</span>
 <div class="seg">${[['system','تلقائي'],['light','فاتح'],['dark','داكن']].map(([v,l])=>`<button class="${state.theme===v?'on':''}" data-act="theme" data-v="${v}">${l}</button>`).join('')}</div>
 </div>
-</div>
-<div class="card rv" data-key="scap">
+</div>`;
+C.cap=`<div class="card rv" data-key="scap">
 <div class="mhead">
 <span class="clab">الحد اليومي</span>
-<span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1"${state.cap.mainPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1"${state.cap.mainPerDay>=3?' disabled':''}>+</button></span>
-<span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1"${state.cap.conPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1"${state.cap.conPerDay>=3?' disabled':''}>+</button></span>
-<span class="stepper"><span class="lb">حتى (إجمالي)</span><button data-act="capstep" data-k="dayMax" data-v="-1"${state.cap.dayMax<=0?' disabled':''}>−</button><b>${state.cap.dayMax>0?ar(state.cap.dayMax):'تلقائي'}</b><button data-act="capstep" data-k="dayMax" data-v="1"${state.cap.dayMax>=6?' disabled':''}>+</button></span>
+<span class="stepper"><span class="lb">رئيسية/يوم</span><button data-act="capstep" data-k="mainPerDay" data-v="-1"${state.cap.mainPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.mainPerDay)}</b><button data-act="capstep" data-k="mainPerDay" data-v="1"${state.cap.mainPerDay>=E.LIM.perDay[1]?' disabled':''}>+</button></span>
+<span class="stepper"><span class="lb">متعاقدة/يوم</span><button data-act="capstep" data-k="conPerDay" data-v="-1"${state.cap.conPerDay<=1?' disabled':''}>−</button><b>${ar(state.cap.conPerDay)}</b><button data-act="capstep" data-k="conPerDay" data-v="1"${state.cap.conPerDay>=E.LIM.perDay[1]?' disabled':''}>+</button></span>
+<span class="stepper"><span class="lb">حتى (إجمالي)</span><button data-act="capstep" data-k="dayMax" data-v="-1"${state.cap.dayMax<=0?' disabled':''}>−</button><b>${state.cap.dayMax>0?ar(state.cap.dayMax):'تلقائي'}</b><button data-act="capstep" data-k="dayMax" data-v="1"${state.cap.dayMax>=E.LIM.dayMax[1]?' disabled':''}>+</button></span>
 </div>
 <div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.cap.even?'true':'false'}" data-act="capeven"><span class="sw${state.cap.even?' on':''}"></span> توزيع متساوٍ</button></div>
 <p class="tiny mut" style="margin-top:8px">${state.cap.even?'تُوزَّع الزيارات بالتساوي، ولا يأخذ يوم زيارتين إلا عند الحاجة':'يوزّع المُخطِّط الزيارات بحرية حتى الحد اليومي'} — الحدود هنا أقصى ما يُسمح به، ويمكن تخصيص حد لكل يوم من تبويب الأيام</p>
-</div>
-${restCardHTML()}
-<div class="card rv" data-key="spair">
+</div>`;
+C.rest=restCardHTML();C.gender=genderCardHTML();C.fair=fairCardHTML();C.solver=solverCardHTML();
+C.pair=`<div class="card rv" data-key="spair">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${on?'true':'false'}" data-act="ptoggle"><span class="sw${on?' on':''}"></span> قواعد الاقتران</button><span class="tiny mut">داخل الفريق الواحد</span><span style="flex:1"></span>
 <div class="seg"><button class="${state.pairs.mode==='soft'?'on':''}" data-act="pmode" data-v="soft">مرن</button><button class="${state.pairs.mode==='hard'?'on':''}" data-act="pmode" data-v="hard">صارم</button></div>
@@ -1420,13 +1661,18 @@ ${restCardHTML()}
 <div class="stack pblock${on?'':' off'}" id="pblock">
 ${list}
 <button class="btn" data-act="padd" data-key="padd">${icon('i-plus')} إضافة قاعدة</button>
-</div>
-<div class="stack" data-key="scf">
+</div>`;
+C.conf=`<div class="stack" data-key="scf">
 <div class="card rv" data-key="scfh"><div class="mhead"><span class="clab">تعارض المواقع</span><span class="tiny mut">من يزور موقعًا لا يزور الآخر في الخطة نفسها</span></div></div>
 ${state.conflicts.length?state.conflicts.map((r,i)=>conflictCardHTML(r,i)).join(''):`<div class="card idle rv" data-key="scfe">${icon('i-pin')} لا قواعد تعارض</div>`}
 <button class="btn" data-act="cfadd" data-key="cfadd"${state.locations.length>1?'':' disabled'}>${icon('i-plus')} إضافة قاعدة تعارض</button>
-</div>
-<div class="card rv" data-key="srep">
+</div>`;
+C.dr=`<div class="stack" data-key="sdr">
+<div class="card rv" data-key="sdrh"><div class="mhead"><span class="clab">قواعد الأيام بين المواقع</span><span class="tiny mut">مواقع لا تُزار في اليوم نفسه، أو تُزار معًا</span></div></div>
+${(state.dayRules||[]).length?state.dayRules.map((r,i)=>dayRuleCardHTML(r,i)).join(''):`<div class="card idle rv" data-key="sdre">${icon('i-pin')} لا قواعد أيام</div>`}
+<button class="btn" data-act="dradd" data-key="dradd"${state.locations.length>1?'':' disabled'}>${icon('i-plus')} إضافة قاعدة أيام</button>
+</div>`;
+C.rep=`<div class="card rv" data-key="srep">
 <div class="mhead">
 <span class="clab">تكرار المواقع خلال الأسبوع</span>
 <div class="seg">${[['banned','ممنوع'],['separate','منفصل'],['merged','مدموج']].map(([v,l])=>`<button class="${state.dup.mode===v?'on':''}" data-act="dupmode" data-v="${v}">${l}</button>`).join('')}</div>
@@ -1436,38 +1682,75 @@ ${state.conflicts.length?state.conflicts.map((r,i)=>conflictCardHTML(r,i)).join(
 <p class="tiny mut" style="margin-top:8px">${{any:'يجوز لنفس العضو زيارة الموقع نفسه أو مواقع مختلفة',different:'إذا تكرر موقع فالفريق الثاني بأعضاء مختلفين',all:'كل عضو يزور مرة واحدة فقط في الخطة'+(state.gmaxOn?' — يتجاوز الحد العام ('+ar(state.gmax)+')':'')+' — يقلّ عدد الزيارات الممكنة بعدد الأعضاء'}[state.dup.people]}</p>
 <div class="mhead" style="margin-top:10px"><button type="button" class="swlab" role="switch" aria-checked="${state.dup.spread==='avoid'?'true':'false'}" data-act="dupspread"><span class="sw${state.dup.spread==='avoid'?' on':''}"></span> يُفضَّل عدم التكرار</button></div>
 <p class="tiny mut" style="margin-top:8px">المواقع ذات الأهداف لا تتكرر خارج أهدافها إلا إذا رفعت حدها الأسبوعي، ولكل موقع خيار تكرار خاص يتجاوز هذا الإعداد</p>
-</div>
-<div class="card rv" data-key="sgmax">
+</div>`;
+C.gmax=`<div class="card rv" data-key="sgmax">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${state.gmaxOn?'true':'false'}" data-act="gmaxon"><span class="sw${state.gmaxOn?' on':''}"></span> حد أقصى عام لزيارات كل عضو</button>
 ${state.gmaxOn?`<span class="stepper"><button data-act="gmaxstep" data-v="-1"${state.gmax<=1?' disabled':''}>−</button><b>${ar(state.gmax)}</b><button data-act="gmaxstep" data-v="1"${state.gmax>=7?' disabled':''}>+</button></span>`:''}
 </div>
 <p class="tiny mut" style="margin-top:8px">${state.gmaxOn?'لا يزور أي عضو أكثر من '+ar(state.gmax)+' في الخطة الواحدة، ويُخفَّض عدد الزيارات تلقائيًا إذا لم تكفِ المقاعد':'بلا حد عام: يحدّد نمط الراحة وأيام العمل عدد زيارات كل عضو'}</p>
-</div>
-<div class="card rv" data-key="sprio">
+</div>`;
+C.prio=`<div class="card rv" data-key="sprio">
 <div class="mhead">
 <span class="clab">الأولوية عند ترتيب الخطط</span>
 <div class="seg">${[['balance','التوازن'],['prefs','التفضيلات'],['stable','الثبات']].map(([v,l])=>`<button class="${state.priority===v?'on':''}" data-act="prio" data-v="${v}">${l}</button>`).join('')}</div>
 </div>
-</div>
-<div class="card rv" data-key="scarry">
+</div>`;
+C.carry=`<div class="card rv" data-key="scarry">
 <div class="mhead"><button type="button" class="swlab" role="switch" aria-checked="${state.carryWeek?'true':'false'}" data-act="carry"><span class="sw${state.carryWeek?' on':''}"></span> مراعاة زيارات نهاية الأسبوع السابق</button></div>
 <p class="tiny mut" style="margin-top:8px">${state.carryWeek?(state.history[prevWeekKey()]?'تُحتسب أيام الأسبوع السابق في قاعدة الراحة':'لا توجد خطة محفوظة للأسبوع السابق'):'يُخطَّط كل أسبوع بمعزل عن السابق'}</p>
-</div>
-<div class="card rv" data-key="sback">
+</div>`;
+C.back=`<div class="card rv" data-key="sback">
 <div class="mhead">
 <span class="clab">نسخة احتياطية</span>
 <div style="display:flex;gap:8px"><button class="btn" data-act="bkexp">تصدير</button><button class="btn" data-act="bkimp">استيراد</button></div>
 </div>
 <input type="file" id="impFile" accept="application/json,.json" hidden>
-</div>
-<div class="card rv" data-key="sauto">
+</div>`;
+C.auto=`<div class="card rv" data-key="sauto">
 <div class="mhead">
 <button type="button" class="swlab" role="switch" aria-checked="${state.autoRegen?'true':'false'}" data-act="autoregen"><span class="sw${state.autoRegen?' on':''}"></span> تحديث تلقائي</button>
 <span style="flex:1"></span>
 <button class="btn terra" data-act="resetall">${icon('i-trash')} إعادة الضبط</button>
 </div>
 </div>`;
+const chips=activeRuleChips();
+const head=`<div class="card rv" data-key="sactive"><div class="mhead"><span class="clab">القواعد النشطة</span></div><div class="pills" style="margin-top:8px">${chips.length?chips.map(c=>`<span class="pill on">${esc(c)}</span>`).join(''):'<span class="tiny mut">الإعدادات الافتراضية فقط</span>'}</div></div>`;
+const capSum=ar(state.cap.mainPerDay)+' رئيسية · '+ar(state.cap.conPerDay)+' متعاقدة / يوم';
+const teamSum=GENDER_MODE_LABELS.find(x=>x[0]===state.gender.mode)[1]+(state.pairs.enabled&&state.pairs.rules.length?' · '+ar(state.pairs.rules.length)+' اقتران':'');
+const placeSum=ar(state.conflicts.length+(state.dayRules||[]).length)+' قاعدة';
+const planSum=({fast:'سريع',normal:'عادي',thorough:'دقيق'})[state.solver.budget]+' · '+ar(state.solver.plans)+' خطط';
+const dataSum=({system:'تلقائي',light:'فاتح',dark:'داكن'})[state.theme]||'';
+const tools=`<div class="card rv" data-key="sset"><div class="mhead"><span class="clab">الإعدادات فقط</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="setexp">تصدير</button><button class="btn" data-act="setimp">استيراد</button><button class="btn terra" data-act="setreset">إعادة الإعدادات</button></div></div><input type="file" id="impSet" accept="application/json,.json" hidden></div>`;
+const restSum=(state.fair.maxSpread||state.fair.minEach?'عدالة '+(state.fair.mode==='hard'?'صارمة':'مرنة'):'بلا عدالة')+(state.gmaxOn?' · حد عام':'');
+const repSum=({banned:'ممنوع',separate:'منفصل',merged:'مدموج'})[state.dup.mode]+((state.dayRules||[]).length?' · '+ar(state.dayRules.length)+' أيام':'');
+const pairSum=(state.pairs.enabled?ar(state.pairs.rules.length)+' اقتران':'اقتران متوقف')+' · '+ar(state.conflicts.length)+' تعارض';
+return head+secHTML('limits','الأيام والحدود اليومية',capSum,C.cap)+secHTML('rest','الراحة والعدالة',restSum,C.rest+C.fair+C.gmax)+secHTML('team','الفرق والخلط النوعي',teamSum,C.gender)+secHTML('repeat','التكرار والمواقع',repSum,C.rep+C.dr)+secHTML('pairing','الاقتران والتعارض',pairSum,C.pair+C.conf)+secHTML('planner','المُخطِّط والنتائج',planSum,C.solver+C.prio+C.carry+C.auto)+secHTML('data','البيانات',dataSum,C.theme+tools+C.back);
+}
+function dayRuleCardHTML(r,i){
+const side=k=>state.locations.map(l=>`<button class="pill${r[k].includes(l.id)?' on':''}" data-act="drloc" data-r="${r.id}" data-side="${k}" data-l="${l.id}">${esc(l.name)}</button>`).join('');
+return `<div class="card rv gcard${r.on?'':' off'}" style="--i:${i}" data-key="dr${r.id}">
+<div class="mhead"><span class="gtitle">${icon('i-days')}قاعدة أيام ${ar(i+1)}</span><span style="flex:1"></span>
+<div class="seg"><button class="${r.kind==='notSameDay'?'on':''}" data-act="drkind" data-r="${r.id}" data-v="notSameDay">ليس في اليوم نفسه</button><button class="${r.kind==='sameDay'?'on':''}" data-act="drkind" data-r="${r.id}" data-v="sameDay">معًا في اليوم نفسه</button></div>
+<button type="button" class="swlab" role="switch" aria-checked="${r.on?'true':'false'}" data-act="dron" data-r="${r.id}"><span class="sw${r.on?' on':''}"></span> مفعّل</button>
+<button class="icon-btn" data-act="drdel" data-r="${r.id}" title="حذف القاعدة">${icon('i-trash')}</button></div>
+<div class="grow" data-key="da"><span class="tiny mut">المجموعة الأولى</span><div class="pills">${side('a')}</div></div>
+<div class="grow" data-key="db"><span class="tiny mut">المجموعة الثانية</span><div class="pills">${side('b')}</div></div>
+</div>`;
+}
+function dayRuleChanged(){refreshSettings();recalcCap();markStale();}
+function addDayRule(){
+if(state.locations.length<2){toast('أضف موقعين على الأقل');return;}
+state.dayRules=state.dayRules||[];
+state.dayRules.push({id:nid(),kind:'notSameDay',on:true,a:[state.locations[0].id],b:[state.locations[1].id]});
+dayRuleChanged();
+}
+function removeDayRule(id){
+const idx=state.dayRules.findIndex(r=>r.id===id);if(idx<0)return;
+const gone=state.dayRules[idx];
+state.dayRules.splice(idx,1);
+dayRuleChanged();
+setUndo('حُذفت القاعدة',()=>{state.dayRules.splice(idx,0,gone);dayRuleChanged();});
 }
 function conflictCardHTML(r,i){
 const side=k=>state.locations.map(l=>`<button class="pill${r[k].includes(l.id)?' on':''}" data-act="cfloc" data-r="${r.id}" data-side="${k}" data-l="${l.id}">${esc(l.name)}</button>`).join('');
@@ -1580,7 +1863,7 @@ ${ddHTML('gloc',g.id,loc?loc.id:'','اختر موقعًا','موقع الزيا�
 <button type="button" class="swlab" role="switch" aria-checked="${g.on?'true':'false'}" data-act="gon" data-g="${g.id}"><span class="sw${g.on?' on':''}"></span> مفعّل</button>
 <button class="icon-btn" data-act="gdel" data-g="${g.id}" title="حذف الهدف">${icon('i-trash')}</button>
 </div>
-${custom?`<div class="grow" data-key="gsz"><span class="tiny mut">الحجم</span><span class="stepper"><button data-act="gsize" data-g="${g.id}" data-v="-1"${csize<=1?' disabled':''}>−</button><b>${ar(csize)}</b><button data-act="gsize" data-g="${g.id}" data-v="1"${csize>=8?' disabled':''}>+</button></span><span class="tiny mut">من المرشحين بغض النظر عن المجموعة</span></div>
+${custom?`<div class="grow" data-key="gsz"><span class="tiny mut">الحجم</span><span class="stepper"><button data-act="gsize" data-g="${g.id}" data-v="-1"${csize<=1?' disabled':''}>−</button><b>${ar(csize)}</b><button data-act="gsize" data-g="${g.id}" data-v="1"${csize>=E.LIM.customSize[1]?' disabled':''}>+</button></span><span class="tiny mut">من المرشحين بغض النظر عن المجموعة</span></div>
 <div class="grow" data-key="ga"><span class="tiny mut">المرشحون</span><div class="pills">${alw||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${(g.allowed||[]).length?'يقتصر على المحددين':'كل الأعضاء'}</span></div>`:''}
 <div class="grow" data-key="gd"><span class="tiny mut">اليوم</span><div class="pills">${dayPills}</div></div>
 <div class="grow" data-key="gp"><span class="tiny mut">الأعضاء</span><div class="pills">${ppl||'<span class="empty-note">لا أعضاء</span>'}</div><span class="gsum">${sum}</span></div>
@@ -1675,7 +1958,7 @@ return `<span class="chip c${m.pool}${miss?' pmiss':''}${viol||cv?' viol':''}${p
 }).join('');
 const gi=r.goal?state.goals.findIndex(g=>g.id===r.goal):-1;
 const teams=grp.rows.map(q=>`<div class="vteam">${teamOf(q)}${q.custom?'<span class="badge bgoal">خاص</span>':''}</div>`).join('');
-return `<div class="vrow${r.goal?' goal':''}" data-key="v${r.loc.id}"><div class="vloc"><b>${esc(r.loc.name)}</b>${grp.rows.length>1?`<span class="badge bdist">×${ar(grp.rows.length)} فرق</span>`:''}${r.goal?`<span class="badge bgoal">${icon('i-target')}${gi>=0?goalLabel(state.goals[gi]):'هدف'}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteams">${teams}</div></div>`;
+return `<div class="vrow${gi>=0?' goal':''}" data-key="v${r.loc.id}"><div class="vloc"><b>${esc(r.loc.name)}</b>${grp.rows.length>1?`<span class="badge bdist">×${ar(grp.rows.length)} فرق</span>`:''}${gi>=0?`<span class="badge bgoal">${icon('i-target')}${goalLabel(state.goals[gi])}</span>`:''}<span class="badge ${r.loc.type==='main'?'bmain':'bcon'}">${r.loc.type==='main'?'رئيسي':'متعاقد'}</span>${r.loc.dist?`<span class="badge bdist">${DISTL[r.loc.dist]}</span>`:''}</div><div class="vteams">${teams}</div></div>`;
 }).join('');
 return `<div class="dayblk rv${dp.dist==='near'?' dnear':''}${isToday(d)?' today':''}" data-key="d${d}" style="--i:${k++}">
 <div class="dayhead"><span class="dname">${DAYS[d]}</span><span class="ddate">${dateOf(d)}</span>${isToday(d)?'<span class="today-tag">اليوم</span>':''}${dp.dist?`<span class="thutag">${icon('i-pin')} ${DISTL[dp.dist]}</span>`:''}${dp.fav?`<span class="badge ${dp.fav==='main'?'bmain':'bcon'}">${dp.fav==='main'?'رئيسية':'متعاقد'}</span>`:''}<span class="tiny mut" style="margin-inline-start:auto">${visitsWord(groups.length)}</span></div>
@@ -1844,21 +2127,48 @@ document.querySelectorAll('.mgrid tr[data-mrow]').forEach(tr=>tr.classList.toggl
 }
 function patchWeek(){
 const el=$('#weeklabel');if(!el)return;
-el.textContent=weekLabel();
+el.textContent=weekLabel()+(E.weekOv()?' •':'');
 el.classList.toggle('cur',state.weekStart===thisSaturday());
 document.querySelectorAll('#daypills [data-day]').forEach(p=>{const s=p.querySelector('small');if(s)s.textContent=ar(dayDate(+p.dataset.day).getDate());});
 }
+function ensureWk(){
+state.weekOverrides=state.weekOverrides||{};
+return state.weekOverrides[state.weekStart]||(state.weekOverrides[state.weekStart]={holidays:[],memberOff:{},locClosed:{},note:''});
+}
+function wkToggle(arr,d){const i=arr.indexOf(d);if(i>=0)arr.splice(i,1);else{arr.push(d);arr.sort((a,b)=>a-b);}}
+function wkClean(){
+const o=state.weekOverrides&&state.weekOverrides[state.weekStart];
+if(!o)return;
+for(const k of['memberOff','locClosed'])for(const id of Object.keys(o[k]))if(!o[k][id].length)delete o[k][id];
+if(!o.holidays.length&&!Object.keys(o.memberOff).length&&!Object.keys(o.locClosed).length)delete state.weekOverrides[state.weekStart];
+}
+function syncDayPills(){
+for(let i=0;i<7;i++){
+const p=document.querySelector('#daypills [data-day="'+i+'"]');
+if(p){const on=E.dayOn(i);p.classList.toggle('on',on);p.classList.toggle('hol',E.holidayOn(i));p.setAttribute('aria-pressed',String(on));}
+}
+}
+function wkChanged(){
+wkClean();
+syncDayPills();patchWeek();refreshDays();refreshMembers();refreshLocations();
+if(state.goals.length||state.tab==='goals')refreshGoals();
+recalcCap();markStale();
+}
 function shiftWeek(n){
+const had=!!E.weekOv();
 const d=dayDate(n);state.weekStart=isoD(d);
+const has=!!E.weekOv();
 patchWeek();
+syncDayPills();
 refreshDays();
+if(had||has){refreshMembers();refreshLocations();recalcCap();markStale();}
 if(state.tab==='goals')refreshGoals();
 renderResults();scheduleSave();
 }
 function refreshResMain(){renderResults();}
 function buildStaticUI(){
 renderTabs();
- $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${state.days[i].on?' on':''}${state.days[i].dist==='near'?' dnear':''}" data-act="wday" data-day="${i}" aria-pressed="${state.days[i].on}">${d}<small></small></button>`).join('');
+ $('#daypills').innerHTML=DAYS.map((d,i)=>`<button class="pill dyp${E.dayOn(i)?' on':''}${E.holidayOn(i)?' hol':''}${state.days[i].dist==='near'?' dnear':''}" data-act="wday" data-day="${i}" aria-pressed="${E.dayOn(i)}">${d}<small></small></button>`).join('');
 {const s=$('#alldaysSw');s.setAttribute('aria-checked',String(state.useAllDays));s.querySelector('.sw').classList.toggle('on',state.useAllDays);}
 patchWeek();
  $('#ratioseg').innerHTML=RATIOS.map((r,i)=>`<button class="${state.ratioIdx===i?'on':''}" data-act="ratio" data-i="${i}">${r.l}</button>`).join('');
@@ -1912,7 +2222,7 @@ case'weeknow':state.weekStart=thisSaturday();shiftWeek(0);break;
 case'hl':{const id=+a.m;state.hl=state.hl===id?null:id;paintHl();break;}
 case'goresults':setTab('results');break;
 case'gomain':setTab('plan');break;
-case'dmax':{const d=state.days[+a.d];const nv=clamp((d.max|0)+ +a.v,0,6);if(nv!==d.max){d.max=nv;refreshDays();recalcCap();markStale();}break;}
+case'dmax':{const d=state.days[+a.d];const nv=clamp((d.max|0)+ +a.v,E.LIM.dayCfgMax[0],E.LIM.dayCfgMax[1]);if(nv!==d.max){d.max=nv;refreshDays();recalcCap();markStale();}break;}
 case'dfav':setDayPref(+a.d,'fav',a.v,t);break;
 case'ddist':setDayPref(+a.d,'dist',a.v,t);break;
 case'mpool':{const m=byId(+a.m);if(m){m.pool=+a.v;segOn(t);morph('#mIntro',memberIntroHTML());recalcCap();markStale();}break;}
@@ -1921,11 +2231,11 @@ case'mpref':{const m=byId(+a.m);if(m){m.pref=a.v;segOn(t);markStale();}break;}
 case'moff':{const m=byId(+a.m);if(m){const i=m.off.indexOf(+a.day);if(i>=0)m.off.splice(i,1);else m.off.push(+a.day);t.classList.toggle('on');patchMemberNote(m);markStale();}break;}
 case'mdel':removeMember(+a.m);break;
 case'madd':addMember();break;
-case'ltype':{const l=locById(+a.l);if(l){l.type=a.v;l.genderRule=a.v==='main';refreshLocations();patchLocIntro();recalcCap();markStale();}break;}
+case'ltype':{const l=locById(+a.l);if(l&&l.type!==a.v){const wasDefault=!!l.genderRule===(l.type==='main');l.type=a.v;if(wasDefault)l.genderRule=a.v==='main';for(const g of state.goals)if(g.loc===l.id)trimGoalToShape(g,l);refreshLocations();refreshGoals();patchLocIntro();recalcCap();markStale();}break;}
 case'ldist':{const l=locById(+a.l);if(l){l.dist=a.v;pillsOn(t);markStale();}break;}
 case'lgen':{const l=locById(+a.l);if(l){l.genderRule=!l.genderRule;const sw=t.querySelector('.sw');if(sw)sw.classList.toggle('on');t.setAttribute('aria-checked',String(l.genderRule));markStale();}break;}
 case'ldel':removeLocation(+a.l);break;
-case'lseat':{const l=locById(+a.l);if(l){const sh={...shapeOf(l)};const nv=clamp(sh[a.k]+ +a.v,0,5);sh[a.k]=nv;if(shapeSize(sh)<1){toast('يلزم مقعد واحد على الأقل');break;}l.seats=seatsDiffer(l,sh)?{1:sh[1],2:sh[2]}:null;refreshLocations();recalcCap();refreshGoals();markStale();}break;}
+case'lseat':{const l=locById(+a.l);if(l){const sh={...shapeOf(l)};const nv=clamp(sh[a.k]+ +a.v,E.LIM.seats[0],E.LIM.seats[1]);sh[a.k]=nv;if(shapeSize(sh)<1){toast('يلزم مقعد واحد على الأقل');break;}l.seats=seatsDiffer(l,sh)?{1:sh[1],2:sh[2]}:null;refreshLocations();recalcCap();refreshGoals();markStale();}break;}
 case'lseatreset':{const l=locById(+a.l);if(l){l.seats=null;refreshLocations();recalcCap();refreshGoals();markStale();}break;}
 case'ldup':{const l=locById(+a.l);if(l){l.dup=a.v||null;refreshLocations();recalcCap();markStale();}break;}
 case'lelmode':{const l=locById(+a.l);if(!l)break;
@@ -1947,7 +2257,7 @@ const bb=$('#baddBtn');if(bb)bb.disabled=state.bulk.main===0&&state.bulk.cont===
 break;
 }
 case'capstep':{
-const nv=clamp(state.cap[a.k]+ +a.v,a.k==='dayMax'?0:1,a.k==='dayMax'?6:3);
+const nv=clamp(state.cap[a.k]+ +a.v,a.k==='dayMax'?E.LIM.dayMax[0]:E.LIM.perDay[0],a.k==='dayMax'?E.LIM.dayMax[1]:E.LIM.perDay[1]);
 if(nv!==state.cap[a.k]){
 state.cap[a.k]=nv;
 refreshSettings();
@@ -1970,7 +2280,11 @@ const pb=$('#pblock');if(pb)pb.classList.toggle('off',!state.pairs.enabled);
 markStale();break;
 }
 case'pmode':{state.pairs.mode=a.v;segOn(t);markStale();break;}
-case'pkind':{const r=state.pairs.rules.find(x=>x.id===+a.r);if(r){r.kind=a.v;segOn(t);markStale();}break;}
+case'pkind':{const r=state.pairs.rules.find(x=>x.id===+a.r);if(r){r.kind=a.v;refreshSettings();markStale();}break;}
+case'phard':{const r=state.pairs.rules.find(x=>x.id===+a.r);if(r){if(a.v==='')delete r.hard;else r.hard=a.v==='1';refreshSettings();markStale();}break;}
+case'mtagdel':{const m=byId(+a.m);if(m){m.tags=(m.tags||[]).filter(x=>x!==a.t);refreshMembers();refreshLocations();recalcCap();markStale();}break;}
+case'lneeddel':{const l=locById(+a.l);if(l){l.needs=(l.needs||[]).filter(n=>n.tag!==a.t);refreshLocations();recalcCap();markStale();}break;}
+case'lneedmin':{const l=locById(+a.l),n=l&&(l.needs||[]).find(x=>x.tag===a.t);if(n){const nv=clamp(n.min+ +a.v,E.LIM.needMin[0],E.LIM.needMin[1]);if(nv!==n.min){n.min=nv;refreshLocations();recalcCap();markStale();}}break;}
 case'padd':addPairRule();break;
 case'pdel':removePairRule(+a.r);break;
 case'gadd':addGoal();break;
@@ -1987,13 +2301,22 @@ goalChanged();
 break;
 }
 case'gmode':{const g=state.goals.find(x=>x.id===+a.g);if(g&&(g.mode||'pool')!==a.v){g.mode=a.v;if(a.v==='custom'){g.size=Math.max(g.size||0,g.people.length,2);}else{const loc=locById(g.loc);if(loc){const sh=shapeOf(loc);for(const q of[1,2]){const same=g.people.filter(id=>{const m=byId(id);return m&&m.pool===q;});if(same.length>sh[q]){const drop=same.slice(sh[q]);g.people=g.people.filter(id=>!drop.includes(id));}}}}goalChanged();}break;}
-case'gsize':{const g=state.goals.find(x=>x.id===+a.g);if(g){g.size=clamp(customSize(g)+ +a.v,Math.max(1,g.people.length),8);goalChanged();}break;}
+case'gsize':{const g=state.goals.find(x=>x.id===+a.g);if(g){g.size=clamp(customSize(g)+ +a.v,Math.max(1,g.people.length),E.LIM.customSize[1]);goalChanged();}break;}
 case'gallow':{const g=state.goals.find(x=>x.id===+a.g);if(g){g.allowed=g.allowed||[];const id=+a.m,k=g.allowed.indexOf(id);if(k>=0)g.allowed.splice(k,1);else g.allowed.push(id);goalChanged();}break;}
 case'gppl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalPerson(g,+a.m);break;}
 case'gexcl':{const g=state.goals.find(x=>x.id===+a.g);if(g)toggleGoalExclude(g,+a.m);break;}
-case'lmax':{const l=locById(+a.l);if(l){const nv=clamp(l.maxWeek+ +a.v,0,5);if(nv!==l.maxWeek){l.maxWeek=nv;refreshLocations();patchLocIntro();recalcCap();markStale();}}break;}
+case'lmax':{const l=locById(+a.l);if(l){const nv=clamp(l.maxWeek+ +a.v,E.LIM.maxWeek[0],E.LIM.maxWeek[1]);if(nv!==l.maxWeek){l.maxWeek=nv;refreshLocations();patchLocIntro();recalcCap();markStale();}}break;}
 case'capeven':state.cap.even=!state.cap.even;refreshSettings();markStale();break;
 case'cfadd':addConflict();break;
+case'dradd':addDayRule();break;
+case'drdel':removeDayRule(+a.r);break;
+case'dron':{const r=state.dayRules.find(x=>x.id===+a.r);if(r){r.on=!r.on;dayRuleChanged();}break;}
+case'drkind':{const r=state.dayRules.find(x=>x.id===+a.r);if(r){r.kind=a.v;dayRuleChanged();}break;}
+case'drloc':{const r=state.dayRules.find(x=>x.id===+a.r);if(r){const arr=r[a.side],id=+a.l,k=arr.indexOf(id);if(k>=0)arr.splice(k,1);else arr.push(id);dayRuleChanged();}break;}
+case'lallow':{const l=locById(+a.l);if(l){l.allowedDays=l.allowedDays||[];wkToggle(l.allowedDays,+a.day);refreshLocations();recalcCap();markStale();}break;}
+case'lprio':{const l=locById(+a.l);if(l&&(l.priority||'normal')!==a.v){l.priority=a.v;refreshLocations();markStale();}break;}
+case'lminw':{const l=locById(+a.l);if(l){const nv=clamp((l.minWeek|0)+ +a.v,E.LIM.minWeek[0],E.LIM.minWeek[1]);if(nv!==(l.minWeek|0)){l.minWeek=nv;refreshLocations();refreshGoals();recalcCap();markStale();}}break;}
+case'lgap':{const l=locById(+a.l);if(l){const nv=clamp((l.minGap|0)+ +a.v,E.LIM.minGap[0],E.LIM.minGap[1]);if(nv!==(l.minGap|0)){l.minGap=nv;refreshLocations();recalcCap();markStale();}}break;}
 case'cfdel':removeConflict(+a.r);break;
 case'cfon':{const r=state.conflicts.find(x=>x.id===+a.r);if(r){r.on=!r.on;conflictChanged();}break;}
 case'cfhard':{const r=state.conflicts.find(x=>x.id===+a.r);if(r){r.hard=a.v==='1';conflictChanged();}break;}
@@ -2011,6 +2334,11 @@ case'gmaxstep':{const nv=clamp(state.gmax+ +a.v,1,7);if(nv!==state.gmax){state.g
 case'prio':state.priority=a.v;segOn(t);markStale();break;
 case'carry':state.carryWeek=!state.carryWeek;refreshSettings();markStale();break;
 case'bkexp':exportBackup();break;
+case'secopen':{state.setOpen=state.setOpen||{};state.setOpen[a.sec]=!secOpen(a.sec);saveUiPrefs();refreshSettings();break;}
+case'secreset':secReset(a.sec);break;
+case'setexp':exportSettings();break;
+case'setimp':$('#impSet').click();break;
+case'setreset':resetSettings();break;
 case'bkimp':$('#impFile').click();break;
 case'mtypes':{const m=byId(+a.m);if(m){m.types=a.v;segOn(t);refreshGoals();markStale();}break;}
 case'mpday':{const m=byId(+a.m);if(m){const d=+a.day,i=m.prefDays.indexOf(d);if(i>=0)m.prefDays.splice(i,1);else m.prefDays.push(d);t.classList.toggle('on');markStale();}break;}
@@ -2023,6 +2351,24 @@ case'reststep':{const nv=clamp(state.rest[a.k]+ +a.v,a.k==='rest'?0:1,3);if(nv!=
 case'restcal':state.restCalendar=!state.restCalendar;restChanged();break;
 case'mreststep':{const m=byId(+a.m);if(m&&m.rest){const nv=clamp(m.rest[a.k]+ +a.v,a.k==='rest'?0:1,3);if(nv!==m.rest[a.k]){m.rest[a.k]=nv;refreshMembers();recalcCap();markStale();}}break;}
 case'themecycle':cycleTheme();break;
+case'gendmode':if(state.gender.mode!==a.v){state.gender.mode=a.v;refreshSettings();refreshLocations();recalcCap();markStale();}break;
+case'sbudget':if(state.solver.budget!==a.v){state.solver.budget=a.v;refreshSettings();scheduleSave();}break;
+case'splans':{const R=E.LIM.plans,nv=clamp(state.solver.plans+ +a.v,R[0],R[1]);if(nv!==state.solver.plans){state.solver.plans=nv;refreshSettings();markStale();}break;}
+case'sflex':state.solver.defaultFlex=!state.solver.defaultFlex;refreshSettings();scheduleSave();break;
+case'slock':state.solver.lockSeed=!state.solver.lockSeed;refreshSettings();markStale();break;
+case'sseed':state.solver.seed=Math.floor(Math.random()*1e9);refreshSettings();markStale();break;
+case'sdigits':if(state.digits!==a.v){state.digits=a.v;E.applyDigits();refreshAll();patchHeader();renderResults();scheduleSave();}break;
+case'fairmode':if(state.fair.mode!==a.v){state.fair.mode=a.v;refreshSettings();recalcCap();markStale();}break;
+case'fairspread':{const R=E.LIM.fairSpread,nv=clamp(state.fair.maxSpread+ +a.v,R[0],R[1]);if(nv!==state.fair.maxSpread){state.fair.maxSpread=nv;refreshSettings();recalcCap();markStale();}break;}
+case'fairmin':{const R=E.LIM.fairMin,nv=clamp(state.fair.minEach+ +a.v,R[0],R[1]);if(nv!==state.fair.minEach){state.fair.minEach=nv;refreshSettings();recalcCap();markStale();}break;}
+case'gratio':{const R=E.LIM.ratio,g=state.gender;let na=g.ratio.a,nb=g.ratio.b;if(a.k==='a')na=clamp(na+ +a.v,R[0],R[1]);else nb=clamp(nb+ +a.v,R[0],R[1]);if(nb>na)nb=na;if(na!==g.ratio.a||nb!==g.ratio.b){g.ratio={a:na,b:nb};refreshSettings();recalcCap();markStale();}break;}
+case'gmin':{const R=E.LIM.genderMin,g=state.gender,nv=clamp(g.min+ +a.v,R[0],R[1]);if(nv!==g.min){g.min=nv;refreshSettings();recalcCap();markStale();}break;}
+case'lgmode':{const l=locById(+a.l);if(l){l.genderMode=a.v||null;refreshLocations();recalcCap();markStale();}break;}
+case'wkhol':{wkToggle(ensureWk().holidays,+a.day);wkChanged();break;}
+case'wkmoff':{const o=ensureWk();o.memberOff[a.m]=o.memberOff[a.m]||[];wkToggle(o.memberOff[a.m],+a.day);wkChanged();break;}
+case'wkclosed':{const o=ensureWk();o.locClosed[a.l]=o.locClosed[a.l]||[];wkToggle(o.locClosed[a.l],+a.day);wkChanged();break;}
+case'rawexp':exportRaw();break;
+case'rawdismiss':_blockSave=false;state.loadFailed=false;renderLoadBanner();scheduleSave();break;
 }
 });
 window.addEventListener('resize',()=>ddPlace());
@@ -2054,6 +2400,7 @@ return;
 if(dd.btn){if(ddKey(e))return;}
 if((e.key==='ArrowDown'||e.key==='ArrowUp')&&e.target.matches('.dd-btn')){e.preventDefault();ddOpen(e.target);return;}
 if(e.key==='Enter'&&e.target.matches('input.name')){e.target.blur();return;}
+if(e.key==='Enter'&&e.target.matches('input.tagin')){e.preventDefault();addTagFrom(e.target);return;}
 if(e.key==='Escape'&&state.hl!=null){state.hl=null;paintHl();return;}
 if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,select,textarea,.dd-btn'))return;
 const k=e.key.toLowerCase();
@@ -2071,8 +2418,10 @@ state.members.forEach(m=>{m.types='any';m.prefDays=[];});
 state.locations.forEach(l=>{l.closed=[];});
 loadState();
 initTheme();
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='impFile')importBackup(e.target);});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='impFile')importBackup(e.target);if(e.target&&e.target.id==='impSet')importSettings(e.target);});
+loadUiPrefs();
 buildStaticUI();
+renderLoadBanner();
 patchHeader();
 renderResults();
 refreshGoals();

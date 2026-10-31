@@ -26,8 +26,11 @@ const DAY_SHORT=['سبت','أحد','اثنين','ثلاثاء','أربعاء','�
 const THU=5;
 const DISTL={near:'قريب',mid:'متوسط',far:'بعيد'};
 const RATIOS=[{rm:1,rc:1,l:'١:١'},{rm:2,rc:1,l:'٢:١'},{rm:3,rc:1,l:'٣:١'}];
+const LIM={plans:[1,10],minWeek:[0,5],fairSpread:[0,6],fairMin:[0,4],minGap:[0,6],needMin:[1,6],ratio:[1,6],genderMin:[1,4],perDay:[1,6],dayMax:[0,10],dayCfgMax:[0,10],maxWeek:[0,7],seats:[0,8],customSize:[1,10],gmax:[1,7]};
 const AR='٠١٢٣٤٥٦٧٨٩';
-const ar=n=>String(n).replace(/\d/g,d=>AR[+d]);
+let LATIN=false;
+const ar=n=>LATIN?String(n):String(n).replace(/\d/g,d=>AR[+d]);
+const SOLVER_MS={fast:800,normal:1500,thorough:4000};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function mulberry32(a){return function(){a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
 const isoD=dt=>dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
@@ -58,7 +61,7 @@ return{add,flow};
 
 function baseState(){
 return{
-visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,priority:'balance',carryWeek:false,history:{},gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,view:'day',weekStart:'2026-01-03',
+visits:5,visitsWanted:5,ratioIdx:1,vcap:6,bulk:{main:3,cont:1},minChanges:true,useAllDays:false,autoRegen:true,priority:'balance',carryWeek:false,history:{},historyWd:{},weekOverrides:{},gender:{mode:'legacy4',ratio:{a:3,b:1},min:1},dayRules:[],fair:{maxSpread:0,minEach:0,mode:'soft'},solver:{budget:'normal',plans:6,defaultFlex:false,lockSeed:false,seed:1},digits:'arabic',gmaxOn:false,gmax:2,rest:{rest:1,maxRun:1},restCalendar:true,restCustom:false,view:'day',weekStart:'2026-01-03',
 cap:{mainPerDay:2,conPerDay:1,dayMax:0,even:true},
 dup:{mode:'separate',people:'any',spread:'avoid'},
 conflicts:[],
@@ -79,7 +82,12 @@ function rand(){return rng();}
 const byId=id=>state.members.find(m=>m.id===id);
 const locById=id=>state.locations.find(l=>l.id===id);
 const poolName=p=>p===1?'سريري':'إداري';
-const workingDays=()=>state.days.map((d,i)=>d.on?i:-1).filter(i=>i>=0);
+const weekOv=()=>{const m=state.weekOverrides;return m?m[state.weekStart]||null:null;};
+const holidayOn=d=>{const o=weekOv();return!!(o&&o.holidays&&o.holidays.includes(d));};
+const dayOn=d=>!!state.days[d]&&state.days[d].on&&!holidayOn(d);
+const weekOffDays=id=>{const o=weekOv();return(o&&o.memberOff&&o.memberOff[id])||[];};
+const weekClosedDays=id=>{const o=weekOv();return(o&&o.locClosed&&o.locClosed[id])||[];};
+const workingDays=()=>state.days.map((d,i)=>dayOn(i)?i:-1).filter(i=>i>=0);
 function kCombos(arr,k){const res=[];(function rec(s,cur){if(cur.length===k){res.push(cur.slice());return;}for(let i=s;i<=arr.length-(k-cur.length);i++){cur.push(arr[i]);rec(i+1,cur);cur.pop();}})(0,[]);return res;}
 function pickWeighted(arr,ws){let s=0;for(const w of ws)s+=w;let r=rng()*s;for(let i=0;i<arr.length;i++){r-=ws[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
 const TYPE_SHAPE={main:{1:2,2:2},contracted:{1:2,2:1}};
@@ -92,6 +100,9 @@ return{1:s[1]==null?b[1]:s[1],2:s[2]==null?b[2]:s[2]};
 }
 const shapeSize=s=>s[1]+s[2];
 const seatsDiffer=(l,s)=>{const b=typeShape(l.type);return s[1]!==b[1]||s[2]!==b[2];};
+const dupPeopleEff=()=>RX.has('dupPeople')&&state.dup.people!=='any'?'any':state.dup.people;
+const capMain=()=>state.cap.mainPerDay+(RX.has('daycap')?1:0);
+const capCon=()=>state.cap.conPerDay+(RX.has('daycap')?1:0);
 const dupModeOf=l=>{const m=l&&DUP_MODES.includes(l.dup)?l.dup:state.dup.mode;return m==='banned'&&RX.has('dup')?'separate':m;};
 const teamCap=()=>({c:state.members.filter(m=>m.pool===1).length,a:state.members.filter(m=>m.pool===2).length});
 const globalDayMax=()=>state.cap.dayMax>0?state.cap.dayMax:state.cap.mainPerDay+state.cap.conPerDay;
@@ -100,22 +111,42 @@ function eligibleFor(m,l){
 if(!RX.has('types')&&m.types&&m.types!=='any'&&m.types!==l.type)return false;
 if(!RX.has('elig')){
 if(l.ban&&l.ban.includes(m.id))return false;
-if(l.only&&l.only.length&&!l.only.includes(m.id))return false;
+if(l.only&&l.only.length&&!l.only.includes(m.id)){const al=aliveIds();if(l.only.some(id=>al.has(id)))return false;}
 }
 return true;
 }
-function genderOK(genders){
+const GENDER_MODES=['off','mixed','legacy4','minF','minM'];
+function genderCfgOf(l){
+const g=state.gender||{};
+const mode=l&&GENDER_MODES.includes(l.genderMode)?l.genderMode:(GENDER_MODES.includes(g.mode)?g.mode:'legacy4');
+const r=g.ratio||{};
+return{mode,a:r.a>=1?r.a:3,b:r.b>=1?r.b:1,min:g.min>=1?g.min:1};
+}
+function genderOK(genders,cfg){
 const n=genders.length;
 if(n<2)return true;
-const men=genders.filter(x=>x==='M').length;
-if(n===4)return men===1||men===3;
-return men>=1&&men<=n-1;
+const c=cfg||genderCfgOf(null);
+const men=genders.filter(x=>x==='M').length,wom=n-men;
+if(c.mode==='off')return true;
+if(c.mode==='minF')return wom>=Math.min(c.min,n);
+if(c.mode==='minM')return men>=Math.min(c.min,n);
+if(c.mode==='legacy4'&&n===c.a+c.b)return men===c.a||men===c.b;
+return men>=1&&wom>=1;
 }
-const genderActive=l=>!!l.genderRule&&!RX.has('gender');
-let _winCtx=null,_pos=null,RX=new Set(),RXSKIP=new Set(),RXEX=new Set();
-const closedOn=(l,d)=>!RX.has('closed')&&l.closed.includes(d);
-const offOn=(m,d)=>!RX.has('offdays')&&m.off.includes(d);
-function resetCaches(){_winCtx=null;_pos=null;}
+const genderActive=l=>!!l.genderRule&&!RX.has('gender')&&genderCfgOf(l).mode!=='off';
+let _winCtx=null,_pos=null,_aliveRef=null,_aliveN=-1,_aliveSet=null,RX=new Set(),RXSKIP=new Set(),RXEX=new Set();
+function aliveIds(){
+if(_aliveRef!==state.members||_aliveN!==state.members.length){_aliveRef=state.members;_aliveN=state.members.length;_aliveSet=new Set(state.members.map(m=>m.id));}
+return _aliveSet;
+}
+function nextId(){
+const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.goals.map(g=>g.id),...state.conflicts.map(r=>r.id),...(state.dayRules||[]).map(r=>r.id),...(state.pairs&&Array.isArray(state.pairs.rules)?state.pairs.rules.map(r=>r.id):[])].filter(Number.isFinite);
+return Math.max(...ids)+1;
+}
+const closedOn=(l,d)=>!RX.has('closed')&&(l.closed.includes(d)||weekClosedDays(l.id).includes(d)||(!!l.allowedDays&&l.allowedDays.length>0&&!l.allowedDays.includes(d)));
+const gapOf=l=>RX.has('dayRules')?0:(l.minGap||0);
+const offOn=(m,d)=>!RX.has('offdays')&&(m.off.includes(d)||weekOffDays(m.id).includes(d));
+function resetCaches(){_winCtx=null;_pos=null;_aliveRef=null;}
 function withRelax(fams,fn,more){
 const prev=[RX,RXSKIP,RXEX];
 more=more||{};
@@ -123,27 +154,28 @@ RX=new Set(fams);RXSKIP=new Set(more.skip||[]);RXEX=new Set(more.exempt||[]);res
 try{return fn();}
 finally{[RX,RXSKIP,RXEX]=prev;resetCaches();}
 }
-function goalDays(g){return g.days.length?g.days.filter(d=>state.days[d]&&state.days[d].on):workingDays();}
+function goalDays(g){return g.days.length?g.days.filter(d=>dayOn(d)):workingDays();}
 function locMax(l,gl){
-if(RX.has('loc'))return Infinity;
 const n=gl.filter(g=>g.loc.id===l.id).length;
+if(dupModeOf(l)==='banned')return Math.max(1,n);
+if(RX.has('loc'))return Infinity;
 if(l.maxWeek>0)return Math.max(l.maxWeek,n);
-if(dupModeOf(l)==='banned'&&!RX.has('dup'))return Math.max(1,n);
 if(n>0)return n;
 return Infinity;
 }
-function typeCaps(gl){
-const wd=workingDays(),t={main:0,contracted:0};
-for(const l of state.locations)t[l.type]+=Math.min(locMax(l,gl),wd.filter(d=>!closedOn(l,d)).length*(dupModeOf(l)==='merged'?2:1));
+function typeCaps(gl,M){
+M=M||compileModel();
+const t={main:0,contracted:0};
+for(const l of state.locations)t[l.type]+=locVisitCap(M,l).vl;
 return t;
 }
-function splitRange(V,gl){
-const tc=typeCaps(gl);
+function splitRange(V,gl,M){
+const tc=typeCaps(gl,M);
 const gm=gl.filter(g=>g.loc.type==='main').length,gc=gl.length-gm;
 return{tc,gm,gc,lo:Math.max(gm,V-tc.contracted),hi:Math.min(tc.main,V-gc)};
 }
-function splitCandidates(V,gl){
-const r=splitRange(V,gl),R=RATIOS[state.ratioIdx],want=R.rm/(R.rm+R.rc);
+function splitCandidates(V,gl,M){
+const r=splitRange(V,gl,M),R=RATIOS[state.ratioIdx],want=R.rm/(R.rm+R.rc);
 if(!state.locations.length)return{list:[],goalShort:false,capped:true};
 const list=[];
 for(let nm=r.lo;nm<=r.hi;nm++)list.push({nm,nc:V-nm});
@@ -154,27 +186,81 @@ return{list:nm+nc>0?[{nm,nc}]:[],goalShort:gl.length>0&&(r.gm>r.tc.main||r.gc>r.
 list.sort((a,b)=>Math.abs(a.nm/V-want)-Math.abs(b.nm/V-want)||b.nm-a.nm);
 return{list,goalShort:false,capped:false};
 }
-function effSplit(gl){
+function effSplit(gl,M){
 gl=gl||compileGoals().list;
-const c=splitCandidates(state.visits,gl);
+const c=splitCandidates(state.visits,gl,M);
 if(!c.list.length)return{nm:0,nc:0,capped:true,goalShort:c.goalShort};
 return{nm:c.list[0].nm,nc:c.list[0].nc,capped:c.capped,goalShort:c.goalShort};
 }
+function pairRuleHard(r){
+if(RX.has('pairs'))return false;
+if(r.kind==='must')return true;
+if(r.kind!=='avoid')return false;
+return r.hard===true||(r.hard!==false&&state.pairs.mode==='hard');
+}
 function compilePairs(){
-const P={on:false,hard:false,list:[],with:new Map(),avoid:new Map()};
+const P={on:false,hard:false,hardAny:false,list:[],with:new Map(),avoid:new Map(),avoidHard:new Map(),must:new Map()};
 if(!state.pairs.enabled)return P;
 const alive=new Set(state.members.map(m=>m.id)),seen=new Set();
+const put=(M,a,b)=>{
+if(!M.has(a))M.set(a,new Set());M.get(a).add(b);
+if(!M.has(b))M.set(b,new Set());M.get(b).add(a);
+};
 for(const r of state.pairs.rules){
 if(r.a===r.b||!alive.has(r.a)||!alive.has(r.b)||RXSKIP.has(r.id))continue;
 const k=Math.min(r.a,r.b)+':'+Math.max(r.a,r.b)+':'+r.kind;
 if(seen.has(k))continue;seen.add(k);
-const M=r.kind==='avoid'?P.avoid:P.with;
-if(!M.has(r.a))M.set(r.a,new Set());M.get(r.a).add(r.b);
-if(!M.has(r.b))M.set(r.b,new Set());M.get(r.b).add(r.a);
-P.list.push({a:r.a,b:r.b,kind:r.kind});
+const hard=pairRuleHard(r);
+put(r.kind==='avoid'?P.avoid:P.with,r.a,r.b);
+if(r.kind==='avoid'&&hard)put(P.avoidHard,r.a,r.b);
+if(r.kind==='must'&&hard)put(P.must,r.a,r.b);
+P.list.push({a:r.a,b:r.b,kind:r.kind,hard});
 }
-P.on=P.list.length>0;P.hard=state.pairs.mode==='hard'&&!RX.has('pairs');
+P.on=P.list.length>0;P.hard=P.avoidHard.size>0;P.hardAny=P.hard||P.must.size>0;
 return P;
+}
+function pairTeamOK(P,ids){
+if(P.avoidHard.size)for(let i=0;i<ids.length-1;i++){
+const s=P.avoidHard.get(ids[i]);
+if(s)for(let j=i+1;j<ids.length;j++)if(s.has(ids[j]))return false;
+}
+if(P.must.size)for(const id of ids){
+const s=P.must.get(id);
+if(s)for(const o of s)if(!ids.includes(o))return false;
+}
+return true;
+}
+const needsActive=l=>!!(l.needs&&l.needs.length)&&!RX.has('tags');
+function needsOK(members,l){
+for(const n of l.needs){
+let c=0;
+for(const m of members)if(m&&m.tags&&m.tags.includes(n.tag))c++;
+if(c<n.min)return false;
+}
+return true;
+}
+function compileDayRules(){
+if(RX.has('dayRules'))return[];
+const alive=new Set(state.locations.map(l=>l.id));
+const out=[];
+for(const r of state.dayRules||[]){
+if(!r.on||RXSKIP.has(r.id))continue;
+const A=new Set(r.a.filter(id=>alive.has(id))),B=new Set(r.b.filter(id=>alive.has(id)));
+if(!A.size||!B.size)continue;
+out.push({id:r.id,kind:r.kind,A,B});
+}
+return out;
+}
+function dayRulesHit(rules,locIds,kinds){
+let n=0;
+for(const r of rules){
+if(kinds&&!kinds.includes(r.kind))continue;
+let ha=false,hb=false;
+for(const id of locIds){if(r.A.has(id))ha=true;if(r.B.has(id))hb=true;}
+if(r.kind==='notSameDay'){if(ha&&hb)n++;}
+else if(ha!==hb)n++;
+}
+return n;
 }
 function compileConflicts(){
 const alive=new Set(state.locations.map(l=>l.id)),mem=new Set(state.members.map(m=>m.id));
@@ -209,7 +295,7 @@ return 'كل الأعضاء';
 
 function goalLabel(g){const i=state.goals.indexOf(g);return (g.mode==='custom'?'زيارة خاصة ':'هدف ')+ar(i+1);}
 const goalIsCustom=g=>g.mode==='custom';
-const customSize=g=>clamp(Math.round(+g.size)||2,1,8);
+const customSize=g=>clamp(Math.round(+g.size)||2,LIM.customSize[0],LIM.customSize[1]);
 const poolWord=q=>q===1?'سريريين':'إداريين';
 function seatsFit(shapes,T){
 let c=0,a=0;
@@ -226,7 +312,7 @@ for(const g of active){
 const people=g.people.filter(id=>alive.has(id));
 const loc=locById(g.loc);
 if(!loc){add(g,g.loc==null?'اختر موقعًا':'الموقع المحدد حُذف — اختر موقعًا آخر');continue;}
-for(const d of g.days)if(!state.days[d].on){add(g,'يوم '+DAYS[d]+' ليس يوم عمل');break;}
+for(const d of g.days)if(!dayOn(d)){add(g,'يوم '+DAYS[d]+' ليس يوم عمل');break;}
 if(g.exclude.some(id=>g.people.includes(id)))add(g,'عضو محدد ومستبعد معًا');
 const gd=goalDays(g).filter(d=>!closedOn(loc,d));
 if(g.days.length===1&&closedOn(loc,g.days[0]))add(g,'الموقع مغلق يوم '+DAYS[g.days[0]]);
@@ -252,12 +338,14 @@ const n1=ppl.filter(m=>m.pool===1).length,n2=ppl.length-n1;
 if(n1>sh[1])add(g,sh[1]?'الفريق يتسع لـ '+ar(sh[1])+' سريريين فقط':'لا مقاعد سريرية في هذا الموقع');
 if(n2>sh[2])add(g,sh[2]?'الفريق يتسع لـ '+ar(sh[2])+' إداريين فقط':'لا مقاعد إدارية في هذا الموقع');
 }
-if(ppl.length&&gd.length&&!gd.some(d=>ppl.every(m=>!m.off.includes(d)))){
-if(g.days.length===1){for(const m of ppl)if(m.off.includes(g.days[0]))add(g,m.name+' في إجازة يوم '+DAYS[g.days[0]]);}
+if(ppl.length&&gd.length&&!gd.some(d=>ppl.every(m=>!offOn(m,d)))){
+if(g.days.length===1){for(const m of ppl)if(offOn(m,g.days[0]))add(g,m.name+' في إجازة يوم '+DAYS[g.days[0]]);}
 else add(g,'لا يوم عمل يتاح فيه كل الأعضاء المحددين');
 }
-if(P.on&&P.hard)for(let i=0;i<ppl.length;i++)for(let j=i+1;j<ppl.length;j++)if(P.avoid.get(ppl[i].id)&&P.avoid.get(ppl[i].id).has(ppl[j].id))add(g,'قاعدة «ليس مع» تمنع '+ppl[i].name+' و'+ppl[j].name);
-if(!custom&&genderActive(loc)&&ppl.length===shapeSize(sh)&&shapeSize(sh)>=2&&!genderOK(ppl.map(m=>m.gender)))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
+if(P.on&&P.hard)for(let i=0;i<ppl.length;i++)for(let j=i+1;j<ppl.length;j++)if(P.avoidHard.get(ppl[i].id)&&P.avoidHard.get(ppl[i].id).has(ppl[j].id))add(g,'قاعدة «ليس مع» تمنع '+ppl[i].name+' و'+ppl[j].name);
+if(!custom&&genderActive(loc)&&ppl.length===shapeSize(sh)&&shapeSize(sh)>=2&&!genderOK(ppl.map(m=>m.gender),genderCfgOf(loc)))add(g,'تشكيل الفريق يخالف قاعدة الخلط النوعي');
+if(!custom&&needsActive(loc)&&ppl.length===shapeSize(sh)&&!needsOK(ppl,loc))add(g,'تشكيل الفريق لا يحقق متطلبات الموقع');
+if(P.on&&P.must.size&&ppl.length&&ppl.length===shapeSize(sh)&&!pairTeamOK(P,ppl.map(m=>m.id)))add(g,'قاعدة «دائمًا مع» تخالف تشكيل الفريق');
 if(!issues.has(g.id))list.push({id:g.id,loc,days:gd,people,excl:g.exclude.filter(id=>alive.has(id)),custom:custom?{size:customSize(g),allowed}:null});
 }
 const fixed=list.filter(g=>g.days.length===1);
@@ -269,7 +357,7 @@ if(a.loc.id===b.loc.id){
 if(dupModeOf(a.loc)==='merged'){if(da!==db)add(gb,'سياسة «مدموج»: يجب أن يكون مع '+goalLabel(ga)+' في اليوم نفسه');else if(shared.length)add(gb,'يتكرر مع '+goalLabel(ga)+' بنفس الأعضاء');}
 else if(da===db)add(gb,'يتكرر مع '+goalLabel(ga)+' في نفس الموقع واليوم');
 }
-if(a.loc.id===b.loc.id&&shared.length&&state.dup.people==='different'&&da!==db)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' لنفس الموقع — التكرار يتطلب أعضاء مختلفين');
+if(a.loc.id===b.loc.id&&shared.length&&dupPeopleEff()==='different'&&da!==db)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' لنفس الموقع — التكرار يتطلب أعضاء مختلفين');
 if(shared.length){
 if(da===db)add(gb,byId(shared[0]).name+' محدد في '+goalLabel(ga)+' بنفس اليوم');
 else{const bad=shared.find(id=>!restOK([da,db],ruleOf(byId(id))));if(bad!=null)add(gb,byId(bad).name+' يخالف نمط الراحة مع '+goalLabel(ga));}
@@ -302,13 +390,22 @@ const trips=new Map();
 for(const g of fx)trips.set(g.loc.id,g.loc);
 const tm=[...trips.values()].filter(l=>l.type==='main').length,tcn=trips.size-tm;
 const last=fx[fx.length-1];
-if(trips.size>dayMaxOf(d)||tm>state.cap.mainPerDay||tcn>state.cap.conPerDay||!seatsFit(fx.filter(g=>!g.custom).map(g=>shapeOf(g.loc)),T))add(gobj(last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
+if(trips.size>dayMaxOf(d)||tm>capMain()||tcn>capCon()||!seatsFit(fx.filter(g=>!g.custom).map(g=>shapeOf(g.loc)),T))add(gobj(last.id),'أهداف يوم '+DAYS[d]+' تتجاوز الحد اليومي');
 }
 for(const m of state.members){
 const gs=list.filter(g=>g.people.includes(m.id));
 if(gs.length>memberMax(m))add(gobj(gs[gs.length-1].id),m.name+': أهدافه أكثر من حد زياراته');
 }
 const valid=list.filter(g=>!issues.has(g.id));
+if(!RX.has('minWeek'))for(const l of state.locations){
+let want=l.minWeek|0;
+if(want<=0)continue;
+if(dupModeOf(l)==='banned')want=Math.min(want,1);
+if(l.maxWeek>0)want=Math.min(want,l.maxWeek);
+const have=valid.filter(g=>g.loc.id===l.id).length;
+const days=workingDays().filter(d=>!closedOn(l,d));
+for(let k=have;k<want;k++)valid.push({id:-(l.id*100+k+1),loc:l,days,people:[],excl:[],custom:null,auto:true});
+}
 return{list:valid,issues,active:active.length};
 }
 function goalCounts(){
@@ -334,7 +431,28 @@ return 'كل عضو: حتى '+run+' ثم '+rs+' على الأقل';
 }
 function calOn(){return RX.has('rest')?true:state.restCalendar;}
 function ruleOf(m){if(RX.has('rest')||RXEX.has(m.id))return{rest:0,maxRun:1};return m.rest||state.rest;}
-function memberMin(m){return RX.has('members')?0:(m.vmode==='exact'||m.vmode==='range'?m.vmin:0);}
+const fairHard=()=>!!state.fair&&state.fair.mode==='hard'&&!RX.has('fair');
+const fairMinEach=()=>fairHard()?state.fair.minEach|0:0;
+const fairSpread=()=>fairHard()?state.fair.maxSpread|0:0;
+function fairActive(){
+const out={1:[],2:[]},wd=workingDays();
+for(const m of state.members)if(wd.some(d=>!offOn(m,d))&&state.locations.some(l=>eligibleFor(m,l)))out[m.pool].push(m.id);
+return out;
+}
+function fairExcess(rows,act,spreadMax){
+const c=new Map();
+for(const r of rows)for(const id of r.team)c.set(id,(c.get(id)||0)+1);
+let ex=0;
+if(spreadMax>0)for(const q of[1,2]){
+const a=act[q];
+if(a.length<2)continue;
+let hi=-1,lo=Infinity;
+for(const id of a){const n=c.get(id)||0;if(n>hi)hi=n;if(n<lo)lo=n;}
+if(hi-lo>spreadMax)ex+=hi-lo-spreadMax;
+}
+return ex;
+}
+function memberMin(m){return Math.max(RX.has('members')?0:(m.vmode==='exact'||m.vmode==='range'?m.vmin:0),fairMinEach());}
 function globalMax(){return state.gmaxOn&&!RX.has('members')?state.gmax:Infinity;}
 function memberMax(m){if(RX.has('members'))return Infinity;return Math.min(m.vmode==='exact'?m.vmin:m.vmode==='range'?m.vmax:Infinity,globalMax(),state.dup.people==='all'&&!RX.has('dupPeople')?1:Infinity);}
 function maxVisitDays(m,wd){
@@ -371,7 +489,6 @@ const days=workingDays().sort((a,b)=>a-b);
 const locs=state.locations.slice();
 const G=compileGoals();
 const goals=G.list;
-const splits=splitCandidates(state.visits,goals);
 const lmax=new Map(locs.map(l=>[l.id,locMax(l,goals)]));
 const avail=new Map(days.map(d=>[d,{c:state.members.filter(m=>m.pool===1&&!offOn(m,d)).length,a:state.members.filter(m=>m.pool===2&&!offOn(m,d)).length}]));
 const eligCache=new Map();
@@ -380,9 +497,9 @@ for(const m of state.members)budget[m.pool]+=Math.min(maxVisitDays(m,days),membe
 const M={
 days,dayCfg:state.days,locs,mains:locs.filter(l=>l.type==='main'),cons:locs.filter(l=>l.type==='contracted'),
 members:state.members,visits:state.visits,useAll:state.useAllDays,even:state.cap.even,
-pairs:compilePairs(),conflicts:compileConflicts(),goals,lmax,splits:splits.list,goalShort:splits.goalShort,
-cap:{main:state.cap.mainPerDay,con:state.cap.conPerDay},dayMax:dayMaxOf,
-dup:dupModeOf,dupPeople:RX.has('dupPeople')&&state.dup.people!=='any'?'any':state.dup.people,spreadPen:state.dup.spread==='avoid'?4:1.2,
+pairs:compilePairs(),conflicts:compileConflicts(),dayRules:compileDayRules(),fairActive:fairActive(),fairSpread:fairSpread(),goals,lmax,splits:[],goalShort:false,
+cap:{main:capMain(),con:capCon()},dayMax:dayMaxOf,
+dup:dupModeOf,dupPeople:dupPeopleEff(),spreadPen:state.dup.spread==='avoid'?4:1.2,
 avail,budget,win:winCtx(),relax:new Set(opts.relax||[])
 };
 M.locOf=id=>locs.find(l=>l.id===id);
@@ -396,13 +513,15 @@ eligCache.set(k,e);
 }
 return e;
 };
+const sp=splitCandidates(state.visits,goals,M);
+M.splits=sp.list;M.goalShort=sp.goalShort;
 return M;
 }
 
 function dayPos(d){
 if(d<0)return d;
 if(calOn())return d;
-if(!_pos){let k=0;_pos=state.days.map(x=>x.on?k++:null);}
+if(!_pos){let k=0;_pos=state.days.map((x,i)=>dayOn(i)?k++:null);}
 return _pos[d];
 }
 function restOK(days,rule){
@@ -436,7 +555,7 @@ return t;
 function seqDays(on){return calOn()?[0,1,2,3,4,5,6]:[0,1,2,3,4,5,6].filter(d=>on[d]);}
 function winCtx(){
 if(_winCtx)return _winCtx;
-const seq=seqDays(state.days.map(d=>d.on)),W=windowSpan();
+const seq=seqDays(state.days.map((d,i)=>dayOn(i))),W=windowSpan();
 const caps=seq.map((d,k)=>{
 const c=[],a=[];
 for(let w=1;w<=Math.min(W,k+1);w++){c.push(poolWinCap(1,w));a.push(poolWinCap(2,w));}
@@ -459,7 +578,7 @@ return true;
 }
 const goalShape=g=>g.custom?{1:0,2:0}:shapeOf(g.loc);
 function makeBoard(M){
-const load=new Map(M.days.map(d=>[d,{c:0,a:0,trips:0,main:0,con:0}]));
+const load=new Map(M.days.map(d=>[d,{c:0,a:0,x:0,trips:0,main:0,con:0}]));
 const dayLocs=new Map(M.days.map(d=>[d,new Map()]));
 const usage=new Map(),slots=[];
 let tc=0,ta=0;
@@ -473,6 +592,11 @@ if(!customSize&&sh[1]+sh[2]<1)return false;
 if((usage.get(l.id)||0)>=M.lmax.get(l.id))return false;
 const same=dayLocs.get(d).get(l.id)||0;
 if(same&&M.dup(l)!=='merged')return false;
+if(!same){
+const g=gapOf(l);
+if(g>1&&M.dup(l)!=='merged'&&slots.some(s=>s.loc.id===l.id&&Math.abs(s.day-d)<g))return false;
+if(M.dayRules.length&&dayRulesHit(M.dayRules,[...dayLocs.get(d).keys(),l.id],['notSameDay'])>dayRulesHit(M.dayRules,[...dayLocs.get(d).keys()],['notSameDay']))return false;
+}
 if(!same&&usage.get(l.id)&&M.dup(l)==='merged')return false;
 if(!same){
 if(L.trips>=M.dayMax(d))return false;
@@ -480,6 +604,7 @@ if(l.type==='main'?L.main>=M.cap.main:L.con>=M.cap.con)return false;
 }
 const A=M.avail.get(d),E=M.elig(l,d),k=mult(same);
 if(L.c+sh[1]>A.c||L.a+sh[2]>A.a)return false;
+if(L.c+L.a+L.x+sh[1]+sh[2]+(customSize||0)>A.c+A.a)return false;
 if(tc+sh[1]>M.budget[1]||ta+sh[2]>M.budget[2])return false;
 if(customSize?E[1]+E[2]<customSize*k:(E[1]<sh[1]*k||E[2]<sh[2]*k))return false;
 return windowLoadOK(x=>load.get(x),d,L.c+sh[1],L.a+sh[2],M.win);
@@ -489,6 +614,7 @@ const L=load.get(d),dl=dayLocs.get(d),same=dl.get(l.id)||0;
 if(!same){L.trips++;if(l.type==='main')L.main++;else L.con++;}
 dl.set(l.id,same+1);
 L.c+=sh[1];L.a+=sh[2];tc+=sh[1];ta+=sh[2];
+if(extra&&extra.custom)L.x+=extra.custom.size;
 usage.set(l.id,(usage.get(l.id)||0)+1);
 const s={loc:l,day:d,shape:{1:sh[1],2:sh[2]},custom:null,...extra};
 slots.push(s);
@@ -575,6 +701,7 @@ pre.push({loc:g.loc,day:d,people:g.people});
 }
 return pre;
 }
+const PRIO_RANK={high:0,normal:1,low:2},PRIO_W={high:1.6,normal:1,low:0.55};
 const strictChance=n=>n<150?0.8:n<500?0.4:0.12;
 function buildSlots(M,ref,attempt){
 if(ref&&rng()<0.45){
@@ -611,12 +738,13 @@ if(c.l.dist===dp.dist)s+=5;
 else if(c.l.dist&&c.l.dist!=='mid')s-=2;
 else s+=0.3;
 }
-return Math.max(0.05,w)*Math.max(0.05,s);
+return Math.max(0.05,w)*Math.max(0.05,s)*PRIO_W[c.l.priority||'normal'];
 });
 const c=pickWeighted(sel,ws);
 B.add(c.l,c.d,shapeOf(c.l),{});
 }
 if(M.useAll&&M.days.some(d=>!B.load.get(d).trips))return null;
+if(B.slots.length!==M.visits)return null;
 return B.slots;
 }
 
@@ -627,7 +755,7 @@ const n=vs.length,teams=new Array(n),missRows=new Array(n),violRows=new Array(n)
 const busy=new Set(),md=new Map(),cnt=new Map(),vis=new Map(),locMem=new Map();
 const minMembers=M.members.filter(m=>memberMin(m)>0);
 const custom=state.gmaxOn||M.members.some(m=>m.vmode==='exact'||m.vmode==='range');
-let steps=custom?(M.pairs.hard?7000:5200):(M.pairs.hard?5200:3600),prefMiss=0,consecViol=0,conflictViol=0;
+let steps=custom?(M.pairs.hardAny?7000:5200):(M.pairs.hardAny?5200:3600),prefMiss=0,consecViol=0,conflictViol=0;
 const hardRules=M.conflicts.filter(c=>c.hard),softRules=M.conflicts.filter(c=>!c.hard);
 const defi=m=>Math.max(0,memberMin(m)-(cnt.get(m.id)||0));
 const resv=new Map(),resvDays=new Map(),resvLocs=new Map(),prevMap=carryPrev();
@@ -742,10 +870,16 @@ const P=M.pairs;
 const availSet=P.on?new Set(c1.concat(c2,cc).map(x=>x.m.id)):null;
 const rankKey=x=>(cnt.get(x.m.id)||0)*8+x.viol*140+x.cf*120+x.rb-90*defi(x.m)-52*(x.pv===1?1:0)+52*(x.pv===-1?1:0)+(x.m.prefDays&&x.m.prefDays.length?(x.m.prefDays.includes(v.day)?-20:20):0);
 const wide=opts.wide|0;
+const needTags=!cu&&needsActive(v.loc)?new Set(v.loc.needs.map(n=>n.tag)):null;
 const trunc=(arr,k)=>{
 if(wide>=2)return arr;
 const keep=wide===1?Math.max(16,k+8):Math.max(8,k+4),thr=wide===1?Math.max(12,k+6):Math.max(6,k+3);
-if(arr.length>thr){if(opts.info)opts.info.truncated=true;return arr.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,keep);}
+if(arr.length>thr){
+if(opts.info)opts.info.truncated=true;
+const kept=arr.slice().sort((p,q)=>rankKey(p)-rankKey(q)).slice(0,keep);
+if(needTags)for(const x of arr)if(!kept.includes(x)&&x.m.tags&&x.m.tags.some(t=>needTags.has(t))&&kept.length<keep+6)kept.push(x);
+return kept;
+}
 return arr;
 };
 const combos=[];
@@ -757,7 +891,9 @@ for(const a of kCombos(A,sh[1]))for(const b of kCombos(B,sh[2]))teamSets.push(a.
 }
 for(const team of teamSets){
 if(req&&team.filter(x=>req.has(x.m.id)).length!==req.size)continue;
-if(!cu&&genderActive(v.loc)&&!genderOK(team.map(x=>x.m.gender)))continue;
+if(!cu&&genderActive(v.loc)&&!genderOK(team.map(x=>x.m.gender),genderCfgOf(v.loc)))continue;
+if(needTags&&!needsOK(team.map(x=>x.m),v.loc))continue;
+if(P.must.size&&!soft.has('pairs')&&!pairTeamOK(P,team.map(x=>x.m.id)))continue;
 let sc=0,miss=0,vio=0,cfv=0;
 for(const x of team){
 if(req&&req.has(x.m.id)){sc+=x.viol*140+x.cf*120;if(x.viol)vio++;if(x.cf)cfv++;continue;}
@@ -774,7 +910,7 @@ for(let a=0;a<ids.length-1&&!skip;a++)for(let b=a+1;b<ids.length;b++){
 const A=ids[a],B=ids[b];
 if(P.with.get(A)&&P.with.get(A).has(B))pb-=48;
 else if(P.avoid.get(A)&&P.avoid.get(A).has(B)){
-if(P.hard&&!soft.has('pairs')){skip=true;break;}
+if(P.avoidHard.get(A)&&P.avoidHard.get(A).has(B)&&!soft.has('pairs')){skip=true;break;}
 pb+=170;
 }
 }
@@ -846,7 +982,7 @@ if(r.team.includes(a)&&r.team.includes(b)){r.pbreak.push(a,b);pairBreak++;}
 }
 }
 for(const {a,b,kind} of M.pairs.list){
-if(kind!=='with')continue;
+if(kind!=='with'&&kind!=='must')continue;
 let both=0;
 for(const r of rows)if(r.team.includes(a)&&r.team.includes(b))both++;
 pairHit+=both;
@@ -893,13 +1029,13 @@ return plan;
 }
 function evaluatePlan(p,M){
 const rows=p.rows,prev=carryPrev(),P=M.pairs;
-const hard={rest:0,pairHard:0,targets:0,goals:0,locCap:0,offDay:0,doubleBook:0,teamShape:0,gender:0,conflict:0,dup:0,dayCap:0};
+const hard={rest:0,pairHard:0,targets:0,goals:0,locCap:0,offDay:0,doubleBook:0,teamShape:0,gender:0,conflict:0,dup:0,dayCap:0,useAll:0,tags:0,pairMust:0,dayNot:0,daySame:0,gap:0,fair:0};
 const soft={pairAvoid:0,prefMiss:0,withMiss:0,dayMiss:0,conflictSoft:0};
 const days=new Map(),counts=new Map(),lcnt=new Map(),visited=new Map(),perLoc=new Map(),tripsByDay=new Map();
 for(const r of rows){
 lcnt.set(r.loc.id,(lcnt.get(r.loc.id)||0)+1);
-if((r.loc.closed||[]).includes(r.day))hard.locCap++;
 const live=M.locOf(r.loc.id)||r.loc;
+if(closedOn(live,r.day))hard.locCap++;
 const seen=new Set();
 let c1=0,c2=0;
 for(const id of r.team){
@@ -907,7 +1043,7 @@ const m=byId(id);
 if(!m||seen.has(id)){hard.teamShape++;continue;}
 seen.add(id);
 if(m.pool===1)c1++;else c2++;
-if(m.off.includes(r.day)||!eligibleFor(m,live))hard.offDay++;
+if(offOn(m,r.day)||!eligibleFor(m,live))hard.offDay++;
 const ds=days.get(id)||[];
 if(ds.includes(r.day))hard.doubleBook++;
 ds.push(r.day);days.set(id,ds);
@@ -918,9 +1054,12 @@ visited.get(id).add(r.loc.id);
 if(r.custom){
 if(r.team.length!==r.custom.size)hard.teamShape++;
 }else if(c1!==r.shape[1]||c2!==r.shape[2])hard.teamShape++;
-if(!r.custom&&genderActive(live)&&!genderOK(r.team.map(id=>{const m=byId(id);return m?m.gender:null;})))hard.gender++;
+if(!r.custom&&genderActive(live)&&!genderOK(r.team.map(id=>{const m=byId(id);return m?m.gender:null;}),genderCfgOf(live)))hard.gender++;
+if(!r.custom&&needsActive(live)&&!needsOK(r.team.map(id=>byId(id)),live))hard.tags++;
 if(P.on)for(const q of P.list){
-if(q.kind==='avoid'&&r.team.includes(q.a)&&r.team.includes(q.b)){if(P.hard)hard.pairHard++;else soft.pairAvoid++;}
+const ia=r.team.includes(q.a),ib=r.team.includes(q.b);
+if(q.kind==='avoid'&&ia&&ib){if(q.hard)hard.pairHard++;else soft.pairAvoid++;}
+else if(q.kind==='must'&&q.hard&&ia!==ib)hard.pairMust++;
 }
 if(!perLoc.has(r.loc.id))perLoc.set(r.loc.id,[]);
 perLoc.get(r.loc.id).push(r);
@@ -968,6 +1107,28 @@ for(const r of rs)for(const m of r.team)who.set(m,(who.get(m)||0)+1);
 for(const k of who.values())if(k>1)hard.dup+=k-1;
 }
 }
+if(M.useAll)for(const d of M.days)if(!tripsByDay.has(d))hard.useAll++;
+if(M.fairSpread>0)hard.fair+=fairExcess(rows,M.fairActive,M.fairSpread);
+if(M.dayRules.length){
+const byDay=new Map();
+for(const r of rows){if(!byDay.has(r.day))byDay.set(r.day,new Set());byDay.get(r.day).add(r.loc.id);}
+for(const d of M.days){
+const ids=[...(byDay.get(d)||[])];
+hard.dayNot+=dayRulesHit(M.dayRules,ids,['notSameDay']);
+hard.daySame+=dayRulesHit(M.dayRules,ids,['sameDay']);
+}
+}
+{
+const seenD=new Map();
+for(const r of rows){
+const l=M.locOf(r.loc.id)||r.loc,g=gapOf(l);
+if(g>1&&M.dup(l)!=='merged'){
+const a=seenD.get(l.id)||[];
+for(const x of a)if(x!==r.day&&Math.abs(x-r.day)<g)hard.gap++;
+a.push(r.day);seenD.set(l.id,a);
+}
+}
+}
 for(const [d,ls] of tripsByDay){
 let tm=0;
 for(const l of ls.values())if(l.type==='main')tm++;
@@ -997,9 +1158,17 @@ if(p.prefTotal)s+=W.p*(p.prefHit/p.prefTotal);
 if(p.pairTotal)s+=0.28*(p.pairHit/p.pairTotal);
 if(p.pairBreak)s-=0.45*Math.min(1,p.pairBreak/Math.max(1,p.rows.length));
 if(state.cap.even)s+=0.12*p.evenness;
-if(p.sim!=null)s=(1-W.sim)*s+W.sim*p.sim;
-return s+rng()*0.001;
+if(state.fair&&state.fair.mode==='soft'&&(state.fair.maxSpread>0||state.fair.minEach>0)){
+const act=fairActive();
+let ex=fairExcess(p.rows,act,state.fair.maxSpread|0);
+if(state.fair.minEach>0){const c=new Map();for(const r of p.rows)for(const id of r.team)c.set(id,(c.get(id)||0)+1);for(const q of[1,2])for(const id of act[q])ex+=Math.max(0,state.fair.minEach-(c.get(id)||0));}
+s-=0.3*Math.min(1,ex/Math.max(1,p.rows.length));
 }
+if(p.sim!=null)s=(1-W.sim)*s+W.sim*p.sim;
+return s;
+}
+const _hc=new WeakMap();
+function planKey(p){let h=_hc.get(p);if(h===undefined){h=hashPlan(p);_hc.set(p,h);}return h;}
 function rankTuple(p){
 const e=p.eval;
 return[e.hardCount,e.clean?0:1,e.ruleBreaks,state.priority==='prefs'?e.soft.prefMiss+e.soft.dayMiss:0,-p.score];
@@ -1007,11 +1176,14 @@ return[e.hardCount,e.clean?0:1,e.ruleBreaks,state.priority==='prefs'?e.soft.pref
 function comparePlans(a,b){
 const x=rankTuple(a),y=rankTuple(b);
 for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]<y[i]?-1:1;
-return 0;
+const ha=planKey(a),hb=planKey(b);
+return ha<hb?-1:ha>hb?1:0;
 }
 
 const FIX={
 memberExempt:{label:f=>'استثناء '+nm(f.id)+' من قاعدة الراحة',run:f=>{const m=byId(f.id);if(m){m.rest={rest:0,maxRun:1};m.restCustom=false;}}},
+weekOffClear:{label:f=>'إلغاء إجازة '+nm(f.id)+' هذا الأسبوع يوم '+DAYS[f.day],run:f=>{const o=weekOv();if(o&&o.memberOff&&o.memberOff[f.id])o.memberOff[f.id]=o.memberOff[f.id].filter(d=>d!==f.day);}},
+weekOpenDay:{label:f=>'فتح '+locName(f.id)+' هذا الأسبوع يوم '+DAYS[f.day],run:f=>{const o=weekOv();if(o&&o.locClosed&&o.locClosed[f.id])o.locClosed[f.id]=o.locClosed[f.id].filter(d=>d!==f.day);}},
 memberOffClear:{label:f=>'إلغاء إجازة '+nm(f.id)+' يوم '+DAYS[f.day],run:f=>{const m=byId(f.id);if(m)m.off=m.off.filter(d=>d!==f.day);}},
 membersAuto:{label:f=>'إلغاء عدد الزيارات المحدد لـ'+nm(f.id),run:f=>{const m=byId(f.id);if(m){m.vmode='auto';m.vmin=0;m.vmax=0;}}},
 gmaxOff:{label:()=>'إلغاء الحد العام لزيارات الأعضاء',run:()=>{state.gmaxOn=false;}},
@@ -1022,8 +1194,14 @@ dupPeople:{label:()=>'السماح لنفس العضو بأكثر من زيار�
 visits:{label:f=>'ضبط الزيارات على '+ar(f.n),run:f=>{state.visitsWanted=f.n;}},
 conflictSoft:{label:f=>'جعل قاعدة التعارض مرنة',run:f=>{const r=state.conflicts.find(x=>x.id===f.id);if(r)r.hard=false;}},
 conflictOff:{label:f=>'إيقاف قاعدة التعارض',run:f=>{const r=state.conflicts.find(x=>x.id===f.id);if(r)r.on=false;}},
-pairSoft:{label:()=>'جعل قواعد الاقتران مرنة',run:()=>{state.pairs.mode='soft';}},
+pairSoft:{label:()=>'جعل قواعد الاقتران مرنة',run:()=>{state.pairs.mode='soft';for(const r of state.pairs.rules){if(r.kind==='must')r.kind='with';if(r.hard===true)r.hard=false;}}},
+locMinWeekOff:{label:f=>'إلغاء الحد الأدنى الأسبوعي لـ'+locName(f.id),run:f=>{const l=locById(f.id);if(l)l.minWeek=0;}},
+fairSoft:{label:()=>'جعل قواعد العدالة مرنة',run:()=>{state.fair.mode='soft';}},
+dayRuleOff:{label:f=>'إيقاف قاعدة الأيام',run:f=>{const r=(state.dayRules||[]).find(x=>x.id===f.id);if(r)r.on=false;}},
+locGapOff:{label:f=>'إلغاء الفاصل بين زيارات '+locName(f.id),run:f=>{const l=locById(f.id);if(l)l.minGap=0;}},
+locNeedOff:{label:f=>'إلغاء متطلب «'+f.tag+'» في '+locName(f.id),run:f=>{const l=locById(f.id);if(l&&l.needs)l.needs=l.needs.filter(n=>n.tag!==f.tag);}},
 locCapClear:{label:f=>'إزالة الحد الأسبوعي لـ'+locName(f.id),run:f=>{const l=locById(f.id);if(l)l.maxWeek=0;}},
+genderMode:{label:f=>f.mode==='mixed'?'تخفيف قاعدة الخلط إلى «مختلط»':'تغيير قاعدة الخلط النوعي',run:f=>{if(GENDER_MODES.includes(f.mode))state.gender.mode=f.mode;}},
 locGenderOff:{label:f=>'إيقاف الخلط النوعي في '+locName(f.id),run:f=>{const l=locById(f.id);if(l)l.genderRule=false;}},
 locOnlyClear:{label:f=>'إزالة تقييد المؤهلين عن '+locName(f.id),run:f=>{const l=locById(f.id);if(l){l.only=[];l.ban=[];}}},
 locSeatsFit:{label:f=>'ملاءمة مقاعد '+locName(f.id)+' للمؤهلين',run:f=>{
@@ -1033,7 +1211,9 @@ for(const m of state.members)if(eligibleFor(m,l))av[m.pool]++;
 const s={1:Math.min(sh[1],av[1]),2:Math.min(sh[2],av[2])};
 l.seats=seatsDiffer(l,s)?s:null;
 }},
-dayMax:{label:f=>'رفع الحد اليومي إلى '+ar(f.n),run:f=>{state.cap.dayMax=f.n;}},
+dayMax:{label:f=>'رفع الحد اليومي إلى '+ar(f.n),run:f=>{state.cap.dayMax=clamp(Math.round(f.n),LIM.dayMax[0],LIM.dayMax[1]);}},
+capMain:{label:f=>'رفع حد المواقع الرئيسية يوميًا إلى '+ar(f.n),run:f=>{state.cap.mainPerDay=clamp(Math.round(f.n),LIM.perDay[0],LIM.perDay[1]);}},
+capCon:{label:f=>'رفع حد المواقع المتعاقدة يوميًا إلى '+ar(f.n),run:f=>{state.cap.conPerDay=clamp(Math.round(f.n),LIM.perDay[0],LIM.perDay[1]);}},
 locSeatsSet:{label:f=>'مقاعد '+locName(f.id)+' ('+poolName(f.pool)+'): '+ar(f.n),run:f=>{
 const l=locById(f.id);if(!l)return;
 const sh=shapeOf(l),s={1:sh[1],2:sh[2]};
@@ -1045,9 +1225,8 @@ locEligClear:{label:f=>'إزالة قيود المؤهلين عن '+locName(f.id
 gmaxSet:{label:f=>'رفع الحد العام لزيارات الأعضاء إلى '+ar(f.n),run:f=>{state.gmaxOn=true;state.gmax=f.n;}},
 multi:{label:f=>'تطبيق '+ar(f.fixes.length)+' تعديلات معًا',run:f=>{for(const x of f.fixes)FIX[x.op].run(x);}},
 memberAdd:{label:f=>'إضافة عضو '+(f.pool===1?'سريري':'إداري'),run:f=>{
-const ids=[100,...state.members.map(m=>m.id),...state.locations.map(l=>l.id),...state.goals.map(g=>g.id),...state.conflicts.map(r=>r.id)];
 const n=state.members.filter(m=>m.pool===f.pool).length+1;
-state.members.push({id:Math.max(...ids)+1,name:(f.pool===1?'سريري ':'إداري ')+ar(n),pool:f.pool,gender:'M',off:[],pref:'',types:'any',prefDays:[],vmode:'auto',vmin:0,vmax:0});
+state.members.push({id:nextId(),name:(f.pool===1?'سريري ':'إداري ')+ar(n),pool:f.pool,gender:'M',off:[],pref:'',types:'any',prefDays:[],vmode:'auto',vmin:0,vmax:0});
 }},
 };
 const DUPL={banned:'ممنوع',separate:'منفصل',merged:'مدموج'};
@@ -1058,8 +1237,8 @@ function memberRestImpact(m,wd){
 if(m.rest&&m.rest.rest===0)return null;
 const rule=ruleOf(m);
 if(rule.rest===0)return null;
-const av=wd.filter(d=>!m.off.includes(d));
-if(!m.off.length||av.length<1)return null;
+const av=wd.filter(d=>!offOn(m,d));
+if(av.length===wd.length||av.length<1)return null;
 const ruled=maxVisitDays(m,wd);
 const full=maxVisitDays({off:[],rest:m.rest},wd);
 if(ruled>=full||ruled>=av.length)return null;
@@ -1088,23 +1267,30 @@ if(!g.on)continue;
 const iss=G.issues.get(g.id);
 if(iss&&iss.length)add('error','goal'+g.id,goalLabel(g)+': '+iss[0],[{op:'goalOff',id:g.id}]);
 }
+for(const l of state.locations){
+if(!needsActive(l))continue;
+for(const n of l.needs){
+const c=state.members.filter(m=>m.tags&&m.tags.includes(n.tag)&&eligibleFor(m,l)).length;
+if(c<n.min)add('error','need'+l.id+n.tag,l.name+': لا يوجد أعضاء مؤهلون بمهارة «'+n.tag+'» ('+ar(c)+' من '+ar(n.min)+')',[{op:'locNeedOff',id:l.id,tag:n.tag}]);
+}
+}
 const sp=effSplit(G.list);
 for(const s of compileMembers(expectedSeats(sp)).issues.slice(0,3))add('warn','budget'+s,s,[]);
 for(const m of state.members){
 const note=memberRestNote(m);
 const mn=memberMin(m),ruled=maxVisitDays(m,wd);
 if(note){
-const exemptMax=wd.filter(d=>!m.off.includes(d)).length;
+const exemptMax=wd.filter(d=>!offOn(m,d)).length;
 const level=mn>ruled&&mn<=exemptMax?'warn':'info';
 add(level,'rest'+m.id,m.name+': '+note.text,[note.fix]);
 }else if(mn>ruled){
-const exemptMax=wd.filter(d=>!m.off.includes(d)).length;
+const exemptMax=wd.filter(d=>!offOn(m,d)).length;
 if(mn<=exemptMax&&!(m.rest&&m.rest.rest===0))add('warn','restmin'+m.id,m.name+': الحد الأدنى ('+ar(mn)+') أكبر مما تسمح به قاعدة الراحة ('+ar(ruled)+')',[{op:'memberExempt',id:m.id}]);
 }
 }
 for(const l of state.locations){
 const sh=shapeOf(l);
-if(shapeSize(sh)<1){add('error','noseat'+l.id,l.name+': بلا مقاعد',[]);continue;}
+if(shapeSize(sh)<1){if(!G.list.some(g=>g.custom&&g.loc.id===l.id))add('error','noseat'+l.id,l.name+': بلا مقاعد',[]);continue;}
 const av={1:0,2:0};
 for(const m of state.members)if(eligibleFor(m,l))av[m.pool]++;
 if(av[1]<sh[1]||av[2]<sh[2])add('error','elig'+l.id,l.name+': المؤهلون ('+ar(av[1])+' سريري، '+ar(av[2])+' إداري) لا يغطون المقاعد المطلوبة',[{op:'locSeatsFit',id:l.id},...((l.only&&l.only.length)||(l.ban&&l.ban.length)?[{op:'locOnlyClear',id:l.id}]:[])]);
@@ -1113,7 +1299,7 @@ if(M){
 for(const d of wd){
 const open=state.locations.filter(l=>!closedOn(l,d)&&(M.elig(l,d)[1]>=shapeOf(l)[1]&&M.elig(l,d)[2]>=shapeOf(l)[2]));
 if(!open.length){
-const offs=state.members.filter(m=>m.off.includes(d));
+const offs=state.members.filter(m=>offOn(m,d));
 add(state.useAllDays?'error':'info','day'+d,'يوم '+DAYS[d]+': لا يمكن تكوين أي زيارة (المتاحون لا يغطون مقاعد أي موقع)',offs.slice(0,2).map(m=>({op:'memberOffClear',id:m.id,day:d})));
 }
 }
@@ -1128,14 +1314,13 @@ return out;
 function diagnosePairs(M){
 const P=M.pairs,out=[];
 if(!P.on||!P.hard)return out;
-const blocked=(a,b)=>P.avoid.get(a)&&P.avoid.get(a).has(b);
+const blocked=(a,b)=>P.avoidHard.get(a)&&P.avoidHard.get(a).has(b);
 const hasPair=(pool,d)=>{
-const c=M.members.filter(m=>m.pool===pool&&!m.off.includes(d));
+const c=M.members.filter(m=>m.pool===pool&&!offOn(m,d));
 for(let i=0;i<c.length-1;i++)for(let j=i+1;j<c.length;j++)if(!blocked(c[i].id,c[j].id))return true;
 return false;
 };
-for(const d of M.days)if(!hasPair(1,d)){out.push('«ليس مع» تمنع ثنائيًا سريريًا يوم '+DAYS[d]);break;}
-if(M.mains.some(l=>shapeOf(l)[2]>=2))for(const d of M.days)if(!hasPair(2,d)){out.push('«ليس مع» تمنع ثنائيًا إداريًا يوم '+DAYS[d]);break;}
+for(const q of[1,2])if(M.locs.some(l=>shapeOf(l)[q]>=2))for(const d of M.days)if(!hasPair(q,d)){out.push('«ليس مع» تمنع ثنائيًا '+(q===1?'سريريًا':'إداريًا')+' يوم '+DAYS[d]);break;}
 return out;
 }
 
@@ -1144,8 +1329,16 @@ return{
 v:2,rest:state.rest,restCalendar:state.restCalendar,days:state.days,members:state.members,locations:state.locations,
 visits:state.visitsWanted,ratioIdx:state.ratioIdx,useAllDays:state.useAllDays,
 bulk:state.bulk,pairs:state.pairs,goals:state.goals,cap:state.cap,dup:state.dup,conflicts:state.conflicts,autoRegen:state.autoRegen,minChanges:state.minChanges,weekStart:state.weekStart,view:state.view,
-priority:state.priority,carryWeek:state.carryWeek,history:state.history,gmaxOn:state.gmaxOn,gmax:state.gmax
+priority:state.priority,carryWeek:state.carryWeek,history:state.history,historyWd:state.historyWd,weekOverrides:pruneOverrides(),gender:state.gender,dayRules:state.dayRules,fair:state.fair,solver:state.solver,digits:state.digits,gmaxOn:state.gmaxOn,gmax:state.gmax
 };
+}
+function pruneOverrides(){
+const out={},src=state.weekOverrides||{};
+const t=new Date(state.weekStart+'T00:00:00');
+t.setDate(t.getDate()-84);
+const min=isoD(t);
+for(const k of Object.keys(src))if(k>=min)out[k]=src[k];
+return out;
 }
 function prevWeekKey(){
 const t=new Date(state.weekStart+'T00:00:00');
@@ -1157,12 +1350,12 @@ const mp=new Map();
 if(!state.carryWeek)return mp;
 const h=state.history[prevWeekKey()];
 if(!h)return mp;
-const wd=workingDays();
+const wd=workingDays(),hw=state.historyWd&&state.historyWd[prevWeekKey()],pwd=hw&&hw.length?hw:wd;
 for(const id of Object.keys(h)){
 const out=[];
 for(const d of h[id]){
 if(state.restCalendar)out.push(d-7);
-else{const k=wd.indexOf(d);if(k>=0)out.push(k-wd.length);}
+else{const k=pwd.indexOf(d);if(k>=0)out.push(k-pwd.length);}
 }
 if(out.length)mp.set(+id,out);
 }
@@ -1179,19 +1372,22 @@ if(sh[2]>0)k=Math.min(k,Math.floor(E[2]/sh[2]));
 return k;
 }
 function locVisitCap(M,l){
-const sh=shapeOf(l);
-if(shapeSize(sh)<1)return{vl:0,open:[],mode:M.dup(l)};
-const open=M.days.filter(d=>!closedOn(l,d)&&slotTeamsMax(M,l,d,sh)>=1);
+const sh=shapeOf(l),noSeat=shapeSize(sh)<1;
+const nc=M.goals.filter(g=>g.custom&&g.loc.id===l.id).length;
 const mode=M.dup(l),lm=M.lmax.get(l.id);
-if(!open.length)return{vl:0,open,mode};
+if(noSeat&&!nc)return{vl:0,open:[],mode,nc:0};
+const reg=d=>noSeat?0:slotTeamsMax(M,l,d,sh);
+const open=M.days.filter(d=>!closedOn(l,d)&&(nc>0||reg(d)>=1));
+if(!open.length)return{vl:0,open,mode,nc:0};
 let vl;
 if(mode==='merged'){
 let best=0;
-for(const d of open)best=Math.max(best,slotTeamsMax(M,l,d,sh));
+for(const d of open)best=Math.max(best,reg(d)+nc);
 vl=Math.min(lm,best);
 }else if(mode==='banned')vl=Math.min(1,lm,open.length);
 else vl=Math.min(lm,open.length);
-return{vl,open,mode};
+if(noSeat)vl=Math.min(vl,nc);
+return{vl,open,mode,nc:Math.min(nc,vl)};
 }
 function memberCap(M,m){
 return Math.min(maxVisitDays(m,M.days),memberMax(m));
@@ -1203,7 +1399,7 @@ let daySum=0;
 for(const d of M.days){
 const open=info.filter(x=>x.open.includes(d));
 const om=open.filter(x=>x.l.type==='main').length,oc=open.length-om;
-const cm=state.cap.mainPerDay,cc=state.cap.conPerDay;
+const cm=M.cap.main,cc=M.cap.con;
 daySum+=Math.min(M.dayMax(d),Math.min(cm,om)+Math.min(cc,oc));
 }
 let extras=0;
@@ -1221,12 +1417,12 @@ for(const m of mem){memNode.set(m.id,nid2++);for(const d of M.days)if(!offOn(m,d
 const F=Dinic(nid2);
 for(const x of info){
 if(x.vl<=0||x.sh[q]===0)continue;
-F.add(S,locNode.get(x.l.id),x.vl*x.sh[q]);
+if(x.vl-x.nc>0)F.add(S,locNode.get(x.l.id),(x.vl-x.nc)*x.sh[q]);
 }
 for(const s of slotNode){
 const {x,d}=s,need=x.sh[q];
 if(need===0)continue;
-F.add(locNode.get(x.l.id),s.id,x.mode==='merged'?x.vl*need:need);
+F.add(locNode.get(x.l.id),s.id,x.mode==='merged'?Math.max(0,x.vl-x.nc)*need:need);
 for(const m of mem){
 if(offOn(m,d)||!eligibleFor(m,x.l))continue;
 F.add(s.id,mdNode.get(m.id+':'+d),1);
@@ -1241,7 +1437,7 @@ F.add(memNode.get(m.id),T,Math.min(maxVisitDays(m,dm),memberMax(m)));
 }
 const have=F.flow(S,T);
 const demands=[];
-for(const x of info)for(let i=0;i<x.vl;i++)demands.push(x.sh[q]);
+for(const x of info)for(let i=0;i<x.vl;i++)demands.push(i<x.nc?0:x.sh[q]);
 demands.sort((a,b)=>a-b);
 let k=0,sum=0;
 for(const dm of demands){if(sum+dm>have)break;sum+=dm;k++;}
@@ -1271,7 +1467,7 @@ o=o||{};
 const deadline=o.deadline==null?Infinity:o.deadline;
 const days=M.days,goals=M.goals,members=M.members,prev=carryPrev();
 const hardC=M.conflicts.filter(c=>c.hard);
-const P=M.pairs,pairsHard=P.on&&P.hard;
+const P=M.pairs,pairsHard=P.on&&P.hardAny;
 const minM=members.filter(m=>memberMin(m)>0);
 const mdays=new Map(members.map(m=>[m.id,[]])),cnt=new Map(members.map(m=>[m.id,0]));
 const visited=new Map(members.map(m=>[m.id,new Map()]));
@@ -1283,7 +1479,7 @@ const rows=[];
 let visits=0,nodes=0,timedOut=false;
 const tick=()=>{if((++nodes&255)===0&&performance.now()>deadline)timedOut=true;return timedOut;};
 const dcapStatic=days.map(d=>{
-const open=M.locs.filter(l=>shapeSize(shapeOf(l))>0&&!closedOn(l,d));
+const open=M.locs.filter(l=>(shapeSize(shapeOf(l))>0||goals.some(g=>g.custom&&g.loc.id===l.id))&&!closedOn(l,d));
 const om=open.filter(l=>l.type==='main').length,oc=open.length-om;
 return Math.min(M.dayMax(d),Math.min(M.cap.main,om)+Math.min(M.cap.con,oc));
 });
@@ -1335,11 +1531,24 @@ const df=memberMin(m)-cnt.get(m.id);
 if(df>0&&fd<df)return false;
 resid[m.pool]+=Math.min(room,fd);
 }
+if(M.fairSpread>0){
+for(const q of[1,2]){
+const a=M.fairActive[q];
+if(a.length<2)continue;
+let hi=0;
+for(const id of a)hi=Math.max(hi,cnt.get(id));
+for(const id of a){
+const m=byId(id),ub=cnt.get(id)+Math.max(0,Math.min(memberMax(m)-cnt.get(id),futureDays(m,di)));
+if(hi-ub>M.fairSpread)return false;
+}
+}
+}
 if(need>0){
-const dem={1:[],2:[]};
+const dem={1:[],2:[]},tot=[];
 for(const l of M.locs){
-const sh=shapeOf(l);
-if(shapeSize(sh)<1)continue;
+const sh=shapeOf(l),noSeat=shapeSize(sh)<1;
+const ncs=goals.filter(g=>g.custom&&!goalDone.has(g.id)&&g.loc.id===l.id);
+if(noSeat&&!ncs.length)continue;
 let fut=0;
 for(let j=di+1;j<days.length;j++)if(!closedOn(l,days[j]))fut++;
 const mode=M.dup(l);
@@ -1347,9 +1556,16 @@ let copies=Math.min(M.lmax.get(l.id)-usage.get(l.id),mode==='merged'?BIG:fut);
 if(mode==='banned')copies=Math.min(copies,1-usage.get(l.id));
 if(mode==='merged'&&usage.get(l.id)>0)copies=0;
 copies=Math.min(Math.max(0,copies),members.length);
-for(let i=0;i<copies;i++){dem[1].push(sh[1]);dem[2].push(sh[2]);}
+if(noSeat)copies=Math.min(copies,ncs.length);
+for(let i=0;i<copies;i++){
+if(i<ncs.length){dem[1].push(0);dem[2].push(0);tot.push(ncs[i].custom.size);}
+else{dem[1].push(sh[1]);dem[2].push(sh[2]);tot.push(sh[1]+sh[2]);}
 }
-if(dem[1].length<need-0&&goals.length===0&&false)return false;
+}
+tot.sort((a,b)=>a-b);
+let st=0;
+for(let i=0;i<need&&i<tot.length;i++)st+=tot[i];
+if(st>resid[1]+resid[2])return false;
 for(const q of[1,2]){
 dem[q].sort((a,b)=>a-b);
 let s=0;
@@ -1368,23 +1584,25 @@ mdays.get(m.id).push(d);cnt.set(m.id,cnt.get(m.id)+1);
 const v=visited.get(m.id);v.set(l.id,(v.get(l.id)||0)+1);
 const lm=locMem.get(l.id);lm.set(m.id,(lm.get(m.id)||0)+1);
 }
-usage.set(l.id,usage.get(l.id)+1);visits++;
+usage.set(l.id,usage.get(l.id)+1);visits++;locDays.get(l.id).push(d);
 }else{
 for(const m of team){
 const a=mdays.get(m.id);a.splice(a.lastIndexOf(d),1);cnt.set(m.id,cnt.get(m.id)-1);
 const v=visited.get(m.id),c=v.get(l.id)-1;if(c<=0)v.delete(l.id);else v.set(l.id,c);
 const lm=locMem.get(l.id),c2=lm.get(m.id)-1;if(c2<=0)lm.delete(m.id);else lm.set(m.id,c2);
 }
-usage.set(l.id,usage.get(l.id)-1);visits--;
+usage.set(l.id,usage.get(l.id)-1);visits--;locDays.get(l.id).pop();
 }
 }
+const locDays=new Map(M.locs.map(l=>[l.id,[]]));
 const staticSig=new Map();
 const unique=new Set();
 for(const c of M.conflicts)for(const id of c.ids)unique.add(id);
 for(const [a,set] of P.avoid){unique.add(a);for(const b of set)unique.add(b);}
+for(const [a,set] of P.must){unique.add(a);for(const b of set)unique.add(b);}
 for(const g of goals){for(const id of g.people)unique.add(id);for(const id of g.excl)unique.add(id);if(g.custom&&g.custom.allowed)for(const id of g.custom.allowed)unique.add(id);}
 for(const m of members){
-staticSig.set(m.id,JSON.stringify([unique.has(m.id)?m.id:0,m.pool,m.gender,[...m.off].sort(),ruleOf(m),memberMin(m),memberMax(m),M.locs.map(l=>eligibleFor(m,l)?1:0).join('')]));
+staticSig.set(m.id,JSON.stringify([unique.has(m.id)?m.id:0,m.pool,m.gender,M.days.filter(d=>offOn(m,d)),(m.tags||[]).slice().sort(),ruleOf(m),memberMin(m),memberMax(m),M.locs.map(l=>eligibleFor(m,l)?1:0).join('')]));
 }
 function sigKey(m){
 const v=[...visited.get(m.id)].sort((a,b)=>a[0]-b[0]);
@@ -1430,25 +1648,22 @@ const sh=unit.shape;
 const r1=reqM.filter(m=>m.pool===1),r2=reqM.filter(m=>m.pool===2);
 if(r1.length>sh[1]||r2.length>sh[2])return;
 const c1=pool.filter(m=>m.pool===1).sort(order),c2=pool.filter(m=>m.pool===2).sort(order);
-const gen=genderActive(l);
+const gen=genderActive(l),tg=needsActive(l);
 const canon1=canonOf(c1),canon2=canonOf(c2);
 for(const a of combosOf(c1,sh[1]-r1.length)){
 if(!canon1(a))continue;
 for(const b of combosOf(c2,sh[2]-r2.length)){
 if(!canon2(b))continue;
 const team=reqM.concat(a,b);
-if(gen&&!genderOK(team.map(x=>x.gender)))continue;
+if(gen&&!genderOK(team.map(x=>x.gender),genderCfgOf(l)))continue;
+if(tg&&!needsOK(team,l))continue;
 if(pairsHard&&pairBad(team))continue;
 yield team;
 }
 }
 }
 function pairBad(team){
-for(let i=0;i<team.length-1;i++)for(let j=i+1;j<team.length;j++){
-const a=team[i].id,b=team[j].id;
-if(P.avoid.get(a)&&P.avoid.get(a).has(b))return true;
-}
-return false;
+return!pairTeamOK(P,team.map(x=>x.id));
 }
 function unitOptions(l,d){
 const opts=[{goal:null}];
@@ -1484,11 +1699,18 @@ if(tick())return false;
 if(di===days.length){
 if(visits!==V||goalDone.size!==goals.length)return false;
 for(const m of minM)if(cnt.get(m.id)<memberMin(m))return false;
+if(M.fairSpread>0)for(const q of[1,2]){
+const a=M.fairActive[q];
+if(a.length<2)continue;
+let hi=-1,lo=Infinity;
+for(const id of a){const n=cnt.get(id);if(n>hi)hi=n;if(n<lo)lo=n;}
+if(hi-lo>M.fairSpread)return false;
+}
 return true;
 }
 if(!boundOK(di-1))return false;
 const d=days[di];
-const cand=M.locs.filter(l=>shapeSize(shapeOf(l))>0||goals.some(g=>g.custom&&g.loc.id===l.id)).filter(l=>!closedOn(l,d));
+const cand=M.locs.filter(l=>shapeSize(shapeOf(l))>0||goals.some(g=>g.custom&&g.loc.id===l.id)).filter(l=>!closedOn(l,d)).sort((a,b)=>PRIO_RANK[a.priority||'normal']-PRIO_RANK[b.priority||'normal']);
 const need=V-visits,fut=suffixCap[di+1]+mergedExtras;
 const minToday=Math.max(M.useAll?1:0,need-fut);
 function pick(idx,chosen,trips,mains,cons,vis){
@@ -1496,6 +1718,7 @@ if(timedOut)return false;
 if(idx===cand.length){
 if(chosen.length<minToday&&vis<minToday)return false;
 if(vis<minToday)return false;
+if(M.dayRules.length&&dayRulesHit(M.dayRules,chosen.filter(c=>c.k>0).map(c=>c.l.id),['sameDay'])>0)return false;
 const units=[];
 for(const c of chosen)for(let k=0;k<c.k;k++)units.push({loc:c.l,day:d});
 if(!units.length)return dayRec(di+1);
@@ -1507,6 +1730,7 @@ const remainingLocs=cand.length-idx-1;
 const maxK=(()=>{
 const room=M.lmax.get(l.id)-usage.get(l.id);
 if(room<=0)return 0;
+{const g=gapOf(l);if(g>1&&mode!=='merged'&&locDays.get(l.id).some(x=>Math.abs(x-d)<g))return 0;}
 if(mode==='banned')return usage.get(l.id)>=1?0:1;
 if(mode==='merged')return usage.get(l.id)>0?0:Math.min(room,need-vis);
 return 1;
@@ -1521,6 +1745,7 @@ if(l.type==='main'?mains+1>M.cap.main:cons+1>M.cap.con)continue;
 if(vis+k>need)continue;
 }
 const nt=k>0?trips+1:trips,nm=k>0&&l.type==='main'?mains+1:mains,nc=k>0&&l.type!=='main'?cons+1:cons;
+if(k>0&&M.dayRules.length&&dayRulesHit(M.dayRules,chosen.filter(c=>c.k>0).map(c=>c.l.id).concat(l.id),['notSameDay'])>0)continue;
 chosen.push({l,k});
 const r=pick(idx+1,chosen,nt,nm,nc,vis+k);
 chosen.pop();
@@ -1629,23 +1854,34 @@ function capacity(o){
 const r=capacityInfo(o);
 return{capacity:r.capacity,exact:r.exact,ub:r.ub,structMax:r.struct,label:r.exact?'exact':'atLeast'};
 }
+function dayCapFixes(){
+const out=[];
+if(globalDayMax()+1<=LIM.dayMax[1])out.push({op:'dayMax',n:globalDayMax()+1});
+if(state.cap.mainPerDay+1<=LIM.perDay[1])out.push({op:'capMain',n:state.cap.mainPerDay+1});
+if(state.cap.conPerDay+1<=LIM.perDay[1])out.push({op:'capCon',n:state.cap.conPerDay+1});
+return out;
+}
 const FAMILIES=[
 {k:'dupPeople',on:()=>state.dup.people!=='any',fixes:()=>[{op:'dupPeople'}]},
 {k:'members',on:()=>state.gmaxOn||state.members.some(m=>m.vmode==='exact'||m.vmode==='range'),fixes:()=>[...(state.gmaxOn?[{op:'gmaxOff'}]:[]),...state.members.filter(m=>m.vmode==='exact'||m.vmode==='range').map(m=>({op:'membersAuto',id:m.id}))]},
 {k:'dup',on:()=>state.locations.some(l=>dupModeOf(l)==='banned'),fixes:()=>[{op:'dupMode',mode:'separate'},{op:'dupMode',mode:'merged'}]},
 {k:'loc',on:()=>state.locations.some(l=>l.maxWeek>0),fixes:()=>state.locations.filter(l=>l.maxWeek>0).map(l=>({op:'locCapClear',id:l.id}))},
 {k:'rest',on:()=>true,fixes:()=>{
-const cands=state.members.filter(m=>m.off.length&&!(m.rest&&m.rest.rest===0)).sort((a,b)=>b.off.length-a.off.length).map(m=>({op:'memberExempt',id:m.id}));
+const cands=state.members.filter(m=>(m.off.length||weekOffDays(m.id).length)&&!(m.rest&&m.rest.rest===0)).sort((a,b)=>(b.off.length+weekOffDays(b.id).length)-(a.off.length+weekOffDays(a.id).length)).map(m=>({op:'memberExempt',id:m.id}));
 return[...cands,{op:'restPreset',k:'12'},{op:'restPreset',k:'01'}];
 }},
-{k:'daycap',on:()=>true,fixes:()=>[{op:'dayMax',n:globalDayMax()+1}]},
-{k:'gender',on:()=>state.locations.some(l=>l.genderRule),fixes:()=>state.locations.filter(l=>l.genderRule).map(l=>({op:'locGenderOff',id:l.id}))},
-{k:'pairs',on:()=>state.pairs.enabled&&state.pairs.mode==='hard',fixes:()=>[{op:'pairSoft'}]},
+{k:'daycap',on:()=>true,fixes:()=>dayCapFixes()},
+{k:'gender',on:()=>state.locations.some(l=>l.genderRule),fixes:()=>[...(state.gender.mode==='legacy4'||state.gender.mode==='minF'||state.gender.mode==='minM'?[{op:'genderMode',mode:'mixed'}]:[]),...state.locations.filter(l=>l.genderRule).map(l=>({op:'locGenderOff',id:l.id}))]},
+{k:'pairs',on:()=>state.pairs.enabled&&state.pairs.rules.some(r=>pairRuleHard(r)||(r.kind==='must'&&!RX.has('pairs'))),fixes:()=>[{op:'pairSoft'}]},
+{k:'fair',on:()=>fairHard()&&(state.fair.maxSpread>0||state.fair.minEach>0),fixes:()=>[{op:'fairSoft'}]},
+{k:'dayRules',on:()=>(state.dayRules||[]).some(r=>r.on)||state.locations.some(l=>l.minGap>1),fixes:()=>[...(state.dayRules||[]).filter(r=>r.on).map(r=>({op:'dayRuleOff',id:r.id})),...state.locations.filter(l=>l.minGap>1).map(l=>({op:'locGapOff',id:l.id}))]},
+{k:'tags',on:()=>state.locations.some(l=>l.needs&&l.needs.length),fixes:()=>state.locations.filter(l=>l.needs&&l.needs.length).map(l=>({op:'locNeedOff',id:l.id,tag:l.needs[0].tag}))},
 {k:'conflicts',on:()=>state.conflicts.some(r=>r.on&&r.hard!==false),fixes:()=>state.conflicts.filter(r=>r.on).map(r=>({op:'conflictSoft',id:r.id}))},
 {k:'elig',on:()=>state.locations.some(l=>(l.only&&l.only.length)||(l.ban&&l.ban.length)),fixes:()=>state.locations.filter(l=>(l.only&&l.only.length)||(l.ban&&l.ban.length)).map(l=>({op:'locEligClear',id:l.id}))},
 {k:'types',on:()=>state.members.some(m=>m.types&&m.types!=='any'),fixes:()=>[]},
-{k:'closed',on:()=>state.locations.some(l=>l.closed.length),fixes:()=>[]},
-{k:'offdays',on:()=>state.members.some(m=>m.off.length),fixes:()=>state.members.filter(m=>m.off.length).map(m=>({op:'memberOffClear',id:m.id,day:m.off[0]}))},
+{k:'closed',on:()=>state.locations.some(l=>l.closed.length||weekClosedDays(l.id).length),fixes:()=>state.locations.filter(l=>weekClosedDays(l.id).length).map(l=>({op:'weekOpenDay',id:l.id,day:weekClosedDays(l.id)[0]}))},
+{k:'offdays',on:()=>state.members.some(m=>m.off.length||weekOffDays(m.id).length),fixes:()=>[...state.members.filter(m=>m.off.length).map(m=>({op:'memberOffClear',id:m.id,day:m.off[0]})),...state.members.filter(m=>weekOffDays(m.id).length).map(m=>({op:'weekOffClear',id:m.id,day:weekOffDays(m.id)[0]}))]},
+{k:'minWeek',on:()=>state.locations.some(l=>l.minWeek>0),fixes:()=>state.locations.filter(l=>l.minWeek>0).map(l=>({op:'locMinWeekOff',id:l.id}))},
 {k:'goals',on:()=>state.goals.some(g=>g.on),fixes:()=>state.goals.filter(g=>g.on).map(g=>({op:'goalOff',id:g.id}))}
 ];
 const FAM_TEXT={
@@ -1656,7 +1892,11 @@ loc:'الحدود الأسبوعية للمواقع',
 rest:'نمط الراحة',
 daycap:'الحد اليومي للزيارات',
 gender:'قاعدة الخلط النوعي',
-pairs:'قواعد «ليس مع» الصارمة',
+pairs:'قواعد الاقتران الصارمة («ليس مع» و«دائمًا مع»)',
+tags:'متطلبات المهارات في المواقع',
+fair:'قواعد العدالة الصارمة بين الأعضاء',
+minWeek:'الحد الأدنى الأسبوعي لزيارات المواقع',
+dayRules:'قواعد الأيام بين المواقع والفواصل بين الزيارات',
 conflicts:'قواعد التعارض بين المواقع',
 elig:'تقييد المؤهلين في المواقع',
 types:'أنواع المواقع المسموحة للأعضاء',
@@ -1669,25 +1909,28 @@ const saved=JSON.parse(JSON.stringify(saveObject()));
 const E2=createFromSaved(saved,{seed:opts.seed});
 return E2;
 }
-function probeFix(fix,V,ms){
+function probeFix(fix,V,ms,deadline){
+if(deadline!=null&&performance.now()>deadline)return false;
 const E2=cloneEngine();
 const d=E2.FIX[fix.op];
 if(!d)return false;
 d.run(fix);
 E2.state.visitsWanted=V;E2.state.visits=V;
-return E2.capacityInfo({timeBudgetMs:ms==null?200:ms,noCache:true}).capacity>=V;
+const budget=ms==null?200:ms;
+return E2.probeV(V,{deadline:performance.now()+budget,quickMs:Math.min(80,budget*0.4)}).status==='feasible';
 }
-function verifyFixes(cands,V,ms,famOk){
+function verifyFixes(cands,V,ms,famOk,deadline){
 const good=[];
 let probes=0;
 for(const fx of cands){
 if(good.length>=3||probes>=10)break;
+if(deadline!=null&&performance.now()>deadline)break;
 probes++;
-if(probeFix(fx,V,ms))good.push(fx);
+if(probeFix(fx,V,ms,deadline))good.push(fx);
 }
 if(!good.length&&famOk&&cands.length>1&&probes<12){
 const multi={op:'multi',fixes:cands};
-if(probeFix(multi,V,ms))good.push(multi);
+if(probeFix(multi,V,ms,deadline))good.push(multi);
 }
 return good;
 }
@@ -1695,19 +1938,23 @@ function explain(o){
 o=o||{};
 const V=o.visits!=null?o.visits:state.visitsWanted;
 const ms=o.timeBudgetMs==null?900:o.timeBudgetMs;
+const deadline=o.deadline!=null?o.deadline:performance.now()+(o.deadlineMs!=null?o.deadlineMs:6000);
+const late=()=>performance.now()>deadline;
 const base=capacityInfo({timeBudgetMs:ms});
-const out={requested:V,capacity:base.capacity,exact:base.exact,ub:base.ub,findings:[]};
+const out={requested:V,capacity:base.capacity,exact:base.exact,ub:base.ub,findings:[],partial:false};
 if(base.capacity>=V)return out;
 const M=compileModel();
 const fb=flowBound(M,V);
 const fams=FAMILIES.filter(f=>f.on());
 const gained=new Map();
 for(const f of fams){
+if(late()){out.partial=true;break;}
 const c=withRelax([f.k],()=>capacityInfo({timeBudgetMs:Math.max(120,ms/4),noCache:true}).capacity);
 gained.set(f.k,c);
 }
 const names={1:'السريريون',2:'الإداريون'};
 const reasonFams=q=>fams.filter(f=>{
+if(late()){out.partial=true;return false;}
 const hv=withRelax([f.k],()=>flowBound(compileModel(),V).pools[q].have);
 return hv>=fb.need[q];
 }).map(f=>f.k);
@@ -1716,17 +1963,19 @@ if(!(fb.need[q]>fb.pools[q].have))continue;
 const rs=reasonFams(q);
 const fixes=[];
 const pms=Math.max(120,ms/6);
-for(const k of rs){const f=fams.find(x=>x.k===k);for(const fx of verifyFixes(f.fixes(),V,pms,true))fixes.push(fx);}
+for(const k of rs){const f=fams.find(x=>x.k===k);for(const fx of verifyFixes(f.fixes(),V,pms,true,deadline))fixes.push(fx);}
 const seatFix=[];
 for(const l of state.locations){
 const sh=shapeOf(l);
 if(sh[q]>=2){
 const fx={op:'locSeatsSet',id:l.id,pool:q,n:sh[q]-1};
-if(probeFix(fx,V,Math.max(120,ms/6)))seatFix.push(fx);
+if(late())out.partial=true;
+else if(probeFix(fx,V,Math.max(120,ms/6),deadline))seatFix.push(fx);
 }
 }
 fixes.push(...seatFix.slice(0,2));
-if(probeFix({op:'memberAdd',pool:q},V,pms))fixes.push({op:'memberAdd',pool:q});
+if(late())out.partial=true;
+else if(probeFix({op:'memberAdd',pool:q},V,pms,deadline))fixes.push({op:'memberAdd',pool:q});
 const because=rs.length?' لأن '+FAM_TEXT[rs[0]]:'';
 out.findings.push({
 family:'seats',pool:q,
@@ -1735,12 +1984,13 @@ text:names[q]+': '+ar(fb.need[q])+' مقاعد مطلوبة و'+ar(fb.pools[q].h
 reasons:rs,fixes,cap:null
 });
 }
-if(V>fb.structMax)out.findings.push({family:'struct',numbers:{need:V,have:fb.structMax},text:'أقصى عدد زيارات ممكنة بسياسة التكرار والأيام المفتوحة هو '+ar(fb.structMax),fixes:verifyFixes(fams.some(f=>f.k==='dup')?[{op:'dupMode',mode:'separate'}]:[],V,Math.max(120,ms/6),false),cap:null});
-if(V>fb.dayMaxVisits)out.findings.push({family:'daycap',numbers:{need:V,have:fb.dayMaxVisits},text:'الحد اليومي يسمح بـ '+ar(fb.dayMaxVisits)+' زيارات فقط',fixes:verifyFixes([{op:'dayMax',n:globalDayMax()+1}],V,Math.max(120,ms/6),false),cap:null});
+if(V>fb.structMax)out.findings.push({family:'struct',numbers:{need:V,have:fb.structMax},text:'أقصى عدد زيارات ممكنة بسياسة التكرار والأيام المفتوحة هو '+ar(fb.structMax),fixes:verifyFixes(fams.some(f=>f.k==='dup')?[{op:'dupMode',mode:'separate'}]:[],V,Math.max(120,ms/6),false,deadline),cap:null});
+if(V>fb.dayMaxVisits)out.findings.push({family:'daycap',numbers:{need:V,have:fb.dayMaxVisits},text:'الحد اليومي يسمح بـ '+ar(fb.dayMaxVisits)+' زيارات فقط',fixes:verifyFixes(dayCapFixes(),V,Math.max(120,ms/6),false,deadline),cap:null});
 for(const f of fams){
 const c=gained.get(f.k);
 if(c>=V&&!out.findings.some(x=>x.reasons&&x.reasons.includes(f.k)&&x.family==='seats')){
-const fixes=verifyFixes(f.fixes(),V,Math.max(120,ms/6),true);
+const fixes=verifyFixes(f.fixes(),V,Math.max(120,ms/6),true,deadline);
+if(late())out.partial=true;
 out.findings.push({family:f.k,numbers:{need:V,have:base.capacity},text:FAM_TEXT[f.k]+' تحدّ من الزيارات',fixes,cap:c});
 }
 }
@@ -1783,8 +2033,9 @@ return best;
 function emptyReason(){
 if(!state.members.length)return'لا يوجد أعضاء. أضف أعضاء أولًا.';
 if(!state.locations.length)return'لا توجد مواقع. أضف مواقع أولًا.';
-if(!state.days.some(d=>d.on))return'لا توجد أيام عمل مفعّلة.';
-if(state.locations.every(l=>shapeSize(shapeOf(l))<1))return'كل المواقع بلا مقاعد.';
+if(!workingDays().length)return'لا توجد أيام عمل مفعّلة.';
+const cg=compileGoals().list.filter(g=>g.custom);
+if(state.locations.every(l=>shapeSize(shapeOf(l))<1&&!cg.some(g=>g.loc.id===l.id)))return'كل المواقع بلا مقاعد.';
 if(state.locations.every(l=>workingDays().every(d=>closedOn(l,d))))return'كل المواقع مغلقة في كل أيام العمل.';
 return null;
 }
@@ -1802,12 +2053,18 @@ if(fb&&fb.need)for(const q of[1,2])if(fb.need[q]>fb.pools[q].have)out.push((q===
 if(!out.length)out.push('لا يتسع له جدول الأعضاء مع باقي القواعد');
 return out;
 }
+function whyShort(fb){
+const out=[];
+if(fb&&fb.need)for(const q of[1,2])if(fb.need[q]>fb.pools[q].have)out.push((q===1?'السريريون ':'الإداريون ')+ar(fb.pools[q].have)+' ومقاعدهم المطلوبة '+ar(fb.need[q]));
+if(!out.length)out.push('لا يتسع له جدول الأعضاء مع باقي القواعد');
+return out;
+}
 function hashPlan(p){return JSON.stringify(p.rows.map(r=>[r.day,r.loc.id,r.team.slice().sort((a,b)=>a-b)]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]));}
 function solveNow(o){
 o=o||{};
 const t0=performance.now();
-const total=o.timeBudgetMs==null?1500:o.timeBudgetMs,end=t0+total;
-const flex=o.mode==='flex';
+const total=o.timeBudgetMs==null?SOLVER_MS[state.solver.budget]||1500:o.timeBudgetMs,end=t0+total;
+const flex=o.mode==='flex'||(o.mode==null&&state.solver.defaultFlex);
 const res={status:'search_exhausted',requested:state.visitsWanted,achieved:0,plans:[],unplaced:[],message:null,attempts:0,capacity:null,ub:null};
 const er=emptyReason();
 if(er){res.status='infeasible_proven';res.message=er;return res;}
@@ -1837,14 +2094,15 @@ else if(r.status==='infeasible')proven=true;
 }
 if(usable.length){
 if(!flex){
-const seeds=usable.slice().sort((x,y)=>{x.score=scorePlan(x);y.score=scorePlan(y);return comparePlans(x,y);}).slice(0,3);
+usable.forEach(p=>{p.score=scorePlan(p);});
+const seeds=usable.slice().sort(comparePlans).slice(0,3);
 const have=new Set(usable.map(hashPlan));
 for(const sp of seeds){
 const im=improvePlan(M,sp,{iters:o.improveIters==null?160:o.improveIters,ref:o.ref||null});
 if(im!==sp&&!have.has(hashPlan(im))){usable.push(im);have.add(hashPlan(im));}
 }
 }
-const pk=pickPlans(usable);
+const pk=pickPlans(usable,state.solver.plans);
 res.plans=pk.picked;
 res.achieved=V;
 res.status=pk.picked[0].eval.clean?'optimal':'feasible';
@@ -1856,18 +2114,20 @@ const ci=capacityInfo({timeBudgetMs:Math.max(300,end-performance.now()),noCache:
 res.capacity={value:ci.capacity,exact:ci.exact};
 if(ci.capacity>0){
 state.visits=ci.capacity;
-const S2=createSearch({mode:'normal',timeBudgetMs:400,widen:true});
+const S2=createSearch({mode:'normal',timeBudgetMs:400,widen:true,ref:o.ref||null});
 S2.run();
 let pl=[...S2.pool.values()].filter(p=>p.eval.hardCount===0);
 if(!pl.length&&ci.plan)pl=[ci.plan];
 if(pl.length){
-const pk=pickPlans(pl);
+const pk=pickPlans(pl,state.solver.plans);
 res.plans=pk.picked;
 res.achieved=ci.capacity;
 const used=new Set(pk.picked[0].rows.map(r=>r.loc.id));
 state.visits=V;
 const M2=compileModel();
-res.unplaced=state.locations.filter(l=>!used.has(l.id)).slice(0,Math.max(0,V-ci.capacity)).map(l=>({loc:l,reasons:whyUnplaced(M2,l,fb)}));
+const missing=Math.max(0,V-ci.capacity);
+res.unplaced=state.locations.filter(l=>!used.has(l.id)).sort((a,b)=>PRIO_RANK[b.priority||'normal']-PRIO_RANK[a.priority||'normal']).slice(0,missing).map(l=>({loc:l,reasons:whyUnplaced(M2,l,fb)}));
+while(res.unplaced.length<missing)res.unplaced.push({loc:{id:null,name:'زيارة إضافية',generic:true},reasons:whyShort(fb)});
 }
 }
 return res;
@@ -1877,20 +2137,45 @@ resetCaches();
 }
 }
 
+function applyDigits(){LATIN=state.digits==='latin';}
+const SAVE_KEYS=['solver','digits','fair','dayRules','gender','weekOverrides','days','members','locations','visitsWanted','visits','ratioIdx','useAllDays','bulk','pairs','goals','cap','dup','conflicts','priority','carryWeek','gmaxOn','gmax','history','historyWd','rest','restCalendar','restCustom','autoRegen','minChanges','weekStart','view'];
 function applySaved(d,migrated){
+if(!d||typeof d!=='object')throw new Error('bad save');
+const snap={};
+for(const k of SAVE_KEYS)snap[k]=state[k]===undefined?undefined:JSON.parse(JSON.stringify(state[k]));
+try{applyInner(d,migrated);}
+catch(e){
+for(const k of SAVE_KEYS){if(snap[k]===undefined)delete state[k];else state[k]=snap[k];}
+resetCaches();
+throw e;
+}
+resetCaches();
+}
+const numId=v=>{const n=typeof v==='number'?v:(typeof v==='string'&&v.trim()!==''?Number(v):NaN);return Number.isFinite(n)?n:null;};
+function dedupeIds(arr){
+const seen=new Set();
+for(const x of arr){
+if(Number.isFinite(x.id)&&!seen.has(x.id)){seen.add(x.id);continue;}
+x.id=nextId();seen.add(x.id);
+}
+}
+function applyInner(d,migrated){
 if(Array.isArray(d.days)&&d.days.length===7)state.days=d.days.map(x=>({on:!!x.on,fav:x.fav||'',dist:x.dist||'',max:x.max|0}));
-if(Array.isArray(d.members))state.members=d.members;
+if(Array.isArray(d.members))state.members=d.members.filter(m=>m&&typeof m==='object').map(m=>({...m,id:numId(m.id),name:typeof m.name==='string'?m.name:(m.name==null?'':String(m.name)),pool:Number(m.pool)===2?2:1,gender:m.gender==='F'?'F':'M'}));
 if(Array.isArray(d.locations))state.locations=d.locations;
 if(typeof d.visits==='number'){state.visitsWanted=d.visits;state.visits=d.visits;}
 if(typeof d.ratioIdx==='number')state.ratioIdx=d.ratioIdx;
 if(typeof d.useAllDays==='boolean')state.useAllDays=d.useAllDays;
 if(d.bulk)state.bulk=d.bulk;
-if(d.pairs)state.pairs=d.pairs;
+if(d.pairs&&typeof d.pairs==='object'){
+const rs=Array.isArray(d.pairs.rules)?d.pairs.rules:[];
+state.pairs={...d.pairs,enabled:!!d.pairs.enabled,mode:d.pairs.mode==='hard'?'hard':'soft',rules:rs.filter(r=>r&&numId(r.a)!=null&&numId(r.b)!=null&&(r.kind==='with'||r.kind==='avoid'||r.kind==='must')).map(r=>{const o={...r,id:numId(r.id),a:numId(r.a),b:numId(r.b),kind:r.kind};if(typeof r.hard!=='boolean')delete o.hard;return o;})};
+}
 if(Array.isArray(d.goals))state.goals=d.goals.filter(g=>g&&typeof g.id==='number').map(g=>{
 const days=Array.isArray(g.days)?g.days:(typeof g.day==='number'&&g.day>=0?[g.day]:[]);
-return{id:g.id,on:g.on!==false,mode:g.mode==='custom'?'custom':'pool',size:clamp(Math.round(+g.size)||2,1,8),allowed:Array.isArray(g.allowed)?g.allowed:[],loc:g.loc,days:[...new Set(days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b),people:Array.isArray(g.people)?g.people:[],exclude:Array.isArray(g.exclude)?g.exclude:[]};
+return{id:g.id,on:g.on!==false,mode:g.mode==='custom'?'custom':'pool',size:clamp(Math.round(+g.size)||2,LIM.customSize[0],LIM.customSize[1]),allowed:Array.isArray(g.allowed)?g.allowed:[],loc:g.loc,days:[...new Set(days.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b),people:Array.isArray(g.people)?g.people:[],exclude:Array.isArray(g.exclude)?g.exclude:[]};
 });
-if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,1,3),conPerDay:clamp(+d.cap.conPerDay||1,1,3),dayMax:clamp(Math.round(+d.cap.dayMax)||0,0,6),even:d.cap.even!==false};
+if(d.cap)state.cap={mainPerDay:clamp(+d.cap.mainPerDay||2,LIM.perDay[0],LIM.perDay[1]),conPerDay:clamp(+d.cap.conPerDay||1,LIM.perDay[0],LIM.perDay[1]),dayMax:clamp(Math.round(+d.cap.dayMax)||0,LIM.dayMax[0],LIM.dayMax[1]),even:d.cap.even!==false};
 if(d.dup&&typeof d.dup==='object')state.dup={mode:DUP_MODES.includes(d.dup.mode)?d.dup.mode:'separate',people:['different','all'].includes(d.dup.people)?d.dup.people:'any',spread:d.dup.spread==='free'?'free':'avoid'};
 else if(['free','avoid','never'].includes(d.locRepeat))state.dup={mode:d.locRepeat==='never'?'banned':'separate',people:'any',spread:d.locRepeat==='free'?'free':'avoid'};
 const legacyGender=!d.dup;
@@ -1898,8 +2183,12 @@ state.conflicts=Array.isArray(d.conflicts)?d.conflicts.filter(r=>r&&typeof r.id=
 if(['balance','prefs','stable'].includes(d.priority))state.priority=d.priority;
 if(typeof d.carryWeek==='boolean')state.carryWeek=d.carryWeek;
 if(typeof d.gmaxOn==='boolean')state.gmaxOn=d.gmaxOn;
-state.gmax=clamp(Math.round(+d.gmax)||2,1,7);
-if(d.history&&typeof d.history==='object'){state.history={};for(const k of Object.keys(d.history))if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&d.history[k]&&typeof d.history[k]==='object')state.history[k]=d.history[k];}
+state.gmax=clamp(Math.round(+d.gmax)||2,LIM.gmax[0],LIM.gmax[1]);
+if(d.history&&typeof d.history==='object'){
+state.history={};state.historyWd={};
+for(const k of Object.keys(d.history))if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&d.history[k]&&typeof d.history[k]==='object')state.history[k]=d.history[k];
+if(d.historyWd&&typeof d.historyWd==='object')for(const k of Object.keys(d.historyWd))if(state.history[k]&&Array.isArray(d.historyWd[k]))state.historyWd[k]=[...new Set(d.historyWd[k].filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b);
+}
 const nr=r=>r&&typeof r==='object'?{rest:clamp(Math.round(+r.rest)||0,0,3),maxRun:clamp(Math.round(+r.maxRun)||1,1,3)}:null;
 if(d.rest)state.rest=nr(d.rest);
 if(typeof d.restCalendar==='boolean')state.restCalendar=d.restCalendar;
@@ -1907,18 +2196,58 @@ if(typeof d.autoRegen==='boolean')state.autoRegen=d.autoRegen;
 if(typeof d.minChanges==='boolean')state.minChanges=d.minChanges;
 if(typeof d.weekStart==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.weekStart))state.weekStart=d.weekStart;
 if(d.view==='day'||d.view==='member')state.view=d.view;
+{
+const g=d.gender&&typeof d.gender==='object'?d.gender:{},r=g.ratio&&typeof g.ratio==='object'?g.ratio:{};
+let a=clamp(Math.round(+r.a)||3,LIM.ratio[0],LIM.ratio[1]),b=clamp(Math.round(+r.b)||1,LIM.ratio[0],LIM.ratio[1]);
+if(b>a){const t=a;a=b;b=t;}
+state.gender={mode:GENDER_MODES.includes(g.mode)?g.mode:'legacy4',ratio:{a,b},min:clamp(Math.round(+g.min)||1,LIM.genderMin[0],LIM.genderMin[1])};
+}
+{
+const f=d.fair&&typeof d.fair==='object'?d.fair:{};
+state.fair={maxSpread:clamp(Math.round(+f.maxSpread)||0,LIM.fairSpread[0],LIM.fairSpread[1]),minEach:clamp(Math.round(+f.minEach)||0,LIM.fairMin[0],LIM.fairMin[1]),mode:f.mode==='hard'?'hard':'soft'};
+}
+{
+const v=d.solver&&typeof d.solver==='object'?d.solver:{};
+state.solver={budget:['fast','normal','thorough'].includes(v.budget)?v.budget:'normal',plans:clamp(Math.round(+v.plans)||6,LIM.plans[0],LIM.plans[1]),defaultFlex:v.defaultFlex===true,lockSeed:v.lockSeed===true,seed:Number.isFinite(+v.seed)&&+v.seed>=0?Math.floor(+v.seed)%4294967296:1};
+state.digits=d.digits==='latin'?'latin':'arabic';
+LATIN=state.digits==='latin';
+}
+state.weekOverrides={};
+if(d.weekOverrides&&typeof d.weekOverrides==='object'){
+const dl=a=>Array.isArray(a)?[...new Set(a.map(Number).filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((x,y)=>x-y):[];
+const mp=o=>{const r={};if(o&&typeof o==='object')for(const k of Object.keys(o)){const v=dl(o[k]);if(v.length&&Number.isFinite(Number(k)))r[k]=v;}return r;};
+for(const k of Object.keys(d.weekOverrides)){
+const o=d.weekOverrides[k];
+if(!/^\d{4}-\d{2}-\d{2}$/.test(k)||!o||typeof o!=='object')continue;
+state.weekOverrides[k]={holidays:dl(o.holidays),memberOff:mp(o.memberOff),locClosed:mp(o.locClosed),note:typeof o.note==='string'?o.note.slice(0,80):''};
+}
+}
+state.members.forEach(m=>{m.tags=Array.isArray(m.tags)?[...new Set(m.tags.filter(t=>typeof t==='string'&&t.trim()).map(t=>t.trim().slice(0,20)))].slice(0,12):[];});
 state.members.forEach(m=>{if(!Array.isArray(m.off))m.off=[];if(m.pref==null)m.pref='';m.types=['main','contracted'].includes(m.types)?m.types:'any';m.prefDays=Array.isArray(m.prefDays)?[...new Set(m.prefDays.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[];m.vmode=['exact','range'].includes(m.vmode)?m.vmode:'auto';m.vmin=clamp(Math.round(+m.vmin)||0,0,7);m.vmax=clamp(Math.round(+m.vmax)||0,0,7);if(m.vmode==='exact')m.vmax=m.vmin;else if(m.vmax<m.vmin)m.vmax=m.vmin;m.rest=nr(m.rest);m.restCustom=!!m.rest&&(!!m.restCustom||!presetKey(m.rest));});
 state.restCustom=!presetKey(state.rest);
 state.locations=state.locations.filter(l=>l&&typeof l.id==='number').map(l=>{
 const type=l.type==='contracted'?'contracted':'main';
-const seats=l.seats&&typeof l.seats==='object'?{1:clamp(Math.round(+l.seats[1]),0,5),2:clamp(Math.round(+l.seats[2]),0,5)}:null;
-const o={...l,type,maxWeek:clamp(l.maxWeek|0,0,5),closed:Array.isArray(l.closed)?[...new Set(l.closed.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[],dup:DUP_MODES.includes(l.dup)?l.dup:null,only:Array.isArray(l.only)?l.only:[],ban:Array.isArray(l.ban)?l.ban:[]};
+const seats=l.seats&&typeof l.seats==='object'?{1:clamp(Math.round(+l.seats[1]),LIM.seats[0],LIM.seats[1]),2:clamp(Math.round(+l.seats[2]),LIM.seats[0],LIM.seats[1])}:null;
+const o={...l,type,maxWeek:clamp(l.maxWeek|0,LIM.maxWeek[0],LIM.maxWeek[1]),closed:Array.isArray(l.closed)?[...new Set(l.closed.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[],dup:DUP_MODES.includes(l.dup)?l.dup:null,only:Array.isArray(l.only)?l.only:[],ban:Array.isArray(l.ban)?l.ban:[]};
 if(legacyGender&&type==='contracted')o.genderRule=false;
+o.genderMode=GENDER_MODES.includes(l.genderMode)?l.genderMode:null;
+o.priority=['high','normal','low'].includes(l.priority)?l.priority:'normal';
+o.minWeek=clamp(Math.round(+l.minWeek)||0,LIM.minWeek[0],LIM.minWeek[1]);
+o.allowedDays=Array.isArray(l.allowedDays)?[...new Set(l.allowedDays.filter(x=>Number.isInteger(x)&&x>=0&&x<=6))].sort((a,b)=>a-b):[];
+o.minGap=clamp(Math.round(+l.minGap)||0,LIM.minGap[0],LIM.minGap[1]);
+o.needs=Array.isArray(l.needs)?l.needs.filter(n=>n&&typeof n.tag==='string'&&n.tag.trim()).map(n=>({tag:n.tag.trim().slice(0,20),min:clamp(Math.round(+n.min)||1,LIM.needMin[0],LIM.needMin[1])})).slice(0,6):[];
 o.seats=seats&&Number.isFinite(seats[1])&&Number.isFinite(seats[2])&&seatsDiffer(o,seats)?seats:null;
 return o;
 });
-state.days.forEach(x=>{x.max=clamp(Math.round(+x.max)||0,0,6);});
+state.days.forEach(x=>{x.max=clamp(Math.round(+x.max)||0,LIM.dayCfgMax[0],LIM.dayCfgMax[1]);});
 if(!Array.isArray(state.pairs.rules))state.pairs.rules=[];
+dedupeIds(state.members);
+dedupeIds(state.locations);
+dedupeIds(state.goals);
+dedupeIds(state.conflicts);
+state.dayRules=(Array.isArray(d.dayRules)?d.dayRules:[]).filter(r=>r&&typeof r==='object'&&(r.kind==='notSameDay'||r.kind==='sameDay')&&Array.isArray(r.a)&&Array.isArray(r.b)).map(r=>({id:numId(r.id),kind:r.kind,on:r.on!==false,a:[...new Set(r.a.map(Number).filter(Number.isFinite))],b:[...new Set(r.b.map(Number).filter(Number.isFinite))]}));
+dedupeIds(state.dayRules);
+dedupeIds(state.pairs.rules);
 const alive=new Set(state.members.map(m=>m.id));
 state.pairs.rules=state.pairs.rules.filter(r=>r&&alive.has(r.a)&&alive.has(r.b));
 state.ratioIdx=clamp(state.ratioIdx|0,0,RATIOS.length-1);
@@ -1992,7 +2321,7 @@ picked.sort(comparePlans);
 return{picked,sorted:all};
 }
 
-return{state,improvePlan,solveNow,whyUnplaced,emptyReason,Dinic,flowBound,solveExact,probeV,capacityInfo,capacity,explain,checkPlan,planFromRows,withSeed,FAMILIES,cloneEngine,locVisitCap,slotTeamsMax,solFromRows,memberCap,byId,locById,poolName,workingDays,kCombos,pickWeighted,TYPE_SHAPE,DUP_MODES,typeShape,shapeOf,shapeSize,seatsDiffer,dupModeOf,teamCap,globalDayMax,dayMaxOf,eligibleFor,genderOK,genderActive,resetCaches,withRelax,goalDays,locMax,typeCaps,splitRange,splitCandidates,effSplit,compilePairs,compileConflicts,conflictAppliesTo,conflictHit,conflictName,conflictWho,goalLabel,goalIsCustom,customSize,poolWord,seatsFit,compileGoals,goalCounts,expectedSeats,PRESETS,presetKey,ruleText,calOn,ruleOf,memberMin,globalMax,memberMax,maxVisitDays,compileMembers,compileModel,dayPos,restOK,winCap,windowSpan,poolWinCap,seqDays,winCtx,windowLoadOK,goalShape,makeBoard,goalDayOK,attachGoals,replaySlots,pickSplit,placeGoals,strictChance,buildSlots,solveTeams,hashSol,triples,diffPlans,makePlan,evaluatePlan,WEIGHTS,scorePlan,rankTuple,comparePlans,FIX,DUPL,locName,goalNameById,fixLabel,memberRestImpact,visitsAcc,memberRestNote,advise,diagnosePairs,saveObject,prevWeekKey,carryPrev,nm,applySaved,createSearch,pickPlans,FLEX_SOFT,reseed,shuffled,rand};
+return{state,improvePlan,solveNow,whyUnplaced,emptyReason,Dinic,flowBound,solveExact,probeV,capacityInfo,capacity,explain,checkPlan,planFromRows,withSeed,FAMILIES,cloneEngine,locVisitCap,slotTeamsMax,solFromRows,memberCap,byId,locById,poolName,workingDays,kCombos,pickWeighted,TYPE_SHAPE,DUP_MODES,typeShape,shapeOf,shapeSize,seatsDiffer,dupModeOf,teamCap,globalDayMax,dayMaxOf,eligibleFor,genderOK,genderActive,resetCaches,withRelax,goalDays,locMax,typeCaps,splitRange,splitCandidates,effSplit,compilePairs,compileConflicts,conflictAppliesTo,conflictHit,conflictName,conflictWho,goalLabel,goalIsCustom,customSize,poolWord,seatsFit,compileGoals,goalCounts,expectedSeats,PRESETS,presetKey,ruleText,calOn,ruleOf,memberMin,globalMax,memberMax,maxVisitDays,compileMembers,compileModel,dayPos,restOK,winCap,windowSpan,poolWinCap,seqDays,winCtx,windowLoadOK,goalShape,makeBoard,goalDayOK,attachGoals,replaySlots,pickSplit,placeGoals,strictChance,buildSlots,solveTeams,hashSol,triples,diffPlans,makePlan,evaluatePlan,WEIGHTS,scorePlan,rankTuple,comparePlans,FIX,LIM,PRIO_RANK,applyDigits,fairActive,fairExcess,compileDayRules,dayRulesHit,gapOf,needsOK,needsActive,pairTeamOK,pairRuleHard,GENDER_MODES,genderCfgOf,weekOv,holidayOn,dayOn,weekOffDays,weekClosedDays,closedOn,offOn,nextId,aliveIds,planKey,DUPL,locName,goalNameById,fixLabel,memberRestImpact,visitsAcc,memberRestNote,advise,diagnosePairs,saveObject,prevWeekKey,carryPrev,nm,applySaved,createSearch,pickPlans,FLEX_SOFT,reseed,shuffled,rand};
 }
 
 function solve(input,o){
@@ -2000,7 +2329,8 @@ o=o||{};
 const saved=JSON.parse(JSON.stringify(input));
 if(o.visitsWanted!=null)saved.visits=o.visitsWanted;
 const E=createFromSaved(saved,{seed:o.seed});
-E.reseed(o.seed==null?1:o.seed);
+const sd=o.seed!=null?o.seed:(E.state.solver.lockSeed?E.state.solver.seed:1);
+E.reseed(sd);
 return E.solveNow(o);
 }
 function createFromSaved(saved,opts){
@@ -2014,5 +2344,5 @@ const E=createFromSaved(saved);
 return E.saveObject();
 }
 
-return{solve,DAYS,DAY_SHORT,THU,DISTL,RATIOS,ar,clamp,mulberry32,isoD,baseState,createEngine,createFromSaved,migrate};
+return{solve,SOLVER_MS,DAYS,DAY_SHORT,THU,DISTL,RATIOS,ar,clamp,mulberry32,isoD,baseState,createEngine,createFromSaved,migrate};
 });

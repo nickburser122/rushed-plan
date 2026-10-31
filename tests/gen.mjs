@@ -55,6 +55,48 @@ saved.conflicts=[{id:++id,on:true,a:[locations[0].id],b:[locations[1].id],scope:
 if(members.length>=4&&chance(0.2)){
 saved.pairs={enabled:true,mode:'hard',rules:[{id:++id,kind:'avoid',a:members[0].id,b:members[1].id}]};
 }
+if(opt.custom!==false&&chance(opt.customP==null?0.2:opt.customP)){
+const l=pick(locations),size=ri(1,3);
+const allowed=chance(0.5)?[]:members.filter(()=>chance(0.7)).map(m=>m.id);
+saved.goals=[{id:++id,on:true,mode:'custom',size,allowed,loc:l.id,days:[],people:[],exclude:[]}];
+}
+if(opt.weekOv!==false&&chance(opt.weekOvP==null?0.25:opt.weekOvP)){
+const o={holidays:[],memberOff:{},locClosed:{},note:''};
+if(chance(0.25)&&wd.length>2)o.holidays=[pick(wd)];
+if(chance(0.6))o.memberOff[pick(members).id]=[pick(wd)];
+if(chance(0.4))o.locClosed[pick(locations).id]=[pick(wd)];
+saved.weekOverrides={[saved.weekStart]:o};
+}
+if(opt.genderCfg!==false&&chance(opt.genderCfgP==null?0.4:opt.genderCfgP)){
+saved.gender={mode:pick(['mixed','legacy4','legacy4','minF','minM','off']),ratio:chance(0.5)?{a:3,b:1}:{a:2,b:2},min:ri(1,2)};
+}
+if(opt.prioP!==0){
+locations.forEach(l=>{if(chance(0.3))l.priority=pick(['high','low']);});
+if(chance(opt.minWeekP==null?0.2:opt.minWeekP)){const l=pick(locations);l.minWeek=ri(1,2);}
+}
+if(opt.fairP!==0&&chance(opt.fairP==null?0.3:opt.fairP)){
+saved.fair={maxSpread:chance(0.7)?ri(1,2):0,minEach:chance(0.3)?1:0,mode:chance(0.7)?'hard':'soft'};
+}
+if(opt.dayRulesP!==0&&chance(opt.dayRulesP==null?0.3:opt.dayRulesP)){
+if(chance(0.5)&&wd.length>2){const l=pick(locations);l.allowedDays=wd.filter(()=>chance(0.7));if(!l.allowedDays.length)l.allowedDays=[wd[0]];}
+if(chance(0.5)){const l=pick(locations);l.minGap=2;}
+if(locations.length>=2&&chance(0.5)){
+const a=locations[0],b=locations[locations.length-1];
+if(a.id!==b.id)saved.dayRules=[{id:++id,kind:chance(0.6)?'notSameDay':'sameDay',on:true,a:[a.id],b:[b.id]}];
+}
+}
+if(opt.tags!==false&&chance(opt.tagsP==null?0.3:opt.tagsP)){
+const tag='ق';
+members.forEach(m=>{if(chance(0.35))m.tags=[tag];});
+const ls=locations.filter(()=>chance(0.4));
+ls.forEach(l=>{l.needs=[{tag,min:chance(0.8)?1:2}];});
+}
+if(opt.mustP!==0&&chance(opt.mustP==null?0.2:opt.mustP)&&members.length>=2){
+const a=pick(members);let b=pick(members);
+if(b.id!==a.id){
+saved.pairs={...saved.pairs,enabled:true,mode:saved.pairs.mode||'soft',rules:[...(saved.pairs.rules||[]),{id:++id,kind:'must',a:a.id,b:b.id}]};
+}
+}
 return saved;
 }
 

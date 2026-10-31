@@ -96,10 +96,12 @@ const base=genInstance(seed);
 const c0=capOf(base);
 if(!c0.exact)continue;
 for(const [name,fn] of relax){
+if(name==='addMember'&&base.fair&&base.fair.mode==='hard'&&(base.fair.maxSpread||base.fair.minEach))continue;
 const c=capOf(free(base,s=>fn(s,seed)));
 if(c.exact&&c.capacity<c0.capacity)bad.push({seed,name,from:c0.capacity,to:c.capacity});
 }
 for(const [name,fn] of tighten){
+if(base.goals&&base.goals.length&&(name==='ban'||name==='dayOff'))continue;
 const c=capOf(free(base,s=>fn(s,seed)));
 if(c.exact&&c.capacity>c0.capacity)bad.push({seed,name,from:c0.capacity,to:c.capacity});
 }
@@ -164,7 +166,8 @@ for(const row of p.rows){
 const l=saved.locations.find(x=>x.id===row.loc.id);
 const sh=E.shapeOf(l);
 const c1=row.team.filter(id=>saved.members.find(m=>m.id===id).pool===1).length;
-if(c1!==sh[1]||row.team.length-c1!==sh[2])bad.push({seed,why:'shape'});
+if(row.custom){if(row.team.length!==row.custom.size)bad.push({seed,why:'customSize'});}
+else if(c1!==sh[1]||row.team.length-c1!==sh[2])bad.push({seed,why:'shape'});
 for(const id of row.team){
 const m=saved.members.find(x=>x.id===id);
 if(seen.has(id+':'+row.day))bad.push({seed,why:'double'});

@@ -90,6 +90,33 @@ The search keeps running past 560ms until the pool has a clean plan, up to the 1
 
 History for carry-over is saved when a plan is picked or after a manual generation. Auto-regeneration after a settings change does not overwrite it.
 
+## Settings reference (v2 data model)
+
+Every setting below defaults to the previous behaviour, saves with the plan, and has a relax family so `explain` can offer a verified one-tap fix when it blocks visits.
+
+| Setting | State key | Relax family | One-tap fix |
+|---|---|---|---|
+| Wider limits: per-day caps 1–6, day total 0–10, per-day max 0–10, weekly cap 0–7, seats 0–8, custom team 1–10 | `cap`, `days[].max`, `locations[].maxWeek/seats` | `daycap`, `loc`, `seats` | `capMain`, `capCon`, `dayMax` |
+| Per-week exceptions: holiday, member leave, location closure for one `weekStart` | `weekOverrides[weekStart]` (`holidays`, `memberOff`, `locClosed`), pruned after 12 weeks | `offdays`, `closed` | `weekOffClear`, `weekOpenDay` |
+| Gender mix mode: `legacy4` (default 3:1 for teams of exactly a+b, otherwise both genders), `mixed`, `minF`, `minM`, `off`; ratio a:b adjustable; per-location override `genderMode` | `gender {mode,ratio:{a,b},min}`, `locations[].genderMode` | `gender` | `genderMode` (to mixed), `locGenderOff` |
+| Member tags and location needs | `members[].tags`, `locations[].needs [{tag,min}]` | `tags` | `locNeedOff` |
+| Pair rules: `with`, `avoid`, `must` (always together); per-rule `hard` overrides the global mode | `pairs.rules[].kind/hard` | `pairs` | `pairSoft` |
+| Location days: `allowedDays`, `minGap`; day rules `notSameDay` and `sameDay` between location sets | `locations[].allowedDays/minGap`, `dayRules` | `dayRules`, `closed` | `dayRuleOff`, `locGapOff` |
+| Fairness: `maxSpread`, `minEach`, soft or hard | `fair` | `fair` | `fairSoft` |
+| Location priority and weekly minimum (auto goals with negative ids) | `locations[].priority/minWeek` | `minWeek` | `locMinWeekOff` |
+| Solver and output: budget, plan count, flex default, seed lock, digits | `solver`, `digits` | none (never blocks) | none |
+
+Notes:
+
+- `sameDay` rules and hard fairness make feasibility non-monotone in the visit count. Capacity is the largest feasible count, and the explain probes test the exact requested count.
+- Capacity ignores soft rules entirely; only hard rules change what can be built.
+- `applySaved` is atomic: a bad file leaves the current state untouched. Members, pair rules and ids are validated, duplicate ids are re-issued, and an unreadable save is copied to `visitplan.v2.corrupt-<timestamp>`.
+- Settings-only export, import and reset keep members, locations, goals and history. Section open state lives in `localStorage` key `visitplan.ui`, not in the plan.
+
+## Property tests cover the new rules
+
+`tests/gen.mjs` randomly adds custom goals, week overrides, gender configs, tags and needs, must pairs, location days and gaps, day rules, fairness, priority and minWeek. `tests/oracle.mjs` brute-forces capacity with the engine's own `evaluatePlan` as the checker and scans every visit count up to the structural bound, so non-monotone rules are covered.
+
 ## Tests
 `npm test` (which runs `node --test`; on Node 22 the directory form `node --test tests/` does not work) needs no dependencies.
 - `engine.test.mjs`: the real-data scenario (`tests/fixtures/user-backup-2026-10-24.json`) and scaling scenarios.
