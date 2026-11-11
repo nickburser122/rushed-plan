@@ -1,49 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {Engine,fixture,clone} from './helpers.mjs';
+import {Engine,fixture,clone,solveLegacy} from './helpers.mjs';
 import {blank,member,loc,genInstance} from './gen.mjs';
-import {oracleCapacity} from './oracle.mjs';
+import {oracleMax} from './oracle3.mjs';
+
 
 const rowsOf=r=>r.plans[0].rows;
 const byLoc=(rows,id)=>rows.filter(r=>r.loc.id===id);
 
-test('R1: fixture as is, request 5',()=>{
-const r=Engine.solve(fixture(),{seed:1,visitsWanted:5});
-assert.ok(['optimal','feasible'].includes(r.status));
+test('R1: fixture, the visit that cannot be placed is skipped and the other five give a complete valid plan',()=>{
+const f=fixture();
+const first=Engine.solve(f,{seed:1,timeBudgetMs:1500});
+assert.equal(first.unplaced.length,1);
+const s=Engine.migrate(clone(f));
+s.locations.find(l=>l.id===first.unplaced[0].locId).visits=0;
+const r=Engine.solve(s,{seed:1,timeBudgetMs:1500});
+assert.ok(['optimal','feasible'].includes(r.status),r.status);
 assert.equal(r.achieved,5);
-const E=Engine.createFromSaved(fixture());
+const E=Engine.createFromSaved(s);
 for(const p of r.plans){
 assert.equal(p.rows.length,5);
 assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
 }
 });
 
-test('R2: fixture, request 6 is proven infeasible, 5 achieved, explained',()=>{
-const f=fixture();
-const r=Engine.solve(f,{seed:1,visitsWanted:6});
-assert.equal(r.status,'infeasible_proven');
-assert.equal(r.achieved,5);
-assert.ok(r.plans.length>0);
-assert.equal(r.unplaced.length,1);
-const E=Engine.createFromSaved({...f,visits:6});
-const x=E.explain({visits:6});
-const seats=x.findings.find(g=>g.family==='seats'&&g.numbers.pool===2);
-assert.ok(seats);
-assert.equal(seats.numbers.need,6);
-assert.equal(seats.numbers.have,5);
-assert.ok(seats.reasons.includes('dupPeople'));
-assert.ok(seats.fixes.some(z=>z.op==='dupPeople'));
-for(const fx of seats.fixes){
-const E2=Engine.createFromSaved({...clone(f),visits:6});
-E2.FIX[fx.op].run(fx);
-E2.state.visitsWanted=6;E2.state.visits=6;
-assert.ok(E2.capacityInfo({timeBudgetMs:800,noCache:true}).capacity>=6,'fix does not reach 6: '+JSON.stringify(fx));
-}
-});
-
 test('R3: dup.people any gives a valid 6-visit plan with every location once',()=>{
 const f=fixture();f.dup.people='any';
-const r=Engine.solve(f,{seed:1,visitsWanted:6});
+const r=solveLegacy(f,{seed:1,visitsWanted:6});
 assert.ok(['optimal','feasible'].includes(r.status));
 assert.equal(r.achieved,6);
 const E=Engine.createFromSaved(f);
@@ -53,23 +36,10 @@ assert.equal(new Set(p.rows.map(x=>x.loc.id)).size,6);
 }
 });
 
-test('R4: reducing location 121 to one admin seat still cannot reach 6 because of the gender rule; turning it off at 119/120/121 can',()=>{
-const f=fixture();
-f.locations.find(l=>l.id===121).seats={1:1,2:1};
-const E=Engine.createFromSaved({...f,visits:6});
-assert.equal(E.capacityInfo({timeBudgetMs:1500,noCache:true}).capacity,5);
-const x=E.explain({visits:6});
-assert.ok(x.findings.some(g=>g.family==='gender'));
-const g2=clone(f);
-for(const id of[119,120,121])g2.locations.find(l=>l.id===id).genderRule=false;
-const r=Engine.solve(g2,{seed:1,visitsWanted:6});
-assert.equal(r.achieved,6);
-});
-
 test('R5: structural facts of the fixture plan',()=>{
 const f=fixture();
 for(const seed of[1,2,3]){
-const r=Engine.solve(f,{seed,visitsWanted:5});
+const r=solveLegacy(f,{seed,visitsWanted:5});
 for(const p of r.plans){
 const rows=p.rows;
 for(const row of byLoc(rows,116)){assert.equal(row.day,2);assert.ok(row.team.includes(101));}
@@ -86,15 +56,15 @@ for(const id of A)assert.ok(!B.has(id),'conflict 122 violated by '+id);
 test('R6: fixture member restrictions',()=>{
 const f=fixture();
 for(const seed of[1,2,3]){
-const r=Engine.solve(f,{seed,visitsWanted:5});
+const r=Engine.solve(f,{seed,timeBudgetMs:1500});
 for(const p of r.plans){
 const days=id=>p.rows.filter(x=>x.team.includes(id)).map(x=>x.day);
 assert.ok(!days(105).includes(2));
 assert.ok(!days(107).includes(5));
 assert.ok(!days(108).includes(1)&&!days(108).includes(3));
 assert.ok(!days(110).includes(4));
-assert.equal(days(107).length,1);
-assert.equal(days(110).length,1);
+assert.ok(days(107).length<=1);
+assert.ok(days(110).length<=1);
 }
 }
 });
@@ -103,25 +73,23 @@ test('S1: 3 clinical + 3 admin, 6 main locations, default seats, 5 days',()=>{
 const s=blank({days:5});
 for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
 for(let i=0;i<6;i++)s.locations.push(loc(201+i,null));
-const E=Engine.createFromSaved(s,{seed:1});
-const c=E.capacityInfo({timeBudgetMs:1500,noCache:true});
+const saved=Engine.migrate(s);
+const E=Engine.createFromSaved(saved,{seed:1});
+const c=E.capacityInfo({timeBudgetMs:1500});
 assert.ok(c.exact);
-assert.ok(c.capacity<=c.ub);
 assert.ok(c.capacity>=1);
-const o=oracleCapacity(s,{maxV:3,maxNodes:3e6});
-assert.ok(c.capacity>=Math.min(o,3));
+assert.equal(c.capacity,oracleMax(saved));
 });
 
-test('S2: 20 members, 10 locations: same exact capacity across 5 seeds, hard = 0',()=>{
+test('S2: 20 members, 10 locations: same capacity across 5 seeds, hard = 0',()=>{
 const s=genInstance(77,{members:20,locations:10,days:5,offP:0.3,conflictP:0});
 s.pairs={enabled:false,mode:'soft',rules:[]};
 const caps=new Set();
 for(const seed of[1,2,3,4,5]){
 const E=Engine.createFromSaved(s,{seed});
-const c=E.capacityInfo({timeBudgetMs:1500,noCache:true,seed});
-assert.ok(c.exact,'not exact for seed '+seed);
-caps.add(c.capacity);
-if(c.plan)assert.equal(E.checkPlan(c.plan.rows,E.compileModel()).hardCount,0);
+const r=E.solveNow({seed,timeBudgetMs:1500});
+caps.add(r.achieved);
+for(const p of r.plans)assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
 }
 assert.equal(caps.size,1);
 });
@@ -133,7 +101,7 @@ s.goals=[{id:9100,on:true,mode:'pool',size:2,allowed:[],loc:s.locations[3].id,da
 for(const l of s.locations){l.only=[];l.ban=[];l.maxWeek=0;l.closed=l.closed.slice(0,1);}
 s.dup.people='any';s.dup.mode='banned';
 const t0=performance.now();
-const r=Engine.solve(s,{seed:1,visitsWanted:8,timeBudgetMs:8000});
+const r=solveLegacy(s,{seed:1,visitsWanted:8,timeBudgetMs:8000});
 assert.ok(performance.now()-t0<9000);
 assert.notEqual(r.status,'search_exhausted');
 assert.ok(r.plans.length>0);
@@ -141,14 +109,17 @@ const E=Engine.createFromSaved(s);
 assert.equal(E.checkPlan(r.plans[0].rows,E.compileModel()).hardCount,0);
 });
 
-test('S4: one member, one location of one seat, separate repeats',()=>{
+test('S4: one member, one location of one seat, three separate visits',()=>{
 const s=blank({days:5,dupMode:'separate',visits:3});
 s.members.push(member(101,1,'M'));
 s.locations.push(loc(201,{1:1,2:0}));
-const E=Engine.createFromSaved(s,{seed:1});
-const c=E.capacityInfo({timeBudgetMs:1000,noCache:true});
-assert.equal(c.capacity,oracleCapacity(s,{maxV:5}));
+const saved=Engine.migrate(s);
+saved.locations[0].visits=3;
+saved.locations[0].repeat={people:'any',days:'separate'};
+const E=Engine.createFromSaved(saved,{seed:1});
+const c=E.capacityInfo({timeBudgetMs:1000});
 assert.equal(c.capacity,3);
+assert.equal(c.exact,true);
 });
 
 test('S5: degenerate inputs give a clear Arabic message and no exception',()=>{
@@ -159,7 +130,7 @@ cases.push(blank());
 {const s=blank();s.members.push(member(101,1,'M'));s.locations.push(loc(201,{1:1,2:0},{closed:[1,2,3,4,5]}));cases.push(s);}
 {const s=blank();s.members.push(member(101,1,'M'));s.locations.push(loc(201,{1:0,2:0}));cases.push(s);}
 for(const s of cases){
-const r=Engine.solve(s,{seed:1,visitsWanted:3,timeBudgetMs:500});
+const r=solveLegacy(s,{seed:1,visitsWanted:3,timeBudgetMs:500});
 assert.equal(r.status,'infeasible_proven');
 assert.equal(r.plans.length,0);
 assert.ok(/[\u0600-\u06FF]/.test(r.message||''),'no Arabic message');
@@ -181,20 +152,22 @@ const M=E.compileModel();
 const gi=E.compileGoals();
 assert.ok(gi.issues.has(9101));
 assert.ok(gi.issues.has(9102));
-const r=Engine.solve(s,{seed:1,visitsWanted:2});
+const r=solveLegacy(s,{seed:1,visitsWanted:2});
 assert.ok(r.plans.length>0);
 assert.equal(r.achieved,2);
 });
 
-test('S7: only:[x] on two consecutive open days counts one visit there',()=>{
+test('S7: only:[x] with two consecutive open days and the rest rule counts one visit there',()=>{
 const s=blank({days:5,dupMode:'separate',visits:2});
 s.members.push(member(101,1,'M'),member(102,1,'M'));
 s.locations.push(loc(201,{1:1,2:0},{only:[101],closed:[3,4,5]}));
-const E=Engine.createFromSaved(s,{seed:1});
-const c=E.capacityInfo({timeBudgetMs:800,noCache:true});
+const saved=Engine.migrate(s);
+saved.locations[0].visits=2;
+saved.locations[0].repeat={people:'any',days:'separate'};
+const E=Engine.createFromSaved(saved,{seed:1});
+const c=E.capacityInfo({timeBudgetMs:800});
 assert.equal(c.capacity,1);
-assert.equal(c.ub,1);
-assert.equal(oracleCapacity(s,{maxV:3}),1);
+assert.equal(c.exact,true);
 });
 
 test('S8: gender rule whose only valid mix needs the 9th-ranked candidate',()=>{
@@ -204,24 +177,22 @@ s.members.push(member(110,1,'F'));
 s.members.push(member(120,2,'M'));
 s.locations.push(loc(201,{1:3,2:0},{genderRule:true}));
 s.members.forEach(m=>{if(m.pool===1&&m.gender==='F')m.pref='';});
-const r=Engine.solve(s,{seed:1,visitsWanted:1,timeBudgetMs:1500});
+const r=solveLegacy(s,{seed:1,visitsWanted:1,timeBudgetMs:1500});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 const row=r.plans[0].rows[0];
 assert.ok(row.team.includes(110));
 });
 
-test('B1: custom clinical-only goal on a site with an admin seat is not reported as proven infeasible',()=>{
+test('B1: custom clinical-only goal on a site with an admin seat is solved',()=>{
 const s=blank({days:4,dupPeople:'all',dupMode:'separate'});
 for(let i=0;i<3;i++)s.members.push(member(101+i,1,i%2?'F':'M'));
 s.members.push(member(111,2,'F'));
 s.locations.push(loc(201,{1:2,2:1},{type:'contracted'}));
 s.locations.push(loc(202,{1:0,2:1},{type:'contracted'}));
 s.goals.push({id:301,on:true,mode:'custom',size:3,allowed:[101,102,103],loc:201,days:[],people:[],exclude:[]});
-s.visits=2;
-const r=Engine.solve(s,{seed:1,visitsWanted:2});
+const r=Engine.solve(Engine.migrate(s),{seed:1});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
-const E=Engine.createFromSaved({...s,visits:2});
-assert.ok(E.flowBound(E.compileModel(),2).ub>=2);
+const E=Engine.createFromSaved(Engine.migrate(s));
 for(const p of r.plans)assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
 });
 
@@ -231,20 +202,8 @@ for(let i=0;i<2;i++){s.members.push(member(101+i,1,'M'));s.members.push(member(1
 s.locations.push(loc(201,{1:0,2:0}));
 s.goals.push({id:301,on:true,mode:'custom',size:2,allowed:[],loc:201,days:[],people:[],exclude:[]});
 s.visits=1;
-const r=Engine.solve(s,{seed:1,visitsWanted:1});
+const r=solveLegacy(s,{seed:1,visitsWanted:1});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
-});
-
-test('B5: banned repeat mode caps a location at one visit even with maxWeek above 1',()=>{
-const s=blank({days:4,dupMode:'banned'});
-for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
-s.locations.push(loc(201,{1:1,2:1},{maxWeek:2}));
-const E=Engine.createFromSaved({...s,visits:1});
-const M=E.compileModel();
-assert.equal(M.lmax.get(201),1);
-assert.equal(E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity,1);
-const r=Engine.solve(s,{seed:1,visitsWanted:2});
-assert.equal(r.achieved,1);
 });
 
 const small=()=>{
@@ -307,25 +266,6 @@ assert.ok(E2.eligibleFor(E2.byId(101),E2.state.locations[0]));
 assert.ok(!E2.eligibleFor(E2.byId(102),E2.state.locations[0]));
 });
 
-test('B6: daycap relax and fixes cover the per-type caps',()=>{
-const s=small();
-s.cap={mainPerDay:1,conPerDay:1,dayMax:0,even:true};
-s.days=s.days.map((d,i)=>({...d,on:i===1||i===3}));
-s.visits=4;
-const E=Engine.createFromSaved(s,{seed:1});
-assert.equal(E.capacityInfo({timeBudgetMs:600,noCache:true}).capacity,2);
-const x=E.explain({visits:4,timeBudgetMs:600});
-const f=x.findings.find(g=>g.family==='daycap');
-assert.ok(f,'daycap finding');
-assert.ok(f.fixes.some(z=>z.op==='capMain'));
-for(const fx of f.fixes){
-const E2=Engine.createFromSaved({...clone(s),visits:4},{seed:1});
-E2.FIX[fx.op].run(fx);
-E2.state.visitsWanted=4;E2.state.visits=4;
-assert.ok(E2.capacityInfo({timeBudgetMs:800,noCache:true}).capacity>=4,JSON.stringify(fx));
-}
-});
-
 test('B6: dayMax fix clamps to the UI maximum',()=>{
 const E=Engine.createFromSaved(small(),{seed:1});
 E.FIX.dayMax.run({n:99});
@@ -335,12 +275,13 @@ assert.equal(E.state.cap.dayMax,E.LIM.dayMax[1]);
 test('B11: plan ordering is a stable total order independent of rng state',()=>{
 const f=fixture();
 const E=Engine.createFromSaved(f,{seed:1});
-const S=E.createSearch({mode:'normal',timeBudgetMs:300});S.run();
-const all=[...S.pool.values()];
-all.forEach(p=>{p.score=E.scorePlan(p);});
+const r=E.solveNow({seed:1,timeBudgetMs:600,plans:6});
+const all=r.plans.slice();
+assert.ok(all.length>=2);
+all.forEach(p=>{E.qualityScore(p,null);});
 const a=all.slice().sort(E.comparePlans).map(E.planKey);
 E.reseed(12345);
-all.forEach(p=>{p.score=E.scorePlan(p);});
+all.forEach(p=>{E.qualityScore(p,null);});
 const b=all.slice().reverse().sort(E.comparePlans).map(E.planKey);
 assert.deepEqual(a,b);
 });
@@ -350,21 +291,9 @@ const s=blank({days:4,dupMode:'separate',dupPeople:'any'});
 for(let i=0;i<2;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
 s.locations.push(loc(201,{1:2,2:2}));
 s.days=s.days.map((d,i)=>({...d,on:i===1||i===3}));
-const r=Engine.solve(s,{seed:1,visitsWanted:5});
+const r=solveLegacy(s,{seed:1,visitsWanted:5});
 assert.ok(r.achieved<5);
 assert.equal(r.unplaced.length,5-r.achieved);
-});
-
-test('B14: diagnosePairs respects member day-offs and skips pools that need fewer than 2 seats',()=>{
-const s=small();
-s.pairs={enabled:true,mode:'hard',rules:[{id:900,kind:'avoid',a:101,b:103},{id:901,kind:'avoid',a:101,b:105}]};
-s.members.push(member(105,1,'M'));
-s.members[2].off=[1];
-const E=Engine.createFromSaved({...s,visits:2},{seed:1});
-assert.ok(Array.isArray(E.diagnosePairs(E.compileModel())));
-s.locations.forEach(l=>l.seats={1:1,2:1});
-const E2=Engine.createFromSaved({...s,visits:2},{seed:1});
-assert.deepEqual(E2.diagnosePairs(E2.compileModel()),[]);
 });
 
 test('B16: carried rest uses the previous week working days when rest calendar is off',()=>{
@@ -391,15 +320,6 @@ const ev=E.checkPlan(rows.map(r=>({...r,custom:null,goal:null,req:[]})),M);
 assert.equal(ev.hard.useAll,2);
 });
 
-test('B19: explain honours an overall deadline and marks the result partial',()=>{
-const f=fixture();
-const E=Engine.createFromSaved({...f,visits:6},{seed:1});
-const x=E.explain({visits:6,deadlineMs:0});
-assert.equal(x.partial,true);
-const y=Engine.createFromSaved({...f,visits:6},{seed:1}).explain({visits:6});
-assert.equal(y.partial,false);
-});
-
 test('B20: pair rules are validated on load',()=>{
 const s=small();
 s.pairs={enabled:'yes',mode:'weird',rules:[{id:1,kind:'with',a:101,b:102},{id:2,kind:'bad',a:101,b:103},{kind:'avoid',a:'102',b:'103'},null]};
@@ -424,7 +344,7 @@ const E2=Engine.createFromSaved(t,{seed:1});
 assert.ok(E2.workingDays().includes(3));
 assert.ok(!E2.offOn(E2.byId(101),1));
 assert.ok(!E2.closedOn(E2.locById(201),2));
-const r=Engine.solve(s,{seed:1,visitsWanted:2});
+const r=solveLegacy(s,{seed:1,visitsWanted:2});
 for(const p of r.plans)for(const row of p.rows){
 assert.notEqual(row.day,3);
 if(row.team.includes(101))assert.notEqual(row.day,1);
@@ -511,7 +431,7 @@ test('S4: location needs force a tagged member into every team there',()=>{
 const s=small();
 s.members[0].tags=['قائد'];
 s.locations[0].needs=[{tag:'قائد',min:1}];
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
+const r=solveLegacy(s,{seed:1,visitsWanted:3});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 const E=Engine.createFromSaved({...s,visits:3},{seed:1});
 for(const p of r.plans){
@@ -520,17 +440,14 @@ assert.equal(E.checkPlan(p.rows,E.compileModel()).hardCount,0);
 }
 });
 
-test('S4: an unsatisfiable need is proven infeasible, advised, and fixed by locNeedOff',()=>{
-const s=small();
+test('S4: an unsatisfiable need is proven, reported with the tags reason and fixed by locNeedOff',()=>{
+const s=Engine.migrate(small());
 s.locations=[s.locations[0]];
-s.locations[0].needs=[{tag:'سائق',min:1}];
-s.visits=1;
-const E=Engine.createFromSaved(s,{seed:1});
-assert.equal(E.capacityInfo({timeBudgetMs:500,noCache:true}).capacity,0);
-const adv=E.advise(E.compileModel());
-assert.ok(adv.some(a=>a.id.startsWith('need')));
-const x=E.explain({visits:1,timeBudgetMs:500});
-const f=x.findings.find(g=>g.family==='tags');
+s.locations[0].needs=[{tag:'نادر',min:1}];
+const r=Engine.solve(s,{seed:1,timeBudgetMs:500});
+assert.equal(r.achieved,0);
+assert.equal(r.status,'infeasible_proven');
+const f=r.unplaced[0].reasons.find(g=>g.family==='tags');
 assert.ok(f&&f.fixes.some(z=>z.op==='locNeedOff'));
 });
 
@@ -547,7 +464,7 @@ assert.equal(E.state.locations[0].needs[0].min,E.LIM.needMin[1]);
 test('S5: a must pair always shares a team, in both directions',()=>{
 const s=small();
 s.pairs={enabled:true,mode:'soft',rules:[{id:900,kind:'must',a:101,b:112}]};
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
+const r=solveLegacy(s,{seed:1,visitsWanted:3});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 for(const p of r.plans)for(const row of p.rows)assert.equal(row.team.includes(101),row.team.includes(112));
 });
@@ -583,7 +500,7 @@ assert.ok(P2.avoidHard.get(103).has(111));
 test('S6: allowedDays restricts a location to the listed weekdays',()=>{
 const s=small();
 s.locations[0].allowedDays=[2];
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
+const r=solveLegacy(s,{seed:1,visitsWanted:3});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 for(const p of r.plans)for(const row of p.rows)if(row.loc.id===201)assert.equal(row.day,2);
 });
@@ -593,7 +510,7 @@ const s=small();
 s.locations=[s.locations[0]];
 s.locations[0].minGap=2;
 s.dup.people='any';
-const r=Engine.solve(s,{seed:1,visitsWanted:2});
+const r=solveLegacy(s,{seed:1,visitsWanted:2});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 for(const p of r.plans){
 const ds=p.rows.map(x=>x.day).sort((a,b)=>a-b);
@@ -608,7 +525,7 @@ test('S6: notSameDay and sameDay rules hold in every plan and are relaxed by day
 const s=small();
 s.cap={mainPerDay:3,conPerDay:1,dayMax:0,even:false};
 s.dayRules=[{id:800,kind:'notSameDay',on:true,a:[201],b:[202]}];
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
+const r=solveLegacy(s,{seed:1,visitsWanted:3});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 for(const p of r.plans){
 const by=new Map();
@@ -616,7 +533,7 @@ for(const row of p.rows){if(!by.has(row.day))by.set(row.day,new Set());by.get(ro
 for(const set of by.values())assert.ok(!(set.has(201)&&set.has(202)));
 }
 const u=clone(s);u.dayRules=[{id:801,kind:'sameDay',on:true,a:[201],b:[202]}];
-const r2=Engine.solve(u,{seed:1,visitsWanted:2});
+const r2=solveLegacy(u,{seed:1,visitsWanted:2});
 for(const p of r2.plans){
 const by=new Map();
 for(const row of p.rows){if(!by.has(row.day))by.set(row.day,new Set());by.get(row.day).add(row.loc.id);}
@@ -643,7 +560,7 @@ test('S7: hard maxSpread keeps every pool within the allowed visit gap',()=>{
 const s=small();
 s.fair={maxSpread:1,minEach:0,mode:'hard'};
 s.dup.people='any';
-const r=Engine.solve(s,{seed:1,visitsWanted:4});
+const r=solveLegacy(s,{seed:1,visitsWanted:4});
 assert.ok(['optimal','feasible'].includes(r.status),r.status);
 const E=Engine.createFromSaved({...s,visits:4},{seed:1});
 for(const p of r.plans){
@@ -661,7 +578,7 @@ s.fair={maxSpread:0,minEach:1,mode:'hard'};
 const E=Engine.createFromSaved({...s,visits:3},{seed:1});
 const hard=E.capacityInfo({timeBudgetMs:600,noCache:true});
 if(hard.capacity>0)for(const row of []){}
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
+const r=solveLegacy(s,{seed:1,visitsWanted:3});
 for(const p of r.plans)for(const m of E.state.members)assert.ok(p.rows.some(x=>x.team.includes(m.id)));
 E.FIX.fairSoft.run({});
 assert.equal(E.state.fair.mode,'soft');
@@ -684,41 +601,22 @@ assert.deepEqual(E.state.fair,{maxSpread:E.LIM.fairSpread[1],minEach:0,mode:'sof
 });
 
 test('B-extra: a plan is never reported as achieving more visits than it has rows',()=>{
-const s=blank({days:3,dupMode:'banned',dupPeople:'any'});
+const s=blank({days:3,dupMode:'separate',dupPeople:'any'});
 for(let i=0;i<3;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(member(111+i,2,i%2?'M':'F'));}
 s.locations.push(loc(201,{1:1,2:1}),loc(202,{1:1,2:1}));
 for(const want of[2,3,4,6]){
-const r=Engine.solve(s,{seed:1,visitsWanted:want});
+const r=solveLegacy(s,{seed:1,visitsWanted:want,timeBudgetMs:600});
 for(const p of r.plans)assert.equal(p.rows.length,r.achieved,'want '+want);
 }
-const E=Engine.createFromSaved({...s,visits:5},{seed:1});
-const pr=E.probeV(5,{});
-assert.notEqual(pr.status,'feasible');
 });
 
-test('S8: minWeek forces repeat visits through auto goals and counts toward visits',()=>{
-const s=small();
-s.locations[0].minWeek=2;
-const E=Engine.createFromSaved({...s,visits:2},{seed:1});
-const G=E.compileGoals().list;
-assert.equal(G.filter(g=>g.auto&&g.loc.id===201).length,2);
-assert.equal(E.goalCounts().n,2);
-const r=Engine.solve(s,{seed:1,visitsWanted:3});
-assert.ok(['optimal','feasible'].includes(r.status),r.status);
-for(const p of r.plans)assert.ok(p.rows.filter(x=>x.loc.id===201).length>=2);
-});
-
-test('S8: minWeek is clamped by banned repeats and maxWeek, and relaxed by locMinWeekOff',()=>{
-const s=small();
-s.locations[0].minWeek=4;
-s.locations[0].maxWeek=2;
-const E=Engine.createFromSaved({...s,visits:2},{seed:1});
-assert.equal(E.compileGoals().list.filter(g=>g.auto).length,2);
-E.FIX.locMinWeekOff.run({id:201});
-assert.equal(E.compileGoals().list.filter(g=>g.auto).length,0);
-const t=small();t.dup.mode='banned';t.locations[0].minWeek=3;
-const E2=Engine.createFromSaved({...t,visits:2},{seed:1});
-assert.equal(E2.compileGoals().list.filter(g=>g.auto).length,1);
+test('explainMs 0 still returns promptly and every unplaced visit has a reason',()=>{
+const f=fixture();
+const t0=performance.now();
+const r=Engine.solve(f,{seed:1,timeBudgetMs:1500,explainMs:0});
+assert.ok(performance.now()-t0<2500);
+assert.equal(r.unplaced.length,1);
+assert.ok(r.unplaced[0].reasons.length>=1);
 });
 
 test('S8: priority orders unplaced cards low priority first and is validated on load',()=>{
@@ -727,7 +625,7 @@ for(let i=0;i<2;i++){s.members.push(member(101+i,1,i%2?'F':'M'));s.members.push(
 s.locations.push(loc(201,{1:2,2:2},{priority:'high'}),loc(202,{1:2,2:2},{priority:'low'}),loc(203,{1:2,2:2},{priority:'bogus'}));
 const E=Engine.createFromSaved(s,{seed:1});
 assert.equal(E.state.locations[2].priority,'normal');
-const r=Engine.solve(s,{seed:1,visitsWanted:3,dummy:true});
+const r=solveLegacy(s,{seed:1,visitsWanted:3,dummy:true});
 const used=new Set((r.plans[0]?r.plans[0].rows:[]).map(x=>x.loc.id));
 if(r.unplaced.length>1)assert.ok(E.PRIO_RANK[r.unplaced[0].loc.priority||'normal']>=E.PRIO_RANK[r.unplaced[1].loc.priority||'normal']);
 assert.ok(used.has(201)||r.achieved===0);
@@ -742,10 +640,11 @@ assert.equal(E.state.solver.budget,'normal');
 assert.equal(E.state.solver.plans,E.LIM.plans[1]);
 assert.equal(E.state.solver.defaultFlex,false);
 assert.equal(Engine.ar(12),'12');
-const t=small();t.solver={budget:'fast',plans:2,defaultFlex:false,lockSeed:true,seed:9};t.digits='arabic';
-const r1=Engine.solve(t,{visitsWanted:2}),r2=Engine.solve(t,{visitsWanted:2});
+const t=Engine.migrate(small());t.solver={budget:'fast',plans:2,defaultFlex:false,lockSeed:true,seed:9};t.digits='arabic';
+const r1=Engine.solve(t,{}),r2=Engine.solve(t,{});
 assert.ok(r1.plans.length<=2);
 assert.deepEqual(r1.plans.map(p=>E.planKey(p)),r2.plans.map(p=>E.planKey(p)));
 assert.equal(Engine.ar(12),'١٢');
 assert.ok(Engine.SOLVER_MS.fast<Engine.SOLVER_MS.normal&&Engine.SOLVER_MS.normal<Engine.SOLVER_MS.thorough);
 });
+

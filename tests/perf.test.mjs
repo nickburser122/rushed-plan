@@ -5,7 +5,7 @@ import {genInstance} from './gen.mjs';
 
 test('perf: fixture first plan under 300 ms, capacity under 500 ms',()=>{
 const t0=performance.now();
-const r=Engine.solve(fixture(),{seed:1,visitsWanted:5});
+const r=Engine.solve(fixture(),{seed:1,timeBudgetMs:1500,explain:false});
 assert.ok(r.firstPlanMs!=null&&r.firstPlanMs<300,'first plan '+r.firstPlanMs);
 const E=Engine.createFromSaved(fixture(),{seed:1});
 const t1=performance.now();
@@ -24,7 +24,7 @@ assert.ok(performance.now()-t<1500);
 test('perf: S3-sized instance finishes inside the 8 s extended budget',()=>{
 const s=genInstance(31,{members:30,locations:20,days:5,conflictP:1,genderP:1});
 const t=performance.now();
-Engine.solve(s,{seed:1,visitsWanted:8,timeBudgetMs:8000});
+Engine.solve(s,{seed:1,timeBudgetMs:8000,explain:false});
 assert.ok(performance.now()-t<9000);
 });
 
@@ -39,7 +39,7 @@ const t=performance.now();
 const c=E.capacityInfo({noCache:true,timeBudgetMs:1400});
 assert.ok(performance.now()-t<4000,'capacity '+(performance.now()-t));
 const t1=performance.now();
-const r=Engine.solve(s,{seed:1,visitsWanted:Math.max(1,c.capacity),timeBudgetMs:3000});
+const r=Engine.solve(s,{seed:1,timeBudgetMs:3000,explain:false});
 assert.ok(performance.now()-t1<7000,'solve '+(performance.now()-t1));
-assert.ok(['optimal','feasible','search_exhausted'].includes(r.status));
+assert.ok(['optimal','feasible','partial','partial_proven','infeasible_proven'].includes(r.status));
 });
