@@ -3,7 +3,7 @@
 A single-file planner for one week of visits. It builds visit schedules for clinical and admin teams.
 
 ## What it does
-- Builds several valid plans for the week. It respects team makeup (2 clinical + 2 admin at main sites, 2 + 1 at contracted sites by default, overridable per location), days off, the rest rule, mixed-gender rules, near/far preferences, pairing rules, place-conflict rules and the repeat policy.
+- Builds several valid plans for the week. It respects team makeup (2 clinical + 2 admin at main sites, 2 + 1 at contracted sites by default, overridable per location), days off, the rest rule, mixed-gender rules, near/far preferences, pairing rules, place-conflict rules and each location's repeat settings.
 - Shows real dates for the week, with previous/next week buttons. Clicking the label jumps back to the current week. Today is highlighted.
 - Has two views: by day, or a grid by member showing where each person is each day, their days off and their total.
 - Lets you copy the plan as dated text, copy it per member, share it (native share sheet or WhatsApp) and print a clean layout.
@@ -14,27 +14,41 @@ A single-file planner for one week of visits. It builds visit schedules for clin
 ## Architecture
 `index.html` is the UI. All planning logic lives in `engine.js`, a classic script with no dependencies. It runs in the page, in a Web Worker (`new Worker('engine.js')`), and under Node for tests. If a Worker cannot start (for example a `file://` page in Chrome) the same engine runs in the page instead.
 
-Pipeline, each stage reading only the stage before it:
-1. `compileModel()` snapshots the state into a model `M`: working days, locations with their seat shape, repeat mode and eligible members, compiled goals, pairs and conflicts, window capacity caps, and the candidate main/contracted splits.
-2. `flowBound(M, V)` builds a max-flow network per pool (slots, member-days, member capacity) plus day and location caps. It gives a sound upper bound `ub` and the per-pool seat budget `{need, have}`.
-3. `solveExact(M, V)` is a complete day-by-day search (all trip sets, all teams, symmetry breaking between interchangeable members, sound bounds). It returns `feasible`, `infeasible` (proven) or `timeout`.
-4. `capacityInfo()` / `capacity()` search downward from `ub` using a quick randomized search and then `solveExact`. The result is `exact` when every larger value was proven infeasible, otherwise `≥K`. Results are cached by a hash of the input.
-5. `makeBoard(M)` and `solveTeams(M, slots)` are the randomized plan generator used to produce many diverse plans quickly. `solveTeams` widens its candidate lists (top-8, top-16, all) instead of failing on a truncated pass.
-6. `evaluatePlan(p, M)` (`checkPlan()`) re-reads the rows and counts hard and soft violations per rule family. Ranking and every test use only this checker.
-7. `solve(input, opts)` ties it together: randomized search, then the exact solver if no plan was found, then local search (`improvePlan`) on the best plans. It returns `{status, requested, achieved, plans, unplaced, ub, capacity}`.
-8. `explain()` replaces the old capacity limiter code. For every rule family it relaxes the family and recomputes the exact capacity, and every fix it lists is applied to a cloned engine and verified to reach the requested visits.
+### Data model: what a visit is
+The week's workload is the sum of per-location `visits` (0 to 7, default 1) plus `extraVisits` (0 to 10). `totalRequested()` returns that sum, and the UI total is always read from it, so it cannot drift from the locations. A location with `visits:0` is skipped this week. A location with `visits >= 2` repeats, and its `repeat` setting says how: `repeat.people` (`different` or `any`: may the same member come back) and `repeat.days` (`separate` or `same`). `maxExtra` lets a location absorb part of the `extraVisits` pool. The old global visit count, main:contracted ratio, weekly cap, minimum, and the global repeat policy are gone; old saves are migrated on load (see CHANGES.md for the exact mapping and the one-time note that explains a changed total).
 
-Statuses: `optimal` and `feasible` (plans found), `infeasible_proven` (the requested visits cannot be done, the best achievable plan is returned with `unplaced` reasons), `search_exhausted` (time ran out without a proof; the «بحث موسّع» button retries with 8 s).
+### Pipeline
+1. `compileModel()` snapshots the state into a model `M`: working days, locations with seat shapes, compiled goals, pairs, conflicts, day rules and caps.
+2. `solveNow(opts)` (exposed as `solve(input, opts)`) builds one unit per requested visit (goal visits first, then plain visits, then optional extra visits) and searches over (unit, day, team):
+   - Each unit's candidate days are filtered by closed days, goal days, day caps, day rules, repeat rules and the minimum gap. The unit with the smallest domain is placed next, with failure weights learned across restarts (dom/wdeg).
+   - A team is built from the least-loaded eligible members, with symmetry breaking between interchangeable members and interchangeable repeat visits.
+   - A max-flow supply bound per pool (members' remaining capacity under the rest rule) prunes branches that cannot be staffed.
+   - Restarts follow a Luby schedule; the first run is deterministic, later runs randomise team order and sometimes drop the failure weights.
+3. If every visit cannot be placed, a branch-and-bound over place/skip decisions finds the largest plan. It maximises, in this order, location coverage, goals met, visits placed and location priority, and it never places a repeat or extra visit while a feasible first visit is left out. `exact:true` means the search finished, so the result is proven best.
+4. `checkPlan(rows)` / `evaluatePlan` re-reads the rows and counts hard and soft violations per rule family. Ranking and every test use only this checker; `tests/judge.mjs` is a second, independent implementation used to test it.
+5. `improvePlan` is a local search over five move types (swap same-pool members, replace a member with an idle eligible one, move a row, swap two rows' days, swap teams inside a merged trip). Each candidate is checked with the engine checker, and only plans with a lower quality score are kept.
+6. `capacityInfo()` / `capacity()` run the same search and return `{requested, capacity, exact, ub}`.
 
-Every suggestion is a plain fix object `{op,...}` in the `FIX` registry, so one function (`applyFix`) applies it from any card, banner or failure message, and each application is undoable from the toast.
+### Result
+`solve` returns `{status, requested, achieved, coverage, exact, plans, unplaced, message, firstPlanMs}`.
 
-Relaxation context: `withRelax(families, fn, {skip, exempt})` re-runs the same model with rule families removed (`dup`, `loc`, `members`, `dupPeople`, `rest`, `daycap`, `gender`, `pairs`, `conflicts`, `elig`, `types`, `closed`, `offdays`, `goals`), individual rules skipped, or members exempted from the rest rule. Flex mode is different: it keeps the rules but lets the solver break `rest`, `pairs` and `conflicts` softly and flags them.
+| status | meaning |
+|---|---|
+| `optimal`, `feasible` | every requested visit is placed |
+| `partial_proven` | not everything fits; `achieved` is the proven maximum |
+| `partial` | not everything fits; the search ran out of time, so `achieved` is at least this |
+| `infeasible_proven` | nothing can be placed (or the input is empty; `message` says why) |
+
+`unplaced` lists each visit that could not be placed: `{locId, idx, goal, reasons:[{family,text,fixes}]}`. A reason is listed only if relaxing that rule family would let the visit be placed together with the visits already placed, and a fix only if applying it to a copy of the engine and solving again completes the plan or places more visits. A visit blocked by two rules at once gets a generic `capacity` reason without fixes. `solve` accepts `timeBudgetMs`, `seed`, `plans`, `explain:false`, `explainMs` and `ref` (the previous plan, for the stable priority). Passing `visitsWanted` throws.
+
+Every suggestion is a plain fix object `{op,...}` in the `FIX` registry, so one function (`applyFix`) applies it from any card or banner, and each application is undoable from the toast. `withRelax(families, fn)` re-runs the model with rule families removed (`dupPeople`, `repPeople`, `members`, `rest`, `daycap`, `seats`, `gender`, `pairs`, `conflicts`, `elig`, `types`, `closed`, `offdays`, `goals`, `tags`, `dayRules`, `fair`).
 
 ## Locations
-- **Seats**: each location has clinical and admin seat counts. Defaults come from its type (main 2+2, contracted 2+1). Change them on the location card; "الافتراضي" resets.
-- **Eligible members**: «الجميع / محدد فقط» switch. In «محدد فقط» a «مسموح فقط» row appears; the «استبعاد» row is always visible. Every tap changes exactly one thing, and adding a member to one row removes them from the other. Both lists work together («only A, B, C» plus «exclude D»). Members whose type setting rules out the location are disabled. «الفعليون» shows how many clinical and admin members can really visit, with a warning if that is below the seats. Switching back to «الجميع» clears the restriction and can be undone. Recalculation and regeneration wait about 600 ms after the last tap. The data model is unchanged (`only[]`, `ban[]`).
-- **Repeat**: use the global policy or override per location. `ممنوع` allows one visit a week. `منفصل` allows repeats on different days, each its own visit. `مدموج` allows repeats on the same day only and shows them as one visit with several teams. Setting «المكرَّر بأعضاء مختلفين» (off by default, as in the old behaviour) keeps repeat visits to different people.
-- **Mixed gender** works on any location. Teams of 4 need 1 or 3 men, other sizes need at least one of each.
+- **Visits**: each location card has a visits stepper (0 to 7). A bulk bar sets the same number for all main or all contracted locations and adds several locations at once. The total shown in the header, the plan tab and the bulk bar is always `totalRequested()`.
+- **Seats**: each location has clinical and admin seat counts. Defaults come from its type (main 2+2, contracted 2+1). Change them on the location card; reset restores the defaults.
+- **Eligible members**: an "only" list and an "exclude" list work together; members whose type setting rules out the location are disabled.
+- **Repeat** (shown when visits is 2 or more): `people` (different people on each visit, or the same people may return) and `days` (on separate days, or all on one day as several teams). The global option "one visit per member per week" is in Settings.
+- **Mixed gender** works on any location. Teams of 4 need 1 or 3 men, other sizes need at least one of each, unless the gender mode says otherwise.
 
 ## Days
 - Global "up to" limit per day (default 3) plus the existing main/contracted per-day limits, and an optional limit per day card.
@@ -46,13 +60,12 @@ Settings → each rule has a set of places A and a set of places B. Anyone who v
 ## Special visits
 In Goals, switch a goal to "فريق مخصص". Set a team size and the candidate members (empty means everyone). Pinned members are always on the team and the rest is filled from the candidates, whatever their group. The pool seat shape and the mixed-gender rule do not apply.
 
-## Advisor
-- The panel on the plan tab lists problems with one-tap fixes.
-- Member cards warn when days off plus the rest rule cost that person visits (for example available only on two consecutive days) and offer "استثناء من قاعدة الراحة".
-- The visits stepper can go above what is achievable. A banner under it says what is possible and why (for example «الإداريون: ٦ مقاعد مطلوبة و٥ متاحة لأن «زيارة واحدة فقط لكل عضو في الأسبوع» مفعّلة»), with verified one-tap fixes. Generating anyway produces the best plan and «لم تُجدول» cards for what could not be placed.
-- When no plan exists, the failure card asks `explain()` which rule family blocks the plan and offers the verified fixes.
+## Reasons and fixes
+- When some visits cannot be placed, an "unplaced" card lists each missing visit with the rule that blocks it and one-tap verified fixes (for example allowing the same member to return, skipping the location this week, or widening a day cap). Applying a fix regenerates the plan.
+- Member cards warn when days off plus the rest rule cost that person visits and offer to exempt them from the rest rule.
+- A one-time banner appears after loading an old save whose total changed ("was 5, now 6"), so the new per-location totals are never a surprise.
 
-Saved data stays under `visitplan.v2`. Old saves migrate on load: the old repeat setting maps to the new repeat policy, and contracted locations keep their old unrestricted gender behaviour.
+Saved data stays under `visitplan.v2`. Old saves migrate on load; the save format version is 3.
 
 ## Goals (الأهداف)
 A goal is a visit that must be in every plan. Each goal has:
@@ -72,38 +85,25 @@ Rules:
 - A pinned member never goes over their maximum visit count: the solver keeps room for their later goal visits when it gives them other visits.
 
 ## Plan ranking
-Every plan is checked by `evaluatePlan()`, which re-reads the plan rows and does not trust the solver's flags. The result is stored as `p.eval`:
-- `hard`: rest rule, hard "ليس مع" pairs, member visit targets, goals, location caps and closed days, days off and member types, double booking, team shape, mixed-gender rule. All of these must be 0 in normal mode.
-- `soft`: soft "ليس مع" breaks, missed preferences, missed "مع" pairs, missed day preferences.
-- `clean`: no hard violations, no "ليس مع" breaks and no missed preferences.
+Every plan is checked by `evaluatePlan()`, which re-reads the plan rows and does not trust the solver's flags. The result is stored as `p.eval`: `hard` counts (rest rule, hard avoid pairs, member visit targets, goals, location caps and closed days, days off and member types, double booking, team shape, gender rule, repeat rules, visits beyond a location's allowance) and `soft` counts (soft avoid breaks, missed preferences, missed pairs, missed day preferences). All hard counts must be 0 for a complete plan.
 
-Plans are sorted in tiers, and a later tier only breaks ties inside the earlier one:
-1. Fewer hard violations.
-2. Clean plans before the rest.
-3. Fewer rule breaks ("ليس مع" breaks plus target misses).
-4. Fewer missed preferences and day preferences, only when the priority is set to preferences.
-5. Higher score: fairness, days, preferences, pairing and similarity to the previous plan.
+Plans are ranked by `[hard violations, -visits placed, quality, hash of the rows]`. The quality score (lower is better) is a weighted sum of eleven terms: load spread, load variance, back-to-back days, day imbalance, missed preferences, missed day preferences, missed pairs, soft avoid breaks, soft conflict breaks, the same person at the same location twice, and (only in the "stable" priority) changes against the previous plan. The priority setting (balance, preferences, stable) changes the weights; the weights are in `QW` in `engine.js`. Plan 1 is the best plan in the pool; the other slots are filled by a diversity pick.
 
-Plan 1 is always the best plan in the pool. When any pooled plan is clean, plan 1 is clean. The diversity pick fills the other slots with clean plans first, then the rest, and the final list is sorted again. "الأمثل" shows only on a clean plan 1. Otherwise plan 1 shows "الأفضل المتاح" with a warning.
-
-The search keeps running past 560ms until the pool has a clean plan, up to the 1500ms limit (2000ms in flex mode) or 9000 attempts.
-
-History for carry-over is saved when a plan is picked or after a manual generation. Auto-regeneration after a settings change does not overwrite it.
-
-## Settings reference (v2 data model)
+## Settings reference (v3 data model)
 
 Every setting below defaults to the previous behaviour, saves with the plan, and has a relax family so `explain` can offer a verified one-tap fix when it blocks visits.
 
 | Setting | State key | Relax family | One-tap fix |
 |---|---|---|---|
-| Wider limits: per-day caps 1–6, day total 0–10, per-day max 0–10, weekly cap 0–7, seats 0–8, custom team 1–10 | `cap`, `days[].max`, `locations[].maxWeek/seats` | `daycap`, `loc`, `seats` | `capMain`, `capCon`, `dayMax` |
+| Wider limits: per-day caps 1–6, day total 0–10, per-day max 0–10, weekly cap 0–7, seats 0–8, custom team 1–10 | `cap`, `days[].max`, `locations[].seats` | `daycap`, `seats` | `capMain`, `capCon`, `dayMax` |
 | Per-week exceptions: holiday, member leave, location closure for one `weekStart` | `weekOverrides[weekStart]` (`holidays`, `memberOff`, `locClosed`), pruned after 12 weeks | `offdays`, `closed` | `weekOffClear`, `weekOpenDay` |
 | Gender mix mode: `legacy4` (default 3:1 for teams of exactly a+b, otherwise both genders), `mixed`, `minF`, `minM`, `off`; ratio a:b adjustable; per-location override `genderMode` | `gender {mode,ratio:{a,b},min}`, `locations[].genderMode` | `gender` | `genderMode` (to mixed), `locGenderOff` |
 | Member tags and location needs | `members[].tags`, `locations[].needs [{tag,min}]` | `tags` | `locNeedOff` |
 | Pair rules: `with`, `avoid`, `must` (always together); per-rule `hard` overrides the global mode | `pairs.rules[].kind/hard` | `pairs` | `pairSoft` |
 | Location days: `allowedDays`, `minGap`; day rules `notSameDay` and `sameDay` between location sets | `locations[].allowedDays/minGap`, `dayRules` | `dayRules`, `closed` | `dayRuleOff`, `locGapOff` |
 | Fairness: `maxSpread`, `minEach`, soft or hard | `fair` | `fair` | `fairSoft` |
-| Location priority and weekly minimum (auto goals with negative ids) | `locations[].priority/minWeek` | `minWeek` | `locMinWeekOff` |
+| Visits and repeats: per-location `visits`, `repeat {people,days}`, `maxExtra`; global `extraVisits`, `oneVisitPerMember` | `locations[].visits/repeat/maxExtra`, `extraVisits`, `oneVisitPerMember` | `dupPeople`, `repPeople` | `dupPeople`, `locRepeatPeople`, `locRepeatDays`, `locVisits`, `extraVisits` |
+| Location priority (used when not everything fits) | `locations[].priority` | none | none |
 | Solver and output: budget, plan count, flex default, seed lock, digits | `solver`, `digits` | none (never blocks) | none |
 
 Notes:
@@ -115,19 +115,20 @@ Notes:
 
 ## Property tests cover the new rules
 
-`tests/gen.mjs` randomly adds custom goals, week overrides, gender configs, tags and needs, must pairs, location days and gaps, day rules, fairness, priority and minWeek. `tests/oracle.mjs` brute-forces capacity with the engine's own `evaluatePlan` as the checker and scans every visit count up to the structural bound, so non-monotone rules are covered.
+`tests/gen.mjs` randomly adds custom goals, week overrides, gender configs, tags and needs, must pairs, location days and gaps, day rules, fairness and priority. `tests/oracle3.mjs` brute-forces the largest placeable set of visits, with `tests/judge.mjs` as the checker. The oracle checks only rules that are monotone in a partial plan while it searches, and the full set of rules at the end (same-day rules and fairness spread are not monotone).
 
 ## Tests
-`npm test` (which runs `node --test`; on Node 22 the directory form `node --test tests/` does not work) needs no dependencies.
-- `engine.test.mjs`: the real-data scenario (`tests/fixtures/user-backup-2026-10-24.json`) and scaling scenarios.
-- `property.test.mjs`: 500 seeded random instances checked against a brute-force oracle (`oracle.mjs`): exactness, completeness, soundness, bound validity, monotonicity, explanation correctness, determinism, output invariants. `PROP_N=…` changes the count.
-- `golden.test.mjs`: the extracted engine reproduces the legacy inline engine (kept in `tests/fixtures/legacy-engine.js`) plan for plan.
-- `perf.test.mjs`, `migrate.test.mjs`.
-- `tests/ui/check.py` is a Playwright script (Python) for the browser flows: stepper banner, fixes, unplaced cards, eligibility taps, desktop and 390 px. Serve the folder (for example `python3 -m http.server 8765`) and run `python3 tests/ui/check.py`.
+`npm test` runs `node --test --test-concurrency=1` (sequential, because several tests measure time) and needs no dependencies. On Node 22 the directory form `node --test tests/` does not work. The suite takes about two minutes.
+- `judge.mjs`: an independent validator written from the rules, not from the engine's checker. It imports only `createFromSaved` and `DAYS`. `judge.test.mjs` proves it: planted plans pass, eight kinds of mutation are rejected, and it agrees with the engine checker on 500 valid and mutated plans.
+- `planted.mjs`: generates an instance by building a valid plan first and then adding constraints that plan satisfies, so a solution is known to exist. `solver.test.mjs` requires all 300 small and 150 medium instances to be solved within 500 ms and 1.5 s and every returned plan to pass the judge.
+- `property.test.mjs`: 500 seeded random instances against the brute-force oracle: exactness, soundness, monotonicity, explanation correctness (every listed fix is checked with the oracle), determinism. `PROP_N=...` changes the count.
+- `reasons.test.mjs` (the real user fixture, repeat reasons, verified fixes), `model.test.mjs` (visits, repeats, extras, goals, week overrides), `locations.test.mjs` and `migrate.test.mjs` (totals and old saves), `quality.test.mjs`, `engine.test.mjs`, `perf.test.mjs`.
+- `guard.test.mjs` fails if the engine special-cases the fixture's ids or seeds, if a test is skipped, if the number of tests drops below `tests/MIN_TESTS`, if the judge starts importing the engine's checker, or if the fixture file changes.
+- `tests/ui/ui.py` is a Playwright script (Python) for the browser flows U-1 to U-7 at 1100 px and 390 px: bulk add and total, repeat controls, per-type stepper, delete and undo, the unplaced card with a one-tap fix, no old controls, no console errors and no total drift in debug mode. Serve the folder (for example `python3 -m http.server 8765`) and run `python3 tests/ui/ui.py`.
 
 ## Debugging
 - `?seed=123` makes the random choices repeatable. Without it, the seed comes from the clock.
-- `?debug=1` logs every pooled plan with its `evaluatePlan()` result and rank key to the console. In normal mode it logs an error for any plan with a hard violation, since that means a solver bug.
+- `?debug=1` logs every pooled plan with its `evaluatePlan()` result to the console, logs an error for any plan with a hard violation (that means a solver bug), and checks after every render that each visible total equals `totalRequested()` (`TOTAL_DESYNC` in the console otherwise).
 
 ## UI polish
 - Every dropdown (goal location, pair-rule members) is a custom pill dropdown that matches the app style. It has grouped headers (clinical/admin, main/contracted), gender dots, distance badges and a check on the selected option. It opens up or down depending on the space available. Keyboard: `↑/↓`, `Home/End`, `Enter`, `Esc`.
